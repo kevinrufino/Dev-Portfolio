@@ -32,11 +32,14 @@ const FIRST_FRAC = FIRST_VB.w / NAME_VB_W;
 const LAST_FRAC = LAST_VB.w / NAME_VB_W;
 
 // ── Tunables ─────────────────────────────────────────────────────────────────
-const CHECK_MS = 150; // how often to check whether the next row can drop
-const OVERLAP_FRAC = 0.05; // row overlap as fraction of name width — matches the hero's mt-[-5%]
+const CHECK_MS = 150; // how often to poll row-0 landing / all-rows settled
+const OVERLAP_FRAC_DESKTOP = 0.05; // row overlap as fraction of name width — matches the hero's mt-[-5%]
+const OVERLAP_FRAC_MOBILE = 0.01; // shallower interlock on thin viewports → fewer rows to fill the fold
+const MOBILE_MAX_W = 768; // viewports narrower than this use the mobile overlap
 const SETTLE_SPEED = 10; // a row is "settled" once both bodies are this slow
-const MAX_ROWS = 14; // safety cap on spawned rows
-const FILL_LINE = 0.14; // stop once the sleeping pile crosses this fraction of the fold from the top
+const ROW_CAP = 40; // sanity cap on the computed row count
+const GRAVITY_FILL = 1.8; // heavier gravity while the stack drops, so the fill reads fast
+const FILL_TIMEOUT_MS = 7000; // report "filled" even if a body never quite settles
 const FLOOR_T = 16; // floor bar thickness (collision only — invisible)
 const SCROLL_RANGE = 1.2; // fold-heights of scroll to fully open the floor
 const IMPULSE_RADIUS_FRAC = 0.28; // click impulse reach, as a fraction of viewport width
@@ -115,6 +118,9 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
         let docH = Math.max(document.body.scrollHeight, fold);
 
         const engine = Matter.Engine.create({ enableSleeping: true });
+        // Heavier gravity while the stack drops in, so the fill animation is
+        // quick; reset to normal once every row has landed.
+        engine.gravity.y = GRAVITY_FILL;
         const world = engine.world;
         // The canvas stays viewport-sized and fixed; every physics body is
         // invisible (only the sprites drawn in afterRender show), so instead of
@@ -241,10 +247,17 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
         // sprites, so stacked rows visually interlock by `overlapPx` (like the
         // hero's mt-[-5%]) while the physics stays box-on-box. Sprites are
         // drawn bottom-aligned to their box so the bottom row sits exactly on
-        // the floor instead of dipping into it.
-        const overlapPx = rect.width * OVERLAP_FRAC;
+        // the floor instead of dipping into it. Thin viewports interlock less
+        // so it takes fewer of the (narrower, shorter) rows to fill the fold.
+        const overlapFrac =
+          W < MOBILE_MAX_W ? OVERLAP_FRAC_MOBILE : OVERLAP_FRAC_DESKTOP;
+        const overlapPx = rect.width * overlapFrac;
         const boxH = wordH - overlapPx;
         const drawTop = boxH / 2 - wordH; // sprite top in body-local coords
+
+        // Rows needed for the stack to fill exactly one viewport: each row
+        // adds one collision-box height to the pile.
+        const totalRows = Math.min(ROW_CAP, Math.max(1, Math.ceil(fold / boxH)));
 
         // Word x-anchors, identical for every row (matches the hero's NameRow
         // layout: first name left-anchored, last name right-anchored).
@@ -262,8 +275,14 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
             frictionAir: 0.012,
             render: invisible,
           });
+          // Tetris mode while the stack drops in: rotation locked so the
+          // boosted-gravity cascade can't knock rows into a tumble — they
+          // stack flat every time. Real inertia is restored once filled, so
+          // the scroll drain and click impulses still tumble naturally.
+          const baseInertia = body.inertia;
+          Matter.Body.setInertia(body, Infinity);
           Matter.World.add(world, body);
-          sprites.push({ body, img, width: w, height: wordH });
+          sprites.push({ body, img, width: w, height: wordH, baseInertia });
           return body;
         };
 
@@ -360,55 +379,56 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
         };
         document.addEventListener('click', handleClick);
 
-        // Fill gauge: only truly sleeping bodies count, so a sprite mid-fall
-        // can't fake a full container.
-        const pileTop = () => {
-          let top = Infinity;
-          for (const { body } of sprites) {
-            if (body.isSleeping) top = Math.min(top, body.bounds.min.y);
-          }
-          return top;
-        };
-
-        // Rows fall into place like the hero's stacked layout: each row is a
-        // KEVIN + RUFINO pair (same variant, alternating per row — the loaded
-        // name is the filled row 0), spawned side by side above the fold at the
-        // exact x-anchors of the loaded name with no initial velocity. The next
-        // row only drops once the previous one has settled, so rows never
-        // collide mid-air and stack neatly instead of tumbling.
+        // Fast fill: once the loaded name (row 0) has landed, spawn every
+        // remaining row at once as a pre-stacked column above the viewport —
+        // they cascade down in order (boosted gravity) and the whole fill
+        // reads in about a second instead of row-by-row. Rows alternate
+        // variant like the hero (row 0, the loaded name, counts as filled).
+        // "Filled" is reported once every body has settled, with a timeout in
+        // case something never quite stops jittering.
         let spawnTimer;
-        let rowIndex = 0;
+        let fillTimeout;
         let done = false;
         const rowSettled = row =>
           row.every(
             b => b.position.y > 0 && (b.isSleeping || b.speed < SETTLE_SPEED),
           );
-        const dropNextRow = () => {
-          if (rowIndex >= MAX_ROWS || pileTop() < fold * FILL_LINE) {
-            clearInterval(spawnTimer);
-            if (!done) {
-              done = true;
-              onFilledRef.current?.();
-            }
+        const finishFill = () => {
+          if (done) return;
+          done = true;
+          clearInterval(spawnTimer);
+          clearTimeout(fillTimeout);
+          engine.gravity.y = 1; // back to normal for the scroll drain
+          for (const s of sprites) Matter.Body.setInertia(s.body, s.baseInertia);
+          onFilledRef.current?.();
+        };
+        const spawnRemainingRows = () => {
+          for (let i = 1; i < totalRows; i++) {
+            const useFilled = i % 2 === 0;
+            // Stack the queued rows upward with a small air gap so the
+            // solver never starts them overlapped.
+            const y = -wordH - (i - 1) * (boxH + 4);
+            rows.push([
+              addSprite(
+                useFilled ? firstFilled : firstOutline,
+                firstX,
+                y,
+                firstW,
+              ),
+              addSprite(useFilled ? lastFilled : lastOutline, lastX, y, lastW),
+            ]);
+          }
+          fillTimeout = setTimeout(finishFill, FILL_TIMEOUT_MS);
+        };
+        let cascadeSpawned = false;
+        const checkFill = () => {
+          if (!cascadeSpawned) {
+            if (!rowSettled(rows[0])) return;
+            cascadeSpawned = true;
+            spawnRemainingRows();
             return;
           }
-          if (!rowSettled(rows[rows.length - 1])) return;
-          rowIndex++;
-          const useFilled = rowIndex % 2 === 0; // row 0 (the loaded name) was filled
-          rows.push([
-            addSprite(
-              useFilled ? firstFilled : firstOutline,
-              firstX,
-              -wordH,
-              firstW,
-            ),
-            addSprite(
-              useFilled ? lastFilled : lastOutline,
-              lastX,
-              -wordH,
-              lastW,
-            ),
-          ]);
+          if (rows.every(rowSettled)) finishFill();
         };
 
         // Pause the simulation while the tab is hidden.
@@ -443,18 +463,19 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
         window.addEventListener('resize', handleResize);
 
         // Handoff: draw the stationary 1:1 bodies first, then let the caller
-        // hide the DOM name, then start physics. Row 1 drops as soon as the
-        // loaded name (row 0) has settled on the floor.
+        // hide the DOM name, then start physics. The cascade spawns as soon
+        // as the loaded name (row 0) has settled on the floor.
         Matter.Render.run(render);
         requestAnimationFrame(() => {
           if (cancelled) return;
           onHandoffRef.current?.();
           Matter.Runner.run(runner, engine);
-          spawnTimer = setInterval(dropNextRow, CHECK_MS);
+          spawnTimer = setInterval(checkFill, CHECK_MS);
         });
 
         teardown = () => {
           if (spawnTimer) clearInterval(spawnTimer);
+          if (fillTimeout) clearTimeout(fillTimeout);
           clearInterval(wakeTimer);
           docObserver.disconnect();
           window.removeEventListener('scroll', updateFloor);

@@ -22,8 +22,21 @@ export default function useLandingSequence() {
   const [pct, setPct] = useState(0);
   const [filling, setFilling] = useState(false);
   const [handedOff, setHandedOff] = useState(false);
+  const [filled, setFilled] = useState(false);
   const nameRef = useRef(null);
   const pctRef = useRef(0); // synchronous source of truth for the eased fill
+
+  // The whole sequence assumes it plays from the top of the page (the floor
+  // sits at the first fold, the handoff rect is measured at scrollY 0). On a
+  // refresh, Chrome restores the previous scroll position — which put the
+  // loader over the middle of the page and dropped the names off-screen.
+  // Take over restoration and start at the top.
+  useEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+    window.scrollTo(0, 0);
+  }, []);
 
   // Pre-warm the matter-js chunk while the loader plays.
   useEffect(() => {
@@ -104,5 +117,18 @@ export default function useLandingSequence() {
     setHandedOff(true);
   }, []);
 
-  return { pct, filling, handedOff, nameRef, getSpawnRect, onHandoff };
+  // The canvas reports when every row has landed — this unfreezes scrolling
+  // and fades in the scroll cue.
+  const onFilled = useCallback(() => setFilled(true), []);
+
+  return {
+    pct,
+    filling,
+    handedOff,
+    filled,
+    nameRef,
+    getSpawnRect,
+    onHandoff,
+    onFilled,
+  };
 }

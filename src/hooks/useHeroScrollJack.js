@@ -1,10 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 
 /**
  * Scroll-jack for the landing hero.
  *
- * Before handoff, the page can't scroll at all (the loader is a gate, and the
- * physics handoff assumes scrollY = 0). After handoff:
+ * Until the fill completes (`ready`), the page can't scroll at all — the
+ * loader is a gate, the physics handoff assumes scrollY = 0, and the name
+ * rows should finish landing before the user can leave. Once ready:
  *
  * - hero:      the first downward wheel / swipe / key is intercepted and
  *              replaced with a smooth animated scroll to the next viewport
@@ -25,19 +26,23 @@ const SWIPE_THRESHOLD_PX = 8;
 const easeInOutCubic = t =>
   t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
-export default function useHeroScrollJack(handedOff) {
-  // Freeze the page entirely while the loading gate is up.
+export default function useHeroScrollJack(ready) {
+  // Lets the scroll cue trigger the same snap the wheel/swipe uses.
+  const snapRef = useRef(null);
+
+  // Freeze the page entirely until the loader has handed off AND every name
+  // row has landed.
   useEffect(() => {
-    if (handedOff) return undefined;
+    if (ready) return undefined;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = prev;
     };
-  }, [handedOff]);
+  }, [ready]);
 
   useEffect(() => {
-    if (!handedOff) return undefined;
+    if (!ready) return undefined;
 
     const fold = window.innerHeight;
     let state = window.scrollY >= fold ? 'locked' : 'hero';
@@ -125,13 +130,21 @@ export default function useHeroScrollJack(handedOff) {
     window.addEventListener('keydown', onKey);
     window.addEventListener('scroll', onScroll, { passive: true });
 
+    // Expose the snap for the scroll cue (only fires from the hero state).
+    snapRef.current = () => {
+      if (state === 'hero') snapToIntro();
+    };
+
     return () => {
       cancelAnimationFrame(raf);
+      snapRef.current = null;
       window.removeEventListener('wheel', onWheel);
       window.removeEventListener('touchstart', onTouchStart);
       window.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('scroll', onScroll);
     };
-  }, [handedOff]);
+  }, [ready]);
+
+  return useCallback(() => snapRef.current?.(), []);
 }

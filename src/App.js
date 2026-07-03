@@ -52,10 +52,11 @@ const AppContent = () => {
   const { setCursorType, type: cursorType } = useCursor();
   const { getThemeColors } = useTheme();
   const seq = useLandingSequence();
-  // Freeze scroll while the loader gate is up; after handoff, the first
-  // scroll-down snaps past the hero to the Intro and the drained hero is
-  // locked off (no scrolling back up into empty space).
-  useHeroScrollJack(seq.handedOff);
+  // Freeze scroll until the loader has handed off AND every name row has
+  // landed; after that, the first scroll-down (or the scroll cue) snaps past
+  // the hero to the Intro and the drained hero is locked off (no scrolling
+  // back up into empty space).
+  const snapPastHero = useHeroScrollJack(seq.filled);
 
   // Preload critical assets
   useEffect(() => {
@@ -100,6 +101,7 @@ const AppContent = () => {
         active={seq.filling}
         getSpawnRect={seq.getSpawnRect}
         onHandoff={seq.onHandoff}
+        onFilled={seq.onFilled}
       />
 
       {/* Page content — z:2, on top */}
@@ -124,6 +126,8 @@ const AppContent = () => {
           pct={seq.pct}
           filling={seq.filling}
           handedOff={seq.handedOff}
+          filled={seq.filled}
+          onCue={snapPastHero}
           nameRef={seq.nameRef}
           secondaryColor={themeColors.secondary}
         />

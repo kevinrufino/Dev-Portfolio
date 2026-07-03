@@ -236,8 +236,12 @@ code {
   mask-repeat: no-repeat;
   -webkit-mask-position: center;
   mask-position: center;
-  -webkit-mask-size: auto;
-  mask-size: auto;
+  /* The mask SVG has no intrinsic size (viewBox only, 1402×187 — the same
+     coordinate space as the rendered HeroName), so `auto` lets the browser
+     guess a size and the mask can miss the letterforms entirely at some
+     viewport sizes / DPRs. Stretch it to the element for exact alignment. */
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
 }
 
 .loading-mask-bar {
@@ -267,6 +271,29 @@ code {
 @media (prefers-reduced-motion: reduce) {
   .wave-slosh,
   .wave-slosh-back {
+    animation: none;
+  }
+}
+
+/* Scroll cue: discrete two-position bob for a pixel-art feel. Lives on an
+   inner wrapper so it doesn't fight the button's centering transform. */
+@keyframes cue-bob {
+  0%,
+  49% {
+    transform: translateY(0);
+  }
+  50%,
+  100% {
+    transform: translateY(6px);
+  }
+}
+
+.cue-bob {
+  animation: cue-bob 1.1s step-end infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cue-bob {
     animation: none;
   }
 }
