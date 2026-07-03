@@ -112,6 +112,52 @@ body {
   -webkit-text-fill-color: var(--ultra);
 }
 
+.project-title-list {
+  position: relative;
+  min-height: clamp(25rem, 48vw, 46rem);
+  contain: layout;
+}
+
+.project-title-item {
+  position: absolute;
+  inset-inline: 0;
+  top: 50%;
+  display: flex;
+  justify-content: flex-end;
+  pointer-events: none;
+  transform: translateY(calc(-50% + var(--project-y)));
+  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.project-title-link {
+  display: block;
+  pointer-events: auto;
+  transform: scale(var(--project-scale));
+  transform-origin: right center;
+  width: 100%;
+  color: var(--ultra);
+  font-family: "OffBit-101-Bold", sans-serif;
+  font-size: clamp(1.45rem, 3.25vw, 3.45rem);
+  line-height: 0.82;
+  overflow-wrap: normal;
+  text-align: right;
+  white-space: nowrap;
+  transition:
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 180ms ease,
+    color 180ms ease,
+    text-shadow 180ms ease;
+}
+
+.project-title-selected {
+  overflow-wrap: anywhere;
+  text-shadow:
+    0.04em 0.04em 0 var(--acid),
+    0.08em 0.08em 0 rgba(62, 59, 244, 0.28);
+  width: var(--project-fit-width);
+  white-space: normal;
+}
+
 @keyframes marquee-x {
   from {
     transform: translateX(0);
@@ -158,6 +204,19 @@ body {
   .cell-hard:hover {
     transition: none;
     transform: none;
+  }
+  .project-title-item,
+  .project-title-link,
+  .project-title-selected {
+    transition: none;
+    text-shadow: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .project-title-link {
+    overflow-wrap: anywhere;
+    white-space: normal;
   }
 }
 
