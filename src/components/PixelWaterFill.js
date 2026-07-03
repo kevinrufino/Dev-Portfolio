@@ -56,9 +56,13 @@ const PixelWaterFill = ({ pct }) => {
 
   return (
     <div className='absolute inset-0 overflow-hidden loading-mask pointer-events-none'>
-      {/* Water body — rises with progress */}
+      {/* Water body — rises with progress. No CSS transition here: the driver
+          already eases `pct` every animation frame, and layering a transition
+          on top makes Chrome restart it on every per-frame retarget — on some
+          versions (observed on 149) the animated height then never accumulates
+          and stays pinned at 0, hiding the water entirely. */}
       <div
-        className='absolute bottom-0 left-0 w-full transition-[height] duration-300'
+        className='absolute bottom-0 left-0 w-full'
         style={{ height: `${clamped}%` }}
       >
         {/* Crests ride on the surface (just above the body) */}
