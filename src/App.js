@@ -30,6 +30,7 @@ import { NavBar } from './components/Nav.js';
 import { Projects } from './components/Projects/Projects.js';
 import { SkillsMarquee } from './components/Intro/SkillsMarquee.js';
 import Cursor from './components/Cursor.js';
+import PixelTrail from './components/PixelTrail.js';
 import { Hero } from './components/Hero/Hero.js';
 import { preloadImages } from './services/AssetService.js';
 import MatterJSCanvas from './components/Hero/MatterJSCanvas.js';
@@ -163,6 +164,7 @@ const AppContent = () => {
         </p>
 
         {/* Global cursor component */}
+        <PixelTrail />
         <Cursor cursor={cursorType} />
 
         {/* Navigation header */}
