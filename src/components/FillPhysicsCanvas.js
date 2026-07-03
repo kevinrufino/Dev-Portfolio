@@ -34,11 +34,11 @@ const LAST_FRAC = LAST_VB.w / NAME_VB_W;
 // ── Tunables ─────────────────────────────────────────────────────────────────
 const CHECK_MS = 150; // how often to check whether the next row can drop
 const OVERLAP_FRAC = 0.05; // row overlap as fraction of name width — matches the hero's mt-[-5%]
-const SETTLE_SPEED = 0.3; // a row is "settled" once both bodies are this slow
+const SETTLE_SPEED = 10; // a row is "settled" once both bodies are this slow
 const MAX_ROWS = 14; // safety cap on spawned rows
 const FILL_LINE = 0.14; // stop once the sleeping pile crosses this fraction of the fold from the top
 const FLOOR_T = 16; // floor bar thickness (collision only — invisible)
-const SCROLL_RANGE = 1.5; // fold-heights of scroll to fully open the floor
+const SCROLL_RANGE = 1.2; // fold-heights of scroll to fully open the floor
 const IMPULSE_RADIUS_FRAC = 0.28; // click impulse reach, as a fraction of viewport width
 const IMPULSE_UP = 12; // upward kick strength on click
 const IMPULSE_PUSH = 8; // radial push strength on click
@@ -49,7 +49,9 @@ const svgToImage = (element, vb) => {
     '<svg',
     `<svg width="${vb.w}" height="${vb.h}"`,
   );
-  const url = URL.createObjectURL(new Blob([markup], { type: 'image/svg+xml' }));
+  const url = URL.createObjectURL(
+    new Blob([markup], { type: 'image/svg+xml' }),
+  );
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
@@ -82,12 +84,30 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
     // filled = solid ultra (the loader's end state); unfilled = the outline variant.
     Promise.all([
       import('matter-js'),
-      svgToImage(<FirstNameComponent primaryColor={ULTRA} secondaryColor={ULTRA} />, FIRST_VB),
-      svgToImage(<FirstNameComponent primaryColor={ULTRA} secondaryColor={ACID} />, FIRST_VB),
-      svgToImage(<LastNameComponent primaryColor={ULTRA} secondaryColor={ULTRA} />, LAST_VB),
-      svgToImage(<LastNameComponent primaryColor={ULTRA} secondaryColor={ACID} />, LAST_VB),
+      svgToImage(
+        <FirstNameComponent primaryColor={ULTRA} secondaryColor={ULTRA} />,
+        FIRST_VB,
+      ),
+      svgToImage(
+        <FirstNameComponent primaryColor={ULTRA} secondaryColor={ACID} />,
+        FIRST_VB,
+      ),
+      svgToImage(
+        <LastNameComponent primaryColor={ULTRA} secondaryColor={ULTRA} />,
+        LAST_VB,
+      ),
+      svgToImage(
+        <LastNameComponent primaryColor={ULTRA} secondaryColor={ACID} />,
+        LAST_VB,
+      ),
     ]).then(
-      ([{ default: Matter }, firstFilled, firstOutline, lastFilled, lastOutline]) => {
+      ([
+        { default: Matter },
+        firstFilled,
+        firstOutline,
+        lastFilled,
+        lastOutline,
+      ]) => {
         if (cancelled || !canvas) return;
 
         let W = window.innerWidth;
@@ -114,7 +134,10 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
         });
         const runner = Matter.Runner.create();
 
-        const invisible = { fillStyle: 'transparent', strokeStyle: 'transparent' };
+        const invisible = {
+          fillStyle: 'transparent',
+          strokeStyle: 'transparent',
+        };
         const staticOpts = { isStatic: true, render: invisible };
 
         // Split floor at the fold: two invisible halves meeting at the center.
@@ -125,17 +148,47 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
           friction: 0.05, // slippery so the pile slides off as it retracts
           render: invisible,
         };
-        const leftFloor = Matter.Bodies.rectangle(W / 4, floorY, W / 2, FLOOR_T, floorOpts);
-        const rightFloor = Matter.Bodies.rectangle((3 * W) / 4, floorY, W / 2, FLOOR_T, floorOpts);
+        const leftFloor = Matter.Bodies.rectangle(
+          W / 4,
+          floorY,
+          W / 2,
+          FLOOR_T,
+          floorOpts,
+        );
+        const rightFloor = Matter.Bodies.rectangle(
+          (3 * W) / 4,
+          floorY,
+          W / 2,
+          FLOOR_T,
+          floorOpts,
+        );
 
         // Tall walls (they always cover the fall, even as the document grows) +
         // a catch floor at the document bottom so nothing escapes if it misses
         // the footer obstacle. `bottomFloor` is repositioned as docH changes.
         const wallH = 40000;
         const leftWall = Matter.Bodies.rectangle(-30, 0, 60, wallH, staticOpts);
-        const rightWall = Matter.Bodies.rectangle(W + 30, 0, 60, wallH, staticOpts);
-        const bottomFloor = Matter.Bodies.rectangle(W / 2, docH + 30, W * 2, 60, staticOpts);
-        Matter.World.add(world, [leftFloor, rightFloor, leftWall, rightWall, bottomFloor]);
+        const rightWall = Matter.Bodies.rectangle(
+          W + 30,
+          0,
+          60,
+          wallH,
+          staticOpts,
+        );
+        const bottomFloor = Matter.Bodies.rectangle(
+          W / 2,
+          docH + 30,
+          W * 2,
+          60,
+          staticOpts,
+        );
+        Matter.World.add(world, [
+          leftFloor,
+          rightFloor,
+          leftWall,
+          rightWall,
+          bottomFloor,
+        ]);
 
         // Keep the catch floor at the real document bottom as content lazy-loads
         // in and the page grows (images/videos below the fold change its height).
@@ -173,7 +226,13 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
               width: vrect.width,
               height: vrect.height,
             }
-          : { left: 0, right: W, top: fold * 0.35, width: W, height: W * (187 / NAME_VB_W) };
+          : {
+              left: 0,
+              right: W,
+              top: fold * 0.35,
+              width: W,
+              height: W * (187 / NAME_VB_W),
+            };
         const firstW = rect.width * FIRST_FRAC;
         const lastW = rect.width * LAST_FRAC;
         const wordH = rect.height;
@@ -231,13 +290,19 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
           for (const { body } of sprites) Matter.Sleeping.set(body, false);
         };
         const updateFloor = () => {
-          const p = Math.min(1, Math.max(0, window.scrollY / (fold * SCROLL_RANGE)));
+          const p = Math.min(
+            1,
+            Math.max(0, window.scrollY / (fold * SCROLL_RANGE)),
+          );
           const shift = p * (W / 2);
           engine.enableSleeping = p === 0;
           if (shift !== lastShift) {
             lastShift = shift;
             Matter.Body.setPosition(leftFloor, { x: W / 4 - shift, y: floorY });
-            Matter.Body.setPosition(rightFloor, { x: (3 * W) / 4 + shift, y: floorY });
+            Matter.Body.setPosition(rightFloor, {
+              x: (3 * W) / 4 + shift,
+              y: floorY,
+            });
           }
           if (p > 0) wakeAll();
         };
@@ -315,7 +380,9 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
         let rowIndex = 0;
         let done = false;
         const rowSettled = row =>
-          row.every(b => b.position.y > 0 && (b.isSleeping || b.speed < SETTLE_SPEED));
+          row.every(
+            b => b.position.y > 0 && (b.isSleeping || b.speed < SETTLE_SPEED),
+          );
         const dropNextRow = () => {
           if (rowIndex >= MAX_ROWS || pileTop() < fold * FILL_LINE) {
             clearInterval(spawnTimer);
@@ -329,8 +396,18 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
           rowIndex++;
           const useFilled = rowIndex % 2 === 0; // row 0 (the loaded name) was filled
           rows.push([
-            addSprite(useFilled ? firstFilled : firstOutline, firstX, -wordH, firstW),
-            addSprite(useFilled ? lastFilled : lastOutline, lastX, -wordH, lastW),
+            addSprite(
+              useFilled ? firstFilled : firstOutline,
+              firstX,
+              -wordH,
+              firstW,
+            ),
+            addSprite(
+              useFilled ? lastFilled : lastOutline,
+              lastX,
+              -wordH,
+              lastW,
+            ),
           ]);
         };
 
@@ -382,7 +459,10 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
           docObserver.disconnect();
           window.removeEventListener('scroll', updateFloor);
           window.removeEventListener('resize', handleResize);
-          window.removeEventListener('registerObstacle', handleRegisterObstacle);
+          window.removeEventListener(
+            'registerObstacle',
+            handleRegisterObstacle,
+          );
           document.removeEventListener('click', handleClick);
           document.removeEventListener('visibilitychange', handleVisibility);
           Matter.Render.stop(render);

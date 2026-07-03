@@ -30,9 +30,9 @@ export default function useLandingSequence() {
     import('matter-js');
   }, []);
 
-  // Water fill = min(time ramp, real readiness), eased toward that target each
-  // frame. Hands off once the minimum time has elapsed AND every readiness
-  // milestone has landed AND the eased fill has essentially reached 100%.
+  // Water fill = time ramp (85%) + real readiness (15%), eased toward that
+  // target each frame. Hands off once the minimum time has elapsed AND every
+  // readiness milestone has landed AND the eased fill has reached ~100%.
   useEffect(() => {
     const start = Date.now();
     const milestones = ['fonts', 'window-load', 'shader'];
@@ -44,7 +44,12 @@ export default function useLandingSequence() {
     const tick = () => {
       const elapsed = Date.now() - start;
       const timeRamp = Math.min(1, elapsed / MIN_LOADING_MS);
-      const target = Math.min(timeRamp, realFrac()) * 100;
+      // Time drives most of the rise (0→85%) so the water visibly climbs even
+      // while readiness signals are still pending; real readiness contributes
+      // the last 15%, so the fill can only complete once the page is ready.
+      // (Gating the whole rise on readiness made the water sit still on cold
+      // loads, then snap to full at the end.)
+      const target = timeRamp * 85 + realFrac() * 15;
       // Tracked in a ref so the handoff test below is synchronous — a
       // functional setState updater isn't guaranteed to run before this frame
       // continues.
