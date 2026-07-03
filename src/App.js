@@ -23,6 +23,7 @@ import AppProviders from './context/AppProviders.js';
 import { useCursor } from './context/CursorContext.js';
 import { useTheme } from './context/ThemeContext.js';
 import useLandingSequence from './hooks/useLandingSequence.js';
+import useHeroScrollJack from './hooks/useHeroScrollJack.js';
 import { Footer } from './components/Footer.js';
 import { Intro } from './components/Intro/Intro.js';
 import { NavBar } from './components/Nav.js';
@@ -51,6 +52,10 @@ const AppContent = () => {
   const { setCursorType, type: cursorType } = useCursor();
   const { getThemeColors } = useTheme();
   const seq = useLandingSequence();
+  // Freeze scroll while the loader gate is up; after handoff, the first
+  // scroll-down snaps past the hero to the Intro and the drained hero is
+  // locked off (no scrolling back up into empty space).
+  useHeroScrollJack(seq.handedOff);
 
   // Preload critical assets
   useEffect(() => {
