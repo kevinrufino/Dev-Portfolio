@@ -2,7 +2,7 @@
  * Combined Context Providers for the application
  *
  * Wraps all context providers in a single component
- * Provides global state management for cursor, theme, and loading
+ * Provides global state management for cursor and theme
  *
  * @component
  * @param {Object} props - Component props
@@ -14,7 +14,6 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { CursorProvider } from './CursorContext.js';
 import { ThemeProvider } from './ThemeContext.js';
-import { LoadingProvider } from './LoadingContext.js';
 
 /**
  * Combined context provider component
@@ -25,9 +24,7 @@ import { LoadingProvider } from './LoadingContext.js';
 const AppProviders = ({ children }) => {
   return (
     <CursorProvider>
-      <ThemeProvider>
-        <LoadingProvider>{children}</LoadingProvider>
-      </ThemeProvider>
+      <ThemeProvider>{children}</ThemeProvider>
     </CursorProvider>
   );
 };

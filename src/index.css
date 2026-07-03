@@ -244,6 +244,33 @@ code {
   mix-blend-mode: difference;
 }
 
+/* Pixel water (loader): stepped wave crests slosh side-to-side. Two layers at
+   different speeds/directions for depth; masked to the letterforms by
+   .loading-mask above. */
+@keyframes wave-slosh-x {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-33.333%);
+  }
+}
+
+.wave-slosh {
+  animation: wave-slosh-x 2.4s ease-in-out infinite alternate;
+}
+
+.wave-slosh-back {
+  animation: wave-slosh-x 3.8s ease-in-out infinite alternate-reverse;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wave-slosh,
+  .wave-slosh-back {
+    animation: none;
+  }
+}
+
 /* path {
   fill: none;
   stroke: #000;
