@@ -23,6 +23,156 @@ import { LastNameComponent } from './Hero/components/LastNameComponent.js';
 const ACID = '#F1F43B';
 const ULTRA = '#3e3bf4';
 
+// ── Firework burst (ported from the retired MatterJSCanvas) ──────────────────
+// Clicking a name sprite in the pile pops a pixel/cell firework at the hit
+// point. Bursts are stored in document coordinates (like the bodies) and drawn
+// inside the same -scrollY offset transform as the sprites.
+const FIREWORK_DURATION = 760;
+const FIREWORK_CELL = 9;
+const FIREWORK_LIMIT = 10;
+
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+const smoothstep = (edge0, edge1, value) => {
+  const x = clamp((value - edge0) / (edge1 - edge0), 0, 1);
+  return x * x * (3 - 2 * x);
+};
+
+const easeOutCubic = value => 1 - Math.pow(1 - value, 3);
+
+const drawFireworkCell = (ctx, x, y, size, shape) => {
+  if (shape === 'circle') {
+    ctx.beginPath();
+    ctx.arc(x, y, size / 2, 0, Math.PI * 2);
+    ctx.fill();
+    return;
+  }
+
+  const radius = size * 0.36;
+  const left = x - size / 2;
+  const top = y - size / 2;
+
+  if (ctx.roundRect) {
+    ctx.beginPath();
+    ctx.roundRect(left, top, size, size, radius);
+    ctx.fill();
+    return;
+  }
+
+  ctx.fillRect(left, top, size, size);
+};
+
+const makeFireworkCells = () => {
+  const cells = [];
+  const rotation = Math.random() * Math.PI * 2;
+  const spokes = 8;
+
+  for (let spoke = 0; spoke < spokes; spoke += 1) {
+    const angle = rotation + (Math.PI * 2 * spoke) / spokes;
+    for (let step = 1; step <= 6; step += 1) {
+      cells.push({
+        angle,
+        distance: FIREWORK_CELL * (step * 1.65 + (spoke % 2) * 0.35),
+        delay: step * 18,
+        size: FIREWORK_CELL * (step < 3 ? 1.04 : 0.82),
+        color: (spoke + step) % 3 === 0 ? ACID : ULTRA,
+        shape: step % 2 === 0 ? 'circle' : 'squircle',
+      });
+    }
+  }
+
+  for (let ring = 2; ring <= 5; ring += 1) {
+    const points = ring * 6;
+    for (let point = 0; point < points; point += 1) {
+      if ((point + ring) % 3 === 0) continue;
+
+      cells.push({
+        angle:
+          rotation +
+          (Math.PI * 2 * point) / points +
+          (ring % 2 ? Math.PI / points : 0),
+        distance: FIREWORK_CELL * ring * 2.2,
+        delay: ring * 24,
+        size: FIREWORK_CELL * (ring % 2 ? 0.72 : 0.6),
+        color: (point + ring) % 4 === 0 ? ACID : ULTRA,
+        shape: (point + ring) % 2 === 0 ? 'circle' : 'squircle',
+      });
+    }
+  }
+
+  cells.push(
+    {
+      angle: 0,
+      distance: 0,
+      delay: 0,
+      size: FIREWORK_CELL * 1.2,
+      color: ACID,
+      shape: 'circle',
+    },
+    {
+      angle: 0,
+      distance: 0,
+      delay: 40,
+      size: FIREWORK_CELL * 0.78,
+      color: ULTRA,
+      shape: 'squircle',
+    },
+  );
+
+  return cells;
+};
+
+const drawFireworks = (ctx, fireworks, now) => {
+  for (let i = fireworks.length - 1; i >= 0; i -= 1) {
+    const burst = fireworks[i];
+    const age = now - burst.start;
+    if (age > FIREWORK_DURATION) {
+      fireworks.splice(i, 1);
+      continue;
+    }
+
+    const progress = clamp(age / FIREWORK_DURATION, 0, 1);
+    const baseAlpha =
+      clamp(progress / 0.14, 0, 1) * (1 - smoothstep(0.64, 1, progress));
+
+    ctx.save();
+    ctx.translate(burst.x, burst.y);
+    ctx.globalCompositeOperation = 'source-over';
+
+    for (const cell of burst.cells) {
+      const localAge = age - cell.delay;
+      if (localAge < 0) continue;
+
+      const localProgress = clamp(
+        localAge / (FIREWORK_DURATION - cell.delay),
+        0,
+        1,
+      );
+      const travel = cell.distance * easeOutCubic(localProgress);
+      const x =
+        Math.round((Math.cos(cell.angle) * travel) / FIREWORK_CELL) *
+        FIREWORK_CELL;
+      const y =
+        Math.round((Math.sin(cell.angle) * travel) / FIREWORK_CELL) *
+        FIREWORK_CELL;
+      const size = cell.size * (1 - localProgress * 0.22);
+      const alpha =
+        baseAlpha *
+        clamp(localAge / 90, 0, 1) *
+        (1 - smoothstep(0.72, 1, localProgress));
+
+      if (alpha <= 0) continue;
+
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = cell.color;
+      drawFireworkCell(ctx, x, y, size, cell.shape);
+    }
+
+    ctx.restore();
+  }
+  ctx.globalAlpha = 1;
+};
+
 // Word geometry within HeroName's 1402×187 viewBox:
 // KEVIN = 600 units left-anchored, RUFINO = 780 units right-anchored (22 gap).
 const NAME_VB_W = 1402;
@@ -221,6 +371,17 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
 
         const sprites = []; // { body, img, width, height }
 
+        // Firework bursts (in document coords) fired when a name sprite is
+        // clicked. Suppressed under reduced-motion, matching the retired canvas.
+        const fireworks = [];
+        const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+        let reduceMotion = motionQuery.matches;
+        const handleMotionPreference = () => {
+          reduceMotion = motionQuery.matches;
+          if (reduceMotion) fireworks.length = 0;
+        };
+        motionQuery.addEventListener('change', handleMotionPreference);
+
         // 1:1 geometry of the loaded name. getSpawnRect returns a viewport
         // rect; convert to document space (at handoff scrollY≈0, but be safe).
         const vrect = getSpawnRect?.();
@@ -349,6 +510,10 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
             ctx.drawImage(img, -width / 2, drawTop, width, height);
             ctx.restore();
           }
+          // Bursts live in document coords too, so they ride the same offset.
+          if (fireworks.length > 0) {
+            drawFireworks(ctx, fireworks, performance.now());
+          }
           ctx.restore();
         });
 
@@ -359,6 +524,24 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
         const handleClick = e => {
           const cx = e.clientX;
           const cy = e.clientY + window.scrollY;
+
+          // Pop a firework only when the click lands on an actual name sprite.
+          if (!reduceMotion) {
+            const hit = Matter.Query.point(
+              sprites.map(s => s.body),
+              { x: cx, y: cy },
+            );
+            if (hit.length > 0) {
+              fireworks.push({
+                x: cx,
+                y: cy,
+                start: performance.now(),
+                cells: makeFireworkCells(),
+              });
+              if (fireworks.length > FIREWORK_LIMIT) fireworks.shift();
+            }
+          }
+
           const radius = W * IMPULSE_RADIUS_FRAC;
           for (const { body } of sprites) {
             const dx = body.position.x - cx;
@@ -486,10 +669,12 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
           );
           document.removeEventListener('click', handleClick);
           document.removeEventListener('visibilitychange', handleVisibility);
+          motionQuery.removeEventListener('change', handleMotionPreference);
           Matter.Render.stop(render);
           Matter.Runner.stop(runner);
           Matter.Engine.clear(engine);
           sprites.length = 0;
+          fireworks.length = 0;
           obstacleMap.clear();
         };
       },

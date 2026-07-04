@@ -31,6 +31,7 @@ import { Projects } from './components/Projects/Projects.js';
 import { SkillsMarquee } from './components/Intro/SkillsMarquee.js';
 import Cursor from './components/Cursor.js';
 import { HeaderSequence } from './components/HeaderSequence.js';
+import PixelTrail from './components/PixelTrail.js';
 import { preloadImages } from './services/AssetService.js';
 import FillPhysicsCanvas from './components/FillPhysicsCanvas.js';
 import ProjectPage from './pages/ProjectPage.js';
@@ -115,6 +116,7 @@ const AppContent = () => {
         </p>
 
         {/* Global cursor component */}
+        <PixelTrail />
         <Cursor cursor={cursorType} />
 
         {/* Navigation header */}
