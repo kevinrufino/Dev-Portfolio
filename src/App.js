@@ -22,17 +22,17 @@ import { AnimatePresence } from 'framer-motion';
 import AppProviders from './context/AppProviders.js';
 import { useCursor } from './context/CursorContext.js';
 import { useTheme } from './context/ThemeContext.js';
-import { useLoading } from './context/LoadingContext.js';
-import LoadingScreen from './components/LoadingScreen.js';
+import useLandingSequence from './hooks/useLandingSequence.js';
+import useHeroScrollJack from './hooks/useHeroScrollJack.js';
 import { Footer } from './components/Footer.js';
 import { Intro } from './components/Intro/Intro.js';
 import { NavBar } from './components/Nav.js';
 import { Projects } from './components/Projects/Projects.js';
 import { SkillsMarquee } from './components/Intro/SkillsMarquee.js';
 import Cursor from './components/Cursor.js';
-import { Hero } from './components/Hero/Hero.js';
+import { HeaderSequence } from './components/HeaderSequence.js';
 import { preloadImages } from './services/AssetService.js';
-import MatterJSCanvas from './components/Hero/MatterJSCanvas.js';
+import FillPhysicsCanvas from './components/FillPhysicsCanvas.js';
 import ProjectPage from './pages/ProjectPage.js';
 import ProjectPreview from './pages/ProjectPreview.js';
 import PageTransition from './components/PageTransition.js';
@@ -51,8 +51,12 @@ const AppContent = () => {
   // Use context hooks instead of local state
   const { setCursorType, type: cursorType } = useCursor();
   const { getThemeColors } = useTheme();
-  const { setProgress, getProgressPercentage, isComplete, setLoadingComplete } =
-    useLoading();
+  const seq = useLandingSequence();
+  // Freeze scroll until the loader has handed off AND every name row has
+  // landed; after that, the first scroll-down (or the scroll cue) snaps past
+  // the hero to the Intro and the drained hero is locked off (no scrolling
+  // back up into empty space).
+  const snapPastHero = useHeroScrollJack(seq.filled);
 
   // Preload critical assets
   useEffect(() => {
@@ -64,64 +68,6 @@ const AppContent = () => {
       preloadImages(criticalAssets);
     }
   }, []);
-
-  // Drive the loading screen off real readiness signals rather than a timer:
-  //   1. fonts          — document.fonts.ready
-  //   2. page resources — the window 'load' event (bundle, CSS, initial images)
-  //   3. shader         — the Three.js background paints its first frame
-  //                       (its 211KB chunk is the heaviest thing on the page)
-  // The bar advances as each milestone lands. A minimum keeps it from flashing
-  // on fast loads; a max cap guarantees it can never hang if a signal is missed
-  // (e.g. WebGL unavailable). Below-the-fold project videos are intentionally
-  // excluded — they lazy-load on scroll and shouldn't gate first paint.
-  useEffect(() => {
-    const MIN_MS = 600;
-    const MAX_MS = 8000;
-    const start = Date.now();
-    const milestones = ['fonts', 'window-load', 'shader'];
-    const done = new Set();
-    let finished = false;
-
-    const reflect = () => {
-      // Map fraction-complete onto the 0..7 internal progress scale.
-      setProgress(Math.round((done.size / milestones.length) * 7));
-    };
-
-    const finish = () => {
-      if (finished) return;
-      finished = true;
-      const remaining = Math.max(0, MIN_MS - (Date.now() - start));
-      setTimeout(() => {
-        setProgress(7);
-        setTimeout(() => setLoadingComplete(), 300);
-      }, remaining);
-    };
-
-    const mark = name => {
-      if (finished || done.has(name)) return;
-      done.add(name);
-      reflect();
-      if (done.size >= milestones.length) finish();
-    };
-
-    document.fonts.ready.then(() => mark('fonts'));
-
-    const onLoad = () => mark('window-load');
-    if (document.readyState === 'complete') onLoad();
-    else window.addEventListener('load', onLoad, { once: true });
-
-    const onShader = () => mark('shader');
-    if (window.__shaderReady) onShader();
-    else window.addEventListener('shader:ready', onShader, { once: true });
-
-    const cap = setTimeout(finish, MAX_MS);
-
-    return () => {
-      clearTimeout(cap);
-      window.removeEventListener('load', onLoad);
-      window.removeEventListener('shader:ready', onShader);
-    };
-  }, [setProgress, setLoadingComplete]);
 
   // Handle cursor reset on app load
   useEffect(() => {
@@ -149,8 +95,14 @@ const AppContent = () => {
         <MikaShaderEffect />
       </Suspense>
 
-      {/* Matter.js physics canvas — z:0, between shader and content */}
-      <MatterJSCanvas />
+      {/* Full-page physics canvas — z:0, between shader and content.
+          Fills the header on handoff, then drains down the page on scroll. */}
+      <FillPhysicsCanvas
+        active={seq.filling}
+        getSpawnRect={seq.getSpawnRect}
+        onHandoff={seq.onHandoff}
+        onFilled={seq.onFilled}
+      />
 
       {/* Page content — z:2, on top */}
       <div
@@ -168,20 +120,16 @@ const AppContent = () => {
         {/* Navigation header */}
         <NavBar setCursor={setCursorType} />
 
-        {!isComplete() && (
-          <LoadingScreen
-            progress={getProgressPercentage()}
-            total={100}
-            secondaryColor={themeColors.secondary}
-            setCursor={setCursorType}
-          />
-        )}
-
-        {/* Hero section */}
-        <Hero
-          primaryColor={themeColors.primary}
+        {/* Landing sequence: blocking pixel-water loader → hero-fold region
+            that the FillPhysicsCanvas fills with stacked names. */}
+        <HeaderSequence
+          pct={seq.pct}
+          filling={seq.filling}
+          handedOff={seq.handedOff}
+          filled={seq.filled}
+          onCue={snapPastHero}
+          nameRef={seq.nameRef}
           secondaryColor={themeColors.secondary}
-          setCursor={setCursorType}
         />
 
         {/* Introduction section */}
