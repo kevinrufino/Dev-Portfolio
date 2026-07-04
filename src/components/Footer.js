@@ -140,14 +140,52 @@ export const Footer = ({ setCursor }) => {
       frame = requestAnimationFrame(updateSmileyOffset);
     };
 
-    updateSmileyOffset();
-    window.addEventListener('scroll', requestUpdate, { passive: true });
+    // Only read layout on scroll while the footer is actually near the
+    // viewport. Up at the top of a long page there's no reason to run a
+    // getBoundingClientRect on every scroll frame for the whole session.
+    let tracking = false;
+    const startTracking = () => {
+      if (tracking) return;
+      tracking = true;
+      updateSmileyOffset();
+      window.addEventListener('scroll', requestUpdate, { passive: true });
+    };
+    const stopTracking = () => {
+      if (!tracking) return;
+      tracking = false;
+      window.removeEventListener('scroll', requestUpdate);
+      if (frame) {
+        cancelAnimationFrame(frame);
+        frame = 0;
+      }
+    };
+
+    // Resize is rare — keep it always so the offset stays correct even if the
+    // viewport changes while the footer is parked off-screen.
     window.addEventListener('resize', requestUpdate);
 
+    let observer;
+    if ('IntersectionObserver' in window) {
+      observer = new IntersectionObserver(
+        entries => {
+          if (entries[0]?.isIntersecting) startTracking();
+          else stopTracking();
+        },
+        { rootMargin: '25% 0px 25% 0px' },
+      );
+      observer.observe(node);
+    } else {
+      startTracking();
+    }
+
+    // Seed a sensible offset before the first intersection callback.
+    updateSmileyOffset();
+
     return () => {
-      if (frame) cancelAnimationFrame(frame);
-      window.removeEventListener('scroll', requestUpdate);
+      observer?.disconnect();
+      stopTracking();
       window.removeEventListener('resize', requestUpdate);
+      if (frame) cancelAnimationFrame(frame);
     };
   }, []);
 
