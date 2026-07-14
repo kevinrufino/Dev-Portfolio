@@ -30,6 +30,7 @@ import { NavBar } from './components/Nav.js';
 import { Projects } from './components/Projects/Projects.js';
 import { SkillsMarquee } from './components/Intro/SkillsMarquee.js';
 import Cursor from './components/Cursor.js';
+import BetaBadge from './components/BetaBadge.js';
 import { HeaderSequence } from './components/HeaderSequence.js';
 import PixelTrail from './components/PixelTrail.js';
 import { preloadImages } from './services/AssetService.js';
@@ -153,6 +154,9 @@ const AppContent = () => {
 
         {/* Footer section */}
         <Footer cursor={''} setCursor={setCursorType} />
+
+        {/* Beta / work-in-progress notice — dismissible, bottom-right */}
+        <BetaBadge setCursor={setCursorType} />
       </div>
     </>
   );
