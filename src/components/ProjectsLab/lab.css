@@ -1,0 +1,194 @@
+/* Projects Lab — self-contained styles for the three candidate renditions.
+   Route: /lab. Uses the global --acid / --ultra tokens from index.css. */
+
+/* ── 01 SIGNAL — broadcast TV ──────────────────────────────────────── */
+
+.krtv-static {
+  image-rendering: pixelated;
+  opacity: 0;
+  transition: opacity 0.12s steps(2, end);
+}
+
+.krtv-scanlines {
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(62, 59, 244, 0.22) 0 2px,
+    transparent 2px 5px
+  );
+}
+
+/* CRT power-off: the picture collapses to a horizontal line, in steps */
+.krtv-feed {
+  transform-origin: center;
+  transition:
+    transform 0.32s steps(7, end),
+    opacity 0.1s steps(2, end) 0.28s;
+}
+
+.krtv-feed-off {
+  transform: scaleY(0.004);
+  opacity: 0;
+}
+
+/* slow broadcast interference band rolling down the picture */
+@keyframes krtv-roll {
+  from {
+    top: -18%;
+  }
+  to {
+    top: 118%;
+  }
+}
+
+.krtv-band {
+  height: 64px;
+  background: linear-gradient(
+    180deg,
+    rgba(241, 244, 59, 0) 0%,
+    rgba(241, 244, 59, 0.14) 50%,
+    rgba(241, 244, 59, 0) 100%
+  );
+  animation: krtv-roll 7s steps(28, end) infinite;
+}
+
+/* ── 02 THE LEDGER — typographic file index ────────────────────────── */
+
+.ledger-title {
+  -webkit-text-stroke: 2px var(--ultra);
+  -webkit-text-fill-color: transparent;
+}
+
+@supports not (-webkit-text-stroke: 2px red) {
+  .ledger-title {
+    -webkit-text-fill-color: currentColor;
+  }
+}
+
+.ledger-row.is-hot .ledger-title,
+.ledger-row:focus-visible .ledger-title {
+  -webkit-text-fill-color: var(--acid);
+  -webkit-text-stroke-color: var(--acid);
+}
+
+.ledger-row.is-hot .ledger-meta,
+.ledger-row:focus-visible .ledger-meta {
+  color: var(--acid);
+}
+
+.ledger-open {
+  opacity: 0;
+}
+
+.ledger-row.is-hot .ledger-open,
+.ledger-row:focus-visible .ledger-open {
+  opacity: 1;
+}
+
+/* Row inversion arrives as a bitmap dither: coarse checker → fine checker
+   → solid, with hard jumps between the frames. */
+.ledger-fill {
+  opacity: 0;
+}
+
+.ledger-row.is-hot .ledger-fill,
+.ledger-row:focus-visible .ledger-fill {
+  animation: ledger-dither 0.16s steps(1, end) forwards;
+}
+
+@keyframes ledger-dither {
+  0% {
+    opacity: 1;
+    background-color: transparent;
+    background-image: repeating-conic-gradient(
+      var(--ultra) 0% 25%,
+      transparent 0% 50%
+    );
+    background-size: 16px 16px;
+  }
+  45% {
+    opacity: 1;
+    background-color: transparent;
+    background-image: repeating-conic-gradient(
+      var(--ultra) 0% 25%,
+      transparent 0% 50%
+    );
+    background-size: 8px 8px;
+  }
+  100% {
+    opacity: 1;
+    background-image: none;
+    background-color: var(--ultra);
+  }
+}
+
+/* scroll-mode dock (touch / no-hover devices) */
+.ledger-dock {
+  right: 12px;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  width: min(46vw, 210px);
+}
+
+/* ── 03 THE PIT — cartridge crate ──────────────────────────────────── */
+
+.pit-stage {
+  touch-action: none;
+  background: var(--acid);
+}
+
+.pit-grid {
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 17px,
+      rgba(62, 59, 244, 0.1) 17px 18px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 17px,
+      rgba(62, 59, 244, 0.1) 17px 18px
+    );
+}
+
+.pit-card {
+  will-change: transform;
+}
+
+.pit-card .pit-card-inner {
+  box-shadow: 3px 3px 0 0 var(--ultra);
+  transition: box-shadow 0.12s steps(2, end);
+}
+
+.pit-card.pit-grabbed {
+  z-index: 20;
+}
+
+.pit-card.pit-grabbed .pit-card-inner {
+  box-shadow: 8px 8px 0 0 var(--ultra);
+}
+
+/* TIDY tween: CSS moves the cards to their slots in pixel steps while the
+   physics bodies are parked static underneath. */
+.pit-tidy .pit-card {
+  transition: transform 0.5s steps(9, end);
+}
+
+/* ── reduced motion ────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .krtv-static,
+  .krtv-band {
+    display: none;
+  }
+  .krtv-feed {
+    transition: none;
+  }
+  .pit-tidy .pit-card {
+    transition: none;
+  }
+  .ledger-row.is-hot .ledger-fill,
+  .ledger-row:focus-visible .ledger-fill {
+    animation: none;
+    opacity: 1;
+    background: var(--ultra);
+  }
+}

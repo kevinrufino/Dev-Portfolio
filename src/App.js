@@ -37,6 +37,7 @@ import { preloadImages } from './services/AssetService.js';
 import FillPhysicsCanvas from './components/FillPhysicsCanvas.js';
 import ProjectPage from './pages/ProjectPage.js';
 import ProjectPreview from './pages/ProjectPreview.js';
+import ProjectsLab from './pages/ProjectsLab.js';
 import PageTransition from './components/PageTransition.js';
 import Reveal from './components/Reveal.js';
 
@@ -198,6 +199,14 @@ const AnimatedRoutes = () => {
         <Route
           path="/projects/:slug/preview"
           element={<ProjectPreview />}
+        />
+        <Route
+          path="/lab"
+          element={
+            <PageTransition>
+              <ProjectsLab />
+            </PageTransition>
+          }
         />
       </Routes>
     </AnimatePresence>
