@@ -39,11 +39,18 @@ export const Thumb = ({ project, className, autoPlay = true, videoRef }) => {
         autoPlay={autoPlay}
         preload={autoPlay ? 'auto' : 'metadata'}
         draggable={false}
+        aria-hidden="true"
       />
     );
   }
   return (
-    <img className={className} src={project.media} alt="" draggable={false} />
+    <img
+      className={className}
+      src={project.media}
+      alt=""
+      draggable={false}
+      aria-hidden="true"
+    />
   );
 };
 

@@ -151,7 +151,7 @@ const AppContent = () => {
         </Reveal>
 
         {/* Projects showcase */}
-        <Projects cursor={''} setCursor={setCursorType} />
+        <Projects />
 
         {/* Footer section */}
         <Footer cursor={''} setCursor={setCursorType} />

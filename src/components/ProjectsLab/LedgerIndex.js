@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
+import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
 import { useReducedMotion } from 'framer-motion';
 import clsx from 'clsx';
@@ -30,7 +31,7 @@ const COUNT = String(LAB_PROJECTS.length).padStart(2, '0');
  * All hot-state visuals key off an `is-hot` class set from React state, so
  * both modes share the exact same CSS.
  */
-const LedgerIndex = () => {
+const LedgerIndex = ({ id, className }) => {
   const [hot, setHot] = useState(-1);
   const [hoverable, setHoverable] = useState(true);
   const prefersReducedMotion = useReducedMotion();
@@ -157,14 +158,23 @@ const LedgerIndex = () => {
   const hotProject = hot >= 0 ? LAB_PROJECTS[hot] : null;
 
   return (
-    <section aria-label="Projects as a file index">
+    <section
+      id={id}
+      className={clsx(id === 'projects' && 'ledger-home', className)}
+      aria-labelledby={id ? `${id}-heading` : undefined}
+      aria-label={id ? undefined : 'Projects as a file index'}
+    >
       {/* index header */}
       <div className="flex items-baseline justify-between border-b-2 border-ultra px-3 md:px-6 pb-2">
-        <p className="font-offbitDot text-[10px] md:text-xs tracking-[0.3em] uppercase">
+        <h2
+          id={id ? `${id}-heading` : undefined}
+          className="font-offbitDot text-[10px] md:text-xs tracking-[0.3em] uppercase"
+        >
           FILE INDEX — {COUNT} ENTRIES
-        </p>
-        <p className="font-offbitDot text-[10px] md:text-xs tracking-[0.3em] uppercase opacity-70">
-          KR ARCHIVE ✦ 2019–2026
+        </h2>
+        <p className="font-offbitDot text-[10px] md:text-xs tracking-[0.18em] md:tracking-[0.3em] uppercase opacity-90 text-right">
+          <span className="md:hidden">KR ✦ 2019–2026</span>
+          <span className="hidden md:inline">KR ARCHIVE ✦ 2019–2026</span>
         </p>
       </div>
 
@@ -230,7 +240,7 @@ const LedgerIndex = () => {
       })}
 
       <div className="flex items-baseline justify-between px-3 md:px-6 pt-2">
-        <p className="font-offbitDot text-[10px] md:text-xs tracking-[0.3em] uppercase opacity-70">
+        <p className="font-offbitDot text-[10px] md:text-xs tracking-[0.3em] uppercase opacity-90">
           END OF INDEX — {COUNT}/{COUNT} FILES ACCOUNTED FOR
         </p>
         <p className="font-offbitDot text-[10px] md:text-xs tracking-[0.3em]">:]</p>
@@ -278,6 +288,11 @@ const LedgerIndex = () => {
       )}
     </section>
   );
+};
+
+LedgerIndex.propTypes = {
+  id: PropTypes.string,
+  className: PropTypes.string,
 };
 
 export default LedgerIndex;
