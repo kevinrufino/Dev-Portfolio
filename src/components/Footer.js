@@ -60,32 +60,7 @@ const PixelSmiley = () => (
 
 export const Footer = ({ setCursor }) => {
   const footerRef = useRef(null);
-  const obstacleRef = useRef(null);
   const [isCurtainLifted, setIsCurtainLifted] = useState(false);
-
-  useEffect(() => {
-    const dispatch = () => {
-      if (!obstacleRef.current) return;
-      const rect = obstacleRef.current.getBoundingClientRect();
-      window.dispatchEvent(
-        new CustomEvent('registerObstacle', {
-          detail: {
-            id: 'footer-contact',
-            x: rect.left + rect.width / 2,
-            y: rect.top + window.scrollY + rect.height / 2,
-            width: rect.width,
-            height: rect.height,
-          },
-        }),
-      );
-    };
-    const frame = requestAnimationFrame(dispatch);
-    window.addEventListener('resize', dispatch);
-    return () => {
-      cancelAnimationFrame(frame);
-      window.removeEventListener('resize', dispatch);
-    };
-  }, []);
 
   useEffect(() => {
     const node = footerRef.current;
@@ -283,10 +258,7 @@ export const Footer = ({ setCursor }) => {
             />
           </div>
         </Reveal>
-        <div
-          className='flex flex-col md:flex-row md:text-3xl m-2 md:m-4 w-max max-w-full'
-          ref={obstacleRef}
-        >
+        <div className='flex flex-col md:flex-row md:text-3xl m-2 md:m-4 w-max max-w-full'>
           <img
             src='/pixel-selfie.png'
             alt="it's a me"

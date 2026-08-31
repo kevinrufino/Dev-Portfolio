@@ -104,6 +104,7 @@ src/
 │   └── Projects/       # Project showcase
 ├── assets/             # Static assets (images, fonts)
 ├── constants.js        # Application constants
+├── featureFlags.js     # Build-time feature toggles
 ├── App.js             # Main application component
 └── index.js           # Application entry point
 ```
@@ -120,6 +121,21 @@ These colors are defined in `App.js` and can be easily customized.
 ### Components
 
 Each component is self-contained and can be modified independently. See the documentation in the `docs/` folder for detailed component guides.
+
+### Feature Flags
+
+Heavier optional experiences are toggled in `src/featureFlags.js`. Each flag is a module const with
+a matching `REACT_APP_*` build-time override, so flipping one needs no code change:
+
+| Flag                       | Env var                       | Default | Effect                                                                 |
+| -------------------------- | ----------------------------- | ------- | ---------------------------------------------------------------------- |
+| `ENABLE_SHADER_BACKGROUND` | `REACT_APP_SHADER_BACKGROUND` | `false` | Three.js/WebGL shader background. Off = flat `--acid` page background. |
+
+To turn one on locally, add it to `.env.local` and restart the dev server:
+
+```bash
+REACT_APP_SHADER_BACKGROUND=true
+```
 
 ## 🤝 Contributing
 

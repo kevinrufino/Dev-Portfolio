@@ -40,7 +40,10 @@ import ProjectPreview from './pages/ProjectPreview.js';
 import ProjectsLab from './pages/ProjectsLab.js';
 import PageTransition from './components/PageTransition.js';
 import Reveal from './components/Reveal.js';
+import { ENABLE_SHADER_BACKGROUND } from './featureFlags.js';
 
+// Only referenced when the flag is on, so the Three.js chunk is never fetched
+// while the background is disabled.
 const MikaShaderEffect = React.lazy(
   () => import('./components/ShaderBackground/index.js'),
 );
@@ -93,10 +96,14 @@ const AppContent = () => {
 
   return (
     <>
-      {/* Shader Background — fixed, z:-1, lazy-loaded to keep Three.js off the critical path */}
-      <Suspense fallback={null}>
-        <MikaShaderEffect />
-      </Suspense>
+      {/* Shader Background — fixed, z:-1, lazy-loaded to keep Three.js off the
+          critical path. Behind ENABLE_SHADER_BACKGROUND; when off, the page
+          sits on the flat --acid background from :root. */}
+      {ENABLE_SHADER_BACKGROUND && (
+        <Suspense fallback={null}>
+          <MikaShaderEffect />
+        </Suspense>
+      )}
 
       {/* Full-page physics canvas — z:0, between shader and content.
           Fills the header on handoff, then drains down the page on scroll. */}
