@@ -1,5 +1,4 @@
-import LedgerIndex from '../ProjectsLab/LedgerIndex.js';
-import '../ProjectsLab/lab.css';
+import ProjectLedger from './ProjectLedger.js';
 
 /**
  * Homepage projects showcase.
@@ -9,8 +8,8 @@ import '../ProjectsLab/lab.css';
  * archive language.
  */
 export const Projects = () => (
-  <LedgerIndex
-    id="projects"
-    className="w-full scroll-mt-6 pt-16 pb-6 md:scroll-mt-8 md:pt-24 md:pb-10"
+  <ProjectLedger
+    id='projects'
+    className='w-full scroll-mt-6 pt-16 pb-6 md:scroll-mt-8 md:pt-24 md:pb-10'
   />
 );
