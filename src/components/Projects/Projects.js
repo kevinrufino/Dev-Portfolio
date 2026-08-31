@@ -1,29 +1,16 @@
-import { ProjectsData } from '../../constants.js';
-import { ProjectVideo } from './ProjectVideo.js';
-import { ProjectInfo } from './ProjectInfo.js';
-import Reveal from '../Reveal.js';
+import LedgerIndex from '../ProjectsLab/LedgerIndex.js';
+import '../ProjectsLab/lab.css';
 
-export const Projects = ({ setCursor }) => {
-  return (
-    <div className='w-full my-4' id='projects'>
-      <div>
-        {ProjectsData.map((project, index) => {
-          return (
-            <Reveal
-              className={`flex flex-col ${
-                index % 2 === 1 ? 'md:flex-row-reverse' : 'md:flex-row'
-              } justify-center items-center m-3 my-6`}
-              key={project.title}
-              onMouseEnter={() => {
-                setCursor(project.title);
-              }}
-            >
-              <ProjectVideo src={project.scrapeGif} />
-              <ProjectInfo {...project} index={index} />
-            </Reveal>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
+/**
+ * Homepage projects showcase.
+ *
+ * THE LEDGER was selected from the projects lab: an edge-to-edge file index
+ * that keeps project discovery quick while preserving the portfolio's pixel
+ * archive language.
+ */
+export const Projects = () => (
+  <LedgerIndex
+    id="projects"
+    className="w-full scroll-mt-6 pt-16 pb-6 md:scroll-mt-8 md:pt-24 md:pb-10"
+  />
+);
