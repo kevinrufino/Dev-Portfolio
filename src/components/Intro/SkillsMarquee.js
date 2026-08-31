@@ -1,4 +1,5 @@
 import React from 'react';
+import DodgeText from '../DodgeText.js';
 
 /**
  * Horizontally scrolling skills marquee.
@@ -15,14 +16,14 @@ const Segment = ({ ariaHidden = false }) => (
     className='flex flex-row shrink-0 whitespace-nowrap'
     aria-hidden={ariaHidden || undefined}
   >
-    <p className='font-offbit101Bold m-4'>{'skills: '}</p>
-    <p className='font-offbit101 m-4'>
+    <DodgeText className='font-offbit101Bold m-4'>{'skills: '}</DodgeText>
+    <DodgeText className='font-offbit101 m-4'>
       {'html, css, javascript, typescript, react, three.js'}
-    </p>
-    <p className='font-offbit101Bold m-4'>{'soft skills: '}</p>
-    <p className='font-offbit101 m-4'>
+    </DodgeText>
+    <DodgeText className='font-offbit101Bold m-4'>{'soft skills: '}</DodgeText>
+    <DodgeText className='font-offbit101 m-4'>
       {'nerd 🤓, designer, gamer, music producer, sneaker collector'}
-    </p>
+    </DodgeText>
   </div>
 );
 

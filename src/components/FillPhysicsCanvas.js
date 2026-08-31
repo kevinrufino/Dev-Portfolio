@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { FirstNameComponent } from './Hero/components/FirstNameComponent.js';
 import { LastNameComponent } from './Hero/components/LastNameComponent.js';
+import { publishFallingRects } from '../utils/dodgeField.js';
 
 /**
  * Full-page physics canvas for the landing sequence.
@@ -485,6 +486,7 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
           Matter.Render.stop(render);
           Matter.Runner.stop(runner);
           render.context.clearRect(0, 0, W, fold);
+          publishFallingRects([]); // every dodging line snaps back to rest
         };
         const cullFallen = () => {
           const limit = docH + CULL_MARGIN;
@@ -511,18 +513,61 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
         // Draw the name sprites each frame, bottom-aligned to the (shorter)
         // collision box. Bodies live in document coordinates; the canvas is a
         // fixed viewport slice, so shift everything up by scrollY.
+        // Reused between frames — the page text is pushed around by these
+        // bounds every frame, for the whole drain.
+        const nameRects = [];
+        const rectPool = [];
+        // Document-space bounds of a drawn sprite (not its collision box: the
+        // sprite is the taller of the two, and it's the pixels the text has to
+        // avoid). Written into a pooled `out` and unrolled over the four
+        // corners: this runs for every name on every frame, and allocating
+        // here would hand the collector a steady drip of garbage.
+        const spriteBounds = (body, width, height, out) => {
+          const cos = Math.cos(body.angle);
+          const sin = Math.sin(body.angle);
+          const px = body.position.x;
+          const py = body.position.y;
+          const hw = width / 2;
+          const t = drawTop;
+          const b = drawTop + height;
+          const x1 = px - hw * cos - t * sin;
+          const y1 = py - hw * sin + t * cos;
+          const x2 = px + hw * cos - t * sin;
+          const y2 = py + hw * sin + t * cos;
+          const x3 = px + hw * cos - b * sin;
+          const y3 = py + hw * sin + b * cos;
+          const x4 = px - hw * cos - b * sin;
+          const y4 = py - hw * sin + b * cos;
+          out.left = Math.min(x1, x2, x3, x4);
+          out.right = Math.max(x1, x2, x3, x4);
+          out.top = Math.min(y1, y2, y3, y4);
+          out.bottom = Math.max(y1, y2, y3, y4);
+          return out;
+        };
+
         Matter.Events.on(render, 'afterRender', () => {
           const ctx = render.context;
           const offset = window.scrollY;
           ctx.save();
           ctx.translate(0, -offset);
+          nameRects.length = 0;
           for (const { body, img, width, height } of sprites) {
             ctx.save();
             ctx.translate(body.position.x, body.position.y);
             ctx.rotate(body.angle);
             ctx.drawImage(img, -width / 2, drawTop, width, height);
             ctx.restore();
+            let out = rectPool[nameRects.length];
+            if (!out) {
+              out = { left: 0, top: 0, right: 0, bottom: 0 };
+              rectPool.push(out);
+            }
+            nameRects.push(spriteBounds(body, width, height, out));
           }
+          // Hand the page text this frame's obstacles. While the pile is still
+          // stacked in the hero this costs the copy below nothing but a range
+          // check — see the band test in dodgeField.
+          publishFallingRects(nameRects);
           // Bursts live in document coords too, so they ride the same offset.
           if (fireworks.length > 0) {
             drawFireworks(ctx, fireworks, performance.now());
@@ -684,6 +729,7 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
           Matter.Render.stop(render);
           Matter.Runner.stop(runner);
           Matter.Engine.clear(engine);
+          publishFallingRects([]);
           sprites.length = 0;
           fireworks.length = 0;
         };

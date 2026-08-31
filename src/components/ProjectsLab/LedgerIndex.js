@@ -5,6 +5,7 @@ import { useReducedMotion } from 'framer-motion';
 import clsx from 'clsx';
 import { clamp } from '../../utils/helpers.js';
 import Reveal from '../Reveal.js';
+import DodgeText from '../DodgeText.js';
 import { LAB_PROJECTS, Thumb } from './labData.js';
 
 const SNAP = 28; // preview renders on a 28px pixel grid
@@ -166,16 +167,17 @@ const LedgerIndex = ({ id, className }) => {
     >
       {/* index header */}
       <div className="flex items-baseline justify-between border-b-2 border-ultra px-3 md:px-6 pb-2">
-        <h2
+        <DodgeText
+          as="h2"
           id={id ? `${id}-heading` : undefined}
           className="font-offbitDot text-[10px] md:text-xs tracking-[0.3em] uppercase"
         >
-          FILE INDEX — {COUNT} ENTRIES
-        </h2>
-        <p className="font-offbitDot text-[10px] md:text-xs tracking-[0.18em] md:tracking-[0.3em] uppercase opacity-90 text-right">
+          {`FILE INDEX — ${COUNT} ENTRIES`}
+        </DodgeText>
+        <DodgeText className="font-offbitDot text-[10px] md:text-xs tracking-[0.18em] md:tracking-[0.3em] uppercase opacity-90 text-right">
           <span className="md:hidden">KR ✦ 2019–2026</span>
           <span className="hidden md:inline">KR ARCHIVE ✦ 2019–2026</span>
-        </p>
+        </DodgeText>
       </div>
 
       {LAB_PROJECTS.map((p, i) => {
@@ -202,26 +204,36 @@ const LedgerIndex = ({ id, className }) => {
               <span className="ledger-fill absolute inset-0" aria-hidden />
 
               <div className="relative z-10 grid grid-cols-[2.5rem_1fr_auto] md:grid-cols-[4rem_1fr_auto] items-center gap-2 md:gap-6 px-3 md:px-6 py-3 md:py-4">
-                <span className="ledger-meta font-offbitDot text-xs md:text-sm tracking-[0.25em]">
+                <DodgeText
+                  as="span"
+                  className="ledger-meta font-offbitDot text-xs md:text-sm tracking-[0.25em]"
+                >
                   {p.no}
-                </span>
+                </DodgeText>
 
-                <h3
+                <DodgeText
+                  as="h3"
                   className={clsx(
                     'ledger-title font-offbit101Bold uppercase leading-[0.9] text-[10.5vw] md:text-[5vw]',
                     showMarquee && 'opacity-0',
                   )}
                 >
                   {p.display}
-                </h3>
+                </DodgeText>
 
                 <span className="flex flex-col items-end gap-1">
-                  <span className="ledger-meta font-offbitDot text-xs md:text-sm tracking-[0.25em]">
+                  <DodgeText
+                    as="span"
+                    className="ledger-meta font-offbitDot text-xs md:text-sm tracking-[0.25em]"
+                  >
                     {p.year}
-                  </span>
-                  <span className="ledger-open hidden md:inline font-offbitDot text-[10px] tracking-[0.25em] text-acid">
-                    OPEN →
-                  </span>
+                  </DodgeText>
+                  <DodgeText
+                    as="span"
+                    className="ledger-open hidden md:inline font-offbitDot text-[10px] tracking-[0.25em] text-acid"
+                  >
+                    {'OPEN →'}
+                  </DodgeText>
                 </span>
               </div>
 
@@ -240,10 +252,12 @@ const LedgerIndex = ({ id, className }) => {
       })}
 
       <div className="flex items-baseline justify-between px-3 md:px-6 pt-2">
-        <p className="font-offbitDot text-[10px] md:text-xs tracking-[0.3em] uppercase opacity-90">
-          END OF INDEX — {COUNT}/{COUNT} FILES ACCOUNTED FOR
-        </p>
-        <p className="font-offbitDot text-[10px] md:text-xs tracking-[0.3em]">:]</p>
+        <DodgeText className="font-offbitDot text-[10px] md:text-xs tracking-[0.3em] uppercase opacity-90">
+          {`END OF INDEX — ${COUNT}/${COUNT} FILES ACCOUNTED FOR`}
+        </DodgeText>
+        <DodgeText className="font-offbitDot text-[10px] md:text-xs tracking-[0.3em]">
+          {':]'}
+        </DodgeText>
       </div>
 
       {/* hover devices: floating preview chasing the pointer on the grid */}

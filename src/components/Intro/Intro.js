@@ -1,5 +1,6 @@
 import Typewriter from 'typewriter-effect';
 import React from 'react';
+import DodgeText from '../DodgeText.js';
 
 // eslint-disable-next-line react/prop-types
 export const Intro = ({ setCursor }) => {
@@ -12,13 +13,16 @@ export const Intro = ({ setCursor }) => {
       }}
     >
       <div className='mb-auto space-y-5'>
-        <h1 className='font-offbit101Bold text-5xl md:text-7xl mt-16 '>
+        <DodgeText
+          as='h1'
+          className='font-offbit101Bold text-5xl md:text-7xl mt-16 '
+        >
           Hey!{' '}
           <span className='wave' role='img' aria-labelledby='wave'>
             👋🏾
           </span>
-        </h1>
-        <h2 className='font-offbit101Bold text-5xl md:text-5xl'>
+        </DodgeText>
+        <DodgeText as='h2' className='font-offbit101Bold text-5xl md:text-5xl'>
           {'I’m Kevin,'}{' '}
           <Typewriter
             style={{ padding: 50, textAlign: 'left' }}
@@ -33,12 +37,12 @@ export const Intro = ({ setCursor }) => {
               deleteSpeed: 50,
             }}
           />
-        </h2>
-        <p className='font-offbit101Bold text-lg md:text-4xl leading-relaxed'>
+        </DodgeText>
+        <DodgeText className='font-offbit101Bold text-lg md:text-4xl leading-relaxed'>
           {
             'I enjoy fusing my love for art and tech to build fun interactive experiences. I currently am working at Nike as a Front-end Creative Developer. Check out my work below 👇🏾'
-          }{' '}
-        </p>
+          }
+        </DodgeText>
       </div>
     </section>
   );

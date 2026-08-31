@@ -482,6 +482,20 @@ body {
   animation: marquee-x 18s linear infinite;
 }
 
+/* ── Falling-name text dodge ────────────────────────────────────────────────
+   DodgeText renders one .dodge-line per laid-out line (pretext decides where
+   the breaks fall). The outer element keeps the line's place in the flow and
+   its alignment; the inner one hugs the glyphs and is the only thing moved,
+   so the block's own layout never changes while a name shoves it around. The
+   move is deliberately abrupt — there is no transition here on purpose. */
+.dodge-line {
+  display: block;
+}
+
+.dodge-line-text {
+  display: inline-block;
+}
+
 @keyframes blink-caret {
   0%,
   49% {
