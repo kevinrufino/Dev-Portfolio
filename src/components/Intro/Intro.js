@@ -13,17 +13,20 @@ export const Intro = ({ setCursor }) => {
       }}
     >
       <div className='mb-auto space-y-5'>
-        <DodgeText
-          as='h1'
-          className='font-offbit101Bold text-5xl md:text-7xl mt-16 '
-        >
-          Hey!{' '}
-          <span className='wave' role='img' aria-labelledby='wave'>
-            👋🏾
-          </span>
-        </DodgeText>
-        <DodgeText as='h2' className='font-offbit101Bold text-5xl md:text-5xl'>
-          {'I’m Kevin,'}{' '}
+        {/* The DodgeText wrappers sit inside the headings rather than around
+            them: a run of plain text dodges letter by letter, while anything
+            with markup of its own (the waving hand, the typewriter) has to
+            move in one piece. */}
+        <h1 className='font-offbit101Bold text-5xl md:text-7xl mt-16 '>
+          <DodgeText as='span'>{'Hey!'}</DodgeText>{' '}
+          <DodgeText as='span'>
+            <span className='wave' role='img' aria-labelledby='wave'>
+              👋🏾
+            </span>
+          </DodgeText>
+        </h1>
+        <h2 className='font-offbit101Bold text-5xl md:text-5xl'>
+          <DodgeText as='span'>{'I’m Kevin,'}</DodgeText>{' '}
           <Typewriter
             style={{ padding: 50, textAlign: 'left' }}
             options={{
@@ -37,7 +40,7 @@ export const Intro = ({ setCursor }) => {
               deleteSpeed: 50,
             }}
           />
-        </DodgeText>
+        </h2>
         <DodgeText className='font-offbit101Bold text-lg md:text-4xl leading-relaxed'>
           {
             'I enjoy fusing my love for art and tech to build fun interactive experiences. I currently am working at Nike as a Front-end Creative Developer. Check out my work below 👇🏾'

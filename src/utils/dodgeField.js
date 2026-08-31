@@ -6,20 +6,20 @@
  * register themselves as targets and are asked, in the same frame, to move
  * their lines clear of anything they intersect.
  *
- * Everything here is deliberately instantaneous: a line jumps exactly far
+ * Everything here is deliberately instantaneous: a character jumps exactly far
  * enough to stop overlapping and jumps straight back the frame contact ends.
  * There is no easing, spring or decay anywhere in this file, by design.
  *
  * The flush is split into a read pass and a write pass so a page full of
- * dodging lines still only costs one layout per frame instead of one per line.
+ * dodging characters still costs one layout per frame.
  */
 
 // Document-space AABBs of the falling names: { left, top, right, bottom }.
 let fallingRects = [];
 
 // Registered text blocks. Each target is { measure(), apply(active) }: measure()
-// refreshes the target's cached line boxes (the read pass), apply() resolves
-// them against the names and writes the transforms (the write pass).
+// refreshes the target's cached character boxes (the read pass), apply()
+// resolves them against the names and writes the transforms (the write pass).
 const targets = new Set();
 
 /**
@@ -36,13 +36,29 @@ export const registerDodgeTarget = target => {
 };
 
 /**
- * Resolve a single line box against the current falling names.
+ * Whether any name currently overlaps a box at all. Callers use it to reject a
+ * whole line in one test rather than resolving each of its characters.
+ * @param {{left:number, top:number, right:number, bottom:number}|null} box
+ */
+export const intersectsAny = box => {
+  if (!box) return false;
+  for (let i = 0; i < fallingRects.length; i++) {
+    const name = fallingRects[i];
+    if (name.right <= box.left || name.left >= box.right) continue;
+    if (name.bottom <= box.top || name.top >= box.bottom) continue;
+    return true;
+  }
+  return false;
+};
+
+/**
+ * Resolve a single character box against the current falling names.
  *
  * Each intersecting name contributes a minimum translation vector — the
  * shortest move that separates the two boxes. `preferAxis` keeps a line
  * committed to the axis it first dodged on for as long as contact lasts, so a
- * name sweeping through a line shoves it one way instead of flipping between
- * sideways and downward halfway through the pass.
+ * name sweeping through shoves a character one way instead of flipping it
+ * between sideways and downward halfway through the pass.
  *
  * The result is written into a single shared object: this runs for every line
  * on the page on every frame of the drain, and the caller reads it before the
