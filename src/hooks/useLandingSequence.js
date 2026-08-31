@@ -1,14 +1,15 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { ENABLE_SHADER_BACKGROUND } from '../featureFlags.js';
 
 /**
  * Drives the landing loader → physics-fill sequence.
  *
  * The pixel-water loader fills the hero name off real page-readiness signals
- * (fonts + window load + first shader paint), eased so it rises smoothly
- * instead of stepping on each milestone, with a minimum on-screen duration so
- * it never flashes past. When the fill reaches 100% it hands off to the
- * physics canvas: the DOM name hides the same frame the canvas draws its 1:1
- * bodies, so the swap is seamless.
+ * (fonts + window load, plus the first shader paint when the shader background
+ * is enabled), eased so it rises smoothly instead of stepping on each
+ * milestone, with a minimum on-screen duration so it never flashes past. When
+ * the fill reaches 100% it hands off to the physics canvas: the DOM name hides
+ * the same frame the canvas draws its 1:1 bodies, so the swap is seamless.
  *
  * State is owned here (rather than in a component) so App can pass it to both
  * the loader overlay and the document-sized FillPhysicsCanvas, which live in
@@ -48,7 +49,12 @@ export default function useLandingSequence() {
   // readiness milestone has landed AND the eased fill has reached ~100%.
   useEffect(() => {
     const start = Date.now();
-    const milestones = ['fonts', 'window-load', 'shader'];
+    // The shader paint is only a real signal when the background is on —
+    // otherwise it would never arrive and the fill would sit at ~85% until the
+    // readiness cap expired.
+    const milestones = ENABLE_SHADER_BACKGROUND
+      ? ['fonts', 'window-load', 'shader']
+      : ['fonts', 'window-load'];
     const done = new Set();
     let raf = 0;
 
@@ -85,8 +91,10 @@ export default function useLandingSequence() {
     else window.addEventListener('load', onLoad, { once: true });
 
     const onShader = () => done.add('shader');
-    if (window.__shaderReady) onShader();
-    else window.addEventListener('shader:ready', onShader, { once: true });
+    if (ENABLE_SHADER_BACKGROUND) {
+      if (window.__shaderReady) onShader();
+      else window.addEventListener('shader:ready', onShader, { once: true });
+    }
 
     // Safety: never hang if a milestone signal is missed.
     const cap = setTimeout(

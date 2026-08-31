@@ -15,7 +15,10 @@ import { LastNameComponent } from './Hero/components/LastNameComponent.js';
  *
  * Physics runs in full document coordinates (y = 0 at the top of the page), so
  * when the floor splits open on scroll the pile falls all the way down the page
- * and lands on the footer obstacle. The canvas itself stays fixed and
+ * and straight off the bottom of it — there is no catch floor and no footer
+ * obstacle, and each name is retired from the world as it clears the document,
+ * so the simulation winds down to nothing instead of holding a settled pile
+ * for the rest of the session. The canvas itself stays fixed and
  * viewport-sized (every body is invisible — only the sprites drawn in
  * afterRender show), and the sprite draw is offset by scrollY to render just
  * the visible slice, avoiding a document-tall backing store.
@@ -192,6 +195,8 @@ const GRAVITY_FILL = 1.8; // heavier gravity while the stack drops, so the fill 
 const FILL_TIMEOUT_MS = 7000; // report "filled" even if a body never quite settles
 const FLOOR_T = 16; // floor bar thickness (collision only — invisible)
 const SCROLL_RANGE = 1.2; // fold-heights of scroll to fully open the floor
+const DRAIN_TICK_MS = 400; // wake/cull cadence while the floor is open
+const CULL_MARGIN = 600; // px past the document bottom before a name is retired
 const IMPULSE_RADIUS_FRAC = 0.28; // click impulse reach, as a fraction of viewport width
 const IMPULSE_UP = 12; // upward kick strength on click
 const IMPULSE_PUSH = 8; // radial push strength on click
@@ -319,9 +324,10 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
           floorOpts,
         );
 
-        // Tall walls (they always cover the fall, even as the document grows) +
-        // a catch floor at the document bottom so nothing escapes if it misses
-        // the footer obstacle. `bottomFloor` is repositioned as docH changes.
+        // Tall walls, so the pile stays within the page width for the whole
+        // fall even as the document grows. There is deliberately no floor at
+        // the bottom: the names fall past the footer and off the page, and are
+        // culled once clear of it (see the drain block below).
         const wallH = 40000;
         const leftWall = Matter.Bodies.rectangle(-30, 0, 60, wallH, staticOpts);
         const rightWall = Matter.Bodies.rectangle(
@@ -331,43 +337,17 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
           wallH,
           staticOpts,
         );
-        const bottomFloor = Matter.Bodies.rectangle(
-          W / 2,
-          docH + 30,
-          W * 2,
-          60,
-          staticOpts,
-        );
-        Matter.World.add(world, [
-          leftFloor,
-          rightFloor,
-          leftWall,
-          rightWall,
-          bottomFloor,
-        ]);
+        Matter.World.add(world, [leftFloor, rightFloor, leftWall, rightWall]);
 
-        // Keep the catch floor at the real document bottom as content lazy-loads
-        // in and the page grows (images/videos below the fold change its height).
+        // Track the real document height as content lazy-loads in and the page
+        // grows (images/videos below the fold change it) — it sets the depth a
+        // falling name has to clear before it can be retired.
         const docObserver = new ResizeObserver(() => {
           const h = Math.max(document.body.scrollHeight, fold);
           if (h === docH) return;
           docH = h;
-          Matter.Body.setPosition(bottomFloor, { x: W / 2, y: docH + 30 });
         });
         docObserver.observe(document.body);
-
-        // Footer (and any other section) can register a static obstacle for the
-        // falling pile to land on, in document coordinates.
-        const obstacleMap = new Map();
-        const handleRegisterObstacle = e => {
-          const { id, x, y, width, height } = e.detail;
-          const existing = obstacleMap.get(id);
-          if (existing) Matter.World.remove(world, existing);
-          const body = Matter.Bodies.rectangle(x, y, width, height, staticOpts);
-          Matter.World.add(world, body);
-          obstacleMap.set(id, body);
-        };
-        window.addEventListener('registerObstacle', handleRegisterObstacle);
 
         const sprites = []; // { body, img, width, height }
 
@@ -488,12 +468,45 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
         };
         updateFloor();
         window.addEventListener('scroll', updateFloor, { passive: true });
-        const wakeTimer = setInterval(() => {
-          if (lastShift > 0) {
-            engine.enableSleeping = false;
-            wakeAll();
+
+        // ── Draining off the page ────────────────────────────────────────────
+        // Nothing catches the pile at the bottom, so every name eventually
+        // clears the document. Once one is far enough past the end to be
+        // invisible at any scroll position it is removed from the world: the
+        // solver steps fewer bodies and afterRender draws fewer sprites the
+        // further the drain gets, and when the last one is gone the runner and
+        // renderer stop outright rather than stepping a settled pile for the
+        // rest of the session.
+        let stopped = false;
+        const culled = new WeakSet();
+        const stopSimulation = () => {
+          if (stopped) return;
+          stopped = true;
+          Matter.Render.stop(render);
+          Matter.Runner.stop(runner);
+          render.context.clearRect(0, 0, W, fold);
+        };
+        const cullFallen = () => {
+          const limit = docH + CULL_MARGIN;
+          for (let i = sprites.length - 1; i >= 0; i--) {
+            const { body } = sprites[i];
+            if (body.position.y < limit) continue;
+            culled.add(body);
+            Matter.World.remove(world, body);
+            sprites.splice(i, 1);
           }
-        }, 400);
+          if (sprites.length === 0) stopSimulation();
+        };
+
+        // The floor only opens on scroll, and scroll is frozen until the fill
+        // has finished — so `lastShift > 0` means the pile is draining and
+        // every row already exists.
+        const drainTimer = setInterval(() => {
+          if (lastShift <= 0 || stopped) return;
+          engine.enableSleeping = false;
+          wakeAll();
+          cullFallen();
+        }, DRAIN_TICK_MS);
 
         // Draw the name sprites each frame, bottom-aligned to the (shorter)
         // collision box. Bodies live in document coordinates; the canvas is a
@@ -574,7 +587,9 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
         let done = false;
         const rowSettled = row =>
           row.every(
-            b => b.position.y > 0 && (b.isSleeping || b.speed < SETTLE_SPEED),
+            b =>
+              culled.has(b) ||
+              (b.position.y > 0 && (b.isSleeping || b.speed < SETTLE_SPEED)),
           );
         const finishFill = () => {
           if (done) return;
@@ -616,6 +631,7 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
 
         // Pause the simulation while the tab is hidden.
         const handleVisibility = () => {
+          if (stopped) return; // drained — nothing left to step
           if (document.hidden) {
             Matter.Render.stop(render);
             Matter.Runner.stop(runner);
@@ -639,7 +655,6 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
           render.canvas.height = fold;
           Matter.Body.setPosition(leftWall, { x: -30, y: 0 });
           Matter.Body.setPosition(rightWall, { x: W + 30, y: 0 });
-          Matter.Body.setPosition(bottomFloor, { x: W / 2, y: docH + 30 });
           lastShift = -1; // force floor reposition on the next scroll tick
           updateFloor();
         };
@@ -659,14 +674,10 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
         teardown = () => {
           if (spawnTimer) clearInterval(spawnTimer);
           if (fillTimeout) clearTimeout(fillTimeout);
-          clearInterval(wakeTimer);
+          clearInterval(drainTimer);
           docObserver.disconnect();
           window.removeEventListener('scroll', updateFloor);
           window.removeEventListener('resize', handleResize);
-          window.removeEventListener(
-            'registerObstacle',
-            handleRegisterObstacle,
-          );
           document.removeEventListener('click', handleClick);
           document.removeEventListener('visibilitychange', handleVisibility);
           motionQuery.removeEventListener('change', handleMotionPreference);
@@ -675,7 +686,6 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
           Matter.Engine.clear(engine);
           sprites.length = 0;
           fireworks.length = 0;
-          obstacleMap.clear();
         };
       },
     );
