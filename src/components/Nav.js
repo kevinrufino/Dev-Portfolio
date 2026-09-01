@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
+import { Link, useLocation } from 'react-router-dom';
+import ArrowBackUpIcon from './ArrowBackUpIcon.js';
 
 /**
  * home / work / connect — three states per item (plain text, hovered
@@ -33,12 +35,7 @@ const ACTIVE_TEXT = '#000000';
 const HOVER_TEXT = '#1e1e1e';
 
 const GooeyNavFilter = ({ id }) => (
-  <svg
-    aria-hidden='true'
-    width='0'
-    height='0'
-    style={{ position: 'absolute' }}
-  >
+  <svg aria-hidden='true' width='0' height='0' style={{ position: 'absolute' }}>
     <defs>
       <filter
         id={id}
@@ -48,7 +45,11 @@ const GooeyNavFilter = ({ id }) => (
         height='150%'
         colorInterpolationFilters='sRGB'
       >
-        <feGaussianBlur in='SourceGraphic' stdDeviation={GOO_SIGMA} result='nb' />
+        <feGaussianBlur
+          in='SourceGraphic'
+          stdDeviation={GOO_SIGMA}
+          result='nb'
+        />
         <feColorMatrix
           in='nb'
           type='matrix'
@@ -63,7 +64,7 @@ GooeyNavFilter.propTypes = {
   id: PropTypes.string.isRequired,
 };
 
-export const NavBar = ({ setCursor }) => {
+const HomeNav = ({ setCursor }) => {
   const navRef = useRef(null);
   const followerRef = useRef(null);
   const linkRefs = useRef([]);
@@ -138,7 +139,9 @@ export const NavBar = ({ setCursor }) => {
     // Spring-follower blob: eases toward the pointer, ramps up size/opacity
     // as it nears the nav so it appears (and starts merging into pills via
     // the goo filter) well before the cursor actually arrives.
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reduce = window.matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    ).matches;
     const p = pointerRef.current;
     const onMove = e => {
       const nav = navRef.current;
@@ -291,6 +294,47 @@ export const NavBar = ({ setCursor }) => {
         ))}
       </ul>
     </nav>
+  );
+};
+
+HomeNav.propTypes = {
+  setCursor: PropTypes.func.isRequired,
+};
+
+const ProjectBackNav = ({ setCursor }) => {
+  const iconRef = useRef(null);
+
+  return (
+    <nav
+      aria-label='Project navigation'
+      className='fixed top-4 left-4 z-20 mix-blend-difference'
+      onMouseEnter={() => setCursor('')}
+    >
+      <Link
+        to='/#projects'
+        aria-label='Back to projects'
+        className='flex h-12 w-12 items-center justify-center text-white no-underline transition-transform duration-200 hover:-translate-x-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white'
+        onFocus={() => iconRef.current?.startAnimation()}
+        onBlur={() => iconRef.current?.stopAnimation()}
+      >
+        <ArrowBackUpIcon ref={iconRef} size={34} className='h-full w-full' />
+      </Link>
+    </nav>
+  );
+};
+
+ProjectBackNav.propTypes = {
+  setCursor: PropTypes.func.isRequired,
+};
+
+export const NavBar = ({ setCursor }) => {
+  const { pathname } = useLocation();
+  const isProjectPage = pathname.startsWith('/projects/');
+
+  return isProjectPage ? (
+    <ProjectBackNav setCursor={setCursor} />
+  ) : (
+    <HomeNav setCursor={setCursor} />
   );
 };
 
