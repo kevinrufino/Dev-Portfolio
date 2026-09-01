@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ProjectsData } from '../constants.js';
 import HalftoneField from '../components/CaseStudy/HalftoneField.js';
@@ -225,11 +225,15 @@ DesignMoment.propTypes = {
   }).isRequired,
 };
 
-const ProjectFooter = ({ nextProject }) => (
+const ProjectFooter = ({ nextProject, original = false }) => (
   <footer className='cs-project-footer'>
     <div>
       <small>Next project</small>
-      <Link to={`/projects/${toSlug(nextProject.title)}`}>
+      <Link
+        to={`/projects/${toSlug(nextProject.title)}${
+          original ? '?style=original' : ''
+        }`}
+      >
         {nextProject.title} — {nextProject.type.toLowerCase()}
       </Link>
     </div>
@@ -242,6 +246,7 @@ ProjectFooter.propTypes = {
     title: PropTypes.string.isRequired,
     type: PropTypes.string.isRequired,
   }).isRequired,
+  original: PropTypes.bool,
 };
 
 const getProjectLinks = (project, slug) => {
@@ -267,7 +272,13 @@ const getProjectLinks = (project, slug) => {
   return links.slice(0, 2);
 };
 
-const MoodieCaseStudy = ({ project, nextProject, slug, reducedMotion }) => {
+const MoodieCaseStudy = ({
+  project,
+  nextProject,
+  slug,
+  reducedMotion,
+  original,
+}) => {
   const links = getProjectLinks(project, slug);
 
   return (
@@ -275,12 +286,21 @@ const MoodieCaseStudy = ({ project, nextProject, slug, reducedMotion }) => {
       <section className='cs-hero'>
         <BackLink />
         <div className='cs-project-cover'>
-          <HalftoneField variant='cover' tone='yellow' />
+          <HalftoneField
+            variant={original ? 'pixel-cover' : 'cover'}
+            tone='yellow'
+            label={
+              original
+                ? 'Interactive halftone graph. Drag or use arrow keys to reshape the pixel lattice.'
+                : undefined
+            }
+          />
           <div className='cs-cover-content'>
             <div className='cs-cover-topline'>
               <Kicker inverse>{moodieCaseStudy.status}</Kicker>
               <p className='cs-drag-chip'>
-                <span aria-hidden='true' /> Drag to explore
+                <span aria-hidden='true' />
+                {original ? 'Drag to explore the graph' : 'Drag to explore'}
               </p>
             </div>
             <h1>{moodieCaseStudy.title}</h1>
@@ -345,12 +365,14 @@ const MoodieCaseStudy = ({ project, nextProject, slug, reducedMotion }) => {
         </ArtifactFrame>
       </section>
 
-      <HalftoneField
-        className='cs-halftone-divider'
-        tone='ink'
-        variant='divider'
-        label='Interactive halftone divider. Drag or use arrow keys to reshape it.'
-      />
+      {!original && (
+        <HalftoneField
+          className='cs-halftone-divider'
+          tone='ink'
+          variant='divider'
+          label='Interactive halftone divider. Drag or use arrow keys to reshape it.'
+        />
+      )}
 
       <section className='cs-moments-section'>
         <SectionIntro {...moodieCaseStudy.momentsIntro} />
@@ -394,7 +416,7 @@ const MoodieCaseStudy = ({ project, nextProject, slug, reducedMotion }) => {
         </div>
       </section>
 
-      <ProjectFooter nextProject={nextProject} />
+      <ProjectFooter nextProject={nextProject} original={original} />
     </>
   );
 };
@@ -404,9 +426,10 @@ MoodieCaseStudy.propTypes = {
   nextProject: PropTypes.object.isRequired,
   slug: PropTypes.string.isRequired,
   reducedMotion: PropTypes.bool.isRequired,
+  original: PropTypes.bool.isRequired,
 };
 
-const ProjectShowcase = ({ project, nextProject, slug }) => {
+const ProjectShowcase = ({ project, nextProject, slug, original }) => {
   const links = getProjectLinks(project, slug);
   const assets = [project.scrapeGif, ...(project.assets || [])].filter(
     (asset, index, list) => asset && list.indexOf(asset) === index,
@@ -455,7 +478,7 @@ const ProjectShowcase = ({ project, nextProject, slug }) => {
         ))}
       </section>
 
-      <ProjectFooter nextProject={nextProject} />
+      <ProjectFooter nextProject={nextProject} original={original} />
     </>
   );
 };
@@ -464,11 +487,14 @@ ProjectShowcase.propTypes = {
   project: PropTypes.object.isRequired,
   nextProject: PropTypes.object.isRequired,
   slug: PropTypes.string.isRequired,
+  original: PropTypes.bool.isRequired,
 };
 
 const ProjectPage = () => {
   const { slug } = useParams();
+  const [searchParams] = useSearchParams();
   const reducedMotion = useReducedMotion();
+  const original = searchParams.get('style') === 'original';
   const index = ProjectsData.findIndex(
     project => toSlug(project.title) === slug,
   );
@@ -505,7 +531,12 @@ const ProjectPage = () => {
   const isMoodie = project.title.toLowerCase() === 'moodie';
 
   return (
-    <div className='case-study-page'>
+    <div
+      className={`case-study-page${
+        original ? ' case-study-page--original' : ''
+      }`}
+      data-design-direction={original ? 'original' : 'soft'}
+    >
       <a className='cs-skip-link' href='#case-study-content'>
         Skip to case study
       </a>
@@ -518,12 +549,14 @@ const ProjectPage = () => {
               nextProject={nextProject}
               slug={slug}
               reducedMotion={reducedMotion}
+              original={original}
             />
           ) : (
             <ProjectShowcase
               project={project}
               nextProject={nextProject}
               slug={slug}
+              original={original}
             />
           )}
         </main>

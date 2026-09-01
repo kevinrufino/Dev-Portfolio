@@ -70,6 +70,7 @@ const HalftoneField = ({
       const rows = Math.ceil(height / pitch) + 1;
       const clock = stateRef.current.reducedMotion ? 0 : time * 0.00045;
       const isCover = variant === 'cover';
+      const isPixelCover = variant === 'pixel-cover';
       const baseOpacity = variant === 'divider' ? 0.16 : 0.96;
       const color = tone === 'ink' ? '11, 11, 20' : '241, 244, 59';
 
@@ -84,6 +85,23 @@ const HalftoneField = ({
           const distance = Math.sqrt(dx * dx + dy * dy);
           const reach = pointer.active ? 0.22 : 0.13;
           const pointerField = clamp(1 - distance / reach, 0, 1);
+
+          if (isPixelCover) {
+            const fade = Math.pow(1 - clamp(normalizedY, 0, 1), 2);
+            const radius =
+              1.6 + fade * 16 + pointerField * (pointer.active ? 15 : 7);
+
+            context.fillStyle = `rgba(${color}, ${clamp(
+              0.92 + pointerField * 0.08,
+              0,
+              1,
+            )})`;
+            context.beginPath();
+            context.arc(x, y, Math.max(1.6, radius), 0, Math.PI * 2);
+            context.fill();
+            continue;
+          }
+
           const noise = hash(column, row);
           const wave =
             (Math.sin(column * 0.68 + clock * 2.1) +
@@ -264,7 +282,7 @@ const HalftoneField = ({
 HalftoneField.propTypes = {
   className: PropTypes.string,
   tone: PropTypes.oneOf(['yellow', 'ink']),
-  variant: PropTypes.oneOf(['cover', 'divider', 'artifact']),
+  variant: PropTypes.oneOf(['cover', 'pixel-cover', 'divider', 'artifact']),
   label: PropTypes.string,
 };
 

@@ -975,3 +975,195 @@
     animation-iteration-count: 1 !important;
   }
 }
+
+/* Original pixel direction — mirrors the non-soft Figma variants. */
+.case-study-page--original main {
+  gap: 96px;
+  padding-top: 96px;
+}
+
+.case-study-page--original .cs-back-link {
+  font-family: "OffBit-Bold", monospace;
+  font-weight: 700;
+}
+
+.case-study-page--original .cs-back-link > span,
+.case-study-page--original .cs-kicker > span,
+.case-study-page--original .cs-drag-chip span,
+.case-study-page--original .cs-pill-link i {
+  border-radius: 2px;
+}
+
+.case-study-page--original .cs-back-link > span,
+.case-study-page--original .cs-kicker > span {
+  width: 10px;
+  height: 10px;
+}
+
+.case-study-page--original .cs-project-cover,
+.case-study-page--original .cs-artifacts-section > .cs-section-intro,
+.case-study-page--original .cs-artifact__well,
+.case-study-page--original .cs-moment,
+.case-study-page--original .cs-impact {
+  border-radius: 4px;
+}
+
+.halftone-field--pixel-cover {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 0;
+  height: 192px;
+}
+
+.case-study-page--original .cs-cover-content h1 {
+  width: min(100%, 880px);
+  max-width: 880px;
+  font-size: clamp(3.3rem, 5vw, 4.5rem);
+}
+
+.case-study-page--original .cs-cover-summary {
+  max-width: 880px;
+  font-size: 20px;
+  line-height: 1.65;
+}
+
+.case-study-page--original .cs-drag-chip {
+  padding: 8px 12px;
+  border-radius: 2px;
+  letter-spacing: 0.08em;
+}
+
+.case-study-page--original .cs-meta-item {
+  border-top-width: 2px;
+}
+
+.case-study-page--original .cs-meta-item p {
+  font-family: "OffBit-Regular", monospace;
+  line-height: 1.45;
+  letter-spacing: 0.005em;
+}
+
+.case-study-page--original .cs-pill-link {
+  min-height: 39px;
+  padding: 9px 16px 9px 24px;
+  border-radius: 2px;
+  font-family: "OffBit-Bold", monospace;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.case-study-page--original .cs-context {
+  gap: 64px;
+}
+
+.case-study-page--original .cs-section-intro h2,
+.case-study-page--original .cs-impact h2 {
+  font-family: "OffBit-Bold", monospace;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.case-study-page--original .cs-artifact__well {
+  border: 2px solid var(--cs-ink);
+}
+
+.case-study-page--original .cs-pipeline > div,
+.case-study-page--original .cs-option > span,
+.case-study-page--original .cs-call,
+.case-study-page--original .cs-reflection > span {
+  border-radius: 2px;
+}
+
+.case-study-page--original .cs-moment__content > header > span,
+.case-study-page--original .cs-moment__tension h3,
+.case-study-page--original .cs-call p,
+.case-study-page--original .cs-stat strong,
+.case-study-page--original .cs-reflection > span,
+.case-study-page--original .cs-reflection h3,
+.case-study-page--original .cs-project-footer > div > a {
+  font-family: "OffBit-101-Bold", "OffBit-Bold", monospace;
+  font-weight: 700;
+}
+
+.case-study-page--original .cs-moment__content > header p {
+  border-radius: 2px;
+}
+
+.case-study-page--original .cs-impact {
+  padding: 64px;
+}
+
+.case-study-page--original .cs-stat {
+  border-top-width: 4px;
+}
+
+.case-study-page--original .cs-showcase-header {
+  gap: 32px;
+}
+
+.case-study-page--original .cs-showcase-header h1 {
+  width: min(100%, 1000px);
+  font-size: clamp(3.2rem, 4vw, 3.5rem);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.case-study-page--original .cs-showcase-header > p {
+  font-size: 20px;
+  line-height: 1.65;
+}
+
+.case-study-page--original .cs-tag-row span {
+  padding: 4px 12px;
+  border-width: 2px;
+  border-radius: 2px;
+}
+
+.case-study-page--original .cs-project-footer {
+  border-top-width: 2px;
+}
+
+@media (max-width: 860px) {
+  .case-study-page--original main {
+    gap: 80px;
+    padding-top: 80px;
+  }
+
+  .case-study-page--original .cs-project-cover {
+    min-height: 650px;
+  }
+}
+
+@media (max-width: 600px) {
+  .case-study-page--original main {
+    gap: 72px;
+    padding-top: 64px;
+  }
+
+  .case-study-page--original .cs-project-cover {
+    min-height: 650px;
+    border-radius: 4px;
+  }
+
+  .case-study-page--original .cs-cover-content h1 {
+    font-size: clamp(2.65rem, 12vw, 3.25rem);
+  }
+
+  .case-study-page--original .cs-cover-summary,
+  .case-study-page--original .cs-showcase-header > p {
+    font-size: 17px;
+  }
+
+  .halftone-field--pixel-cover {
+    height: 168px;
+  }
+
+  .case-study-page--original .cs-impact {
+    padding: 32px 24px;
+  }
+}
