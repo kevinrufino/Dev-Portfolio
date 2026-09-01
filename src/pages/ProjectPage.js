@@ -1,55 +1,510 @@
 import React, { useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { useParams, Link } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ProjectsData } from '../constants.js';
-import { NavBar } from '../components/Nav.js';
-import Cursor from '../components/Cursor.js';
-import { useCursor } from '../context/CursorContext.js';
+import HalftoneField from '../components/CaseStudy/HalftoneField.js';
 import { toSlug } from '../utils/helpers.js';
+import { moodieCaseStudy } from './moodieCaseStudy.js';
+import './ProjectPage.css';
 
-const Label = ({ children }) => (
-  <span className="font-offbitDot text-[10px] md:text-xs tracking-[0.25em] uppercase opacity-80">
-    {children}
-  </span>
+const isVideoAsset = source => /\.(mp4|webm)(\?.*)?$/i.test(source || '');
+
+const Kicker = ({ children, inverse = false }) => (
+  <div className={`cs-kicker${inverse ? ' cs-kicker--inverse' : ''}`}>
+    <span aria-hidden='true' />
+    <p>{children}</p>
+  </div>
 );
 
-Label.propTypes = {
+Kicker.propTypes = {
   children: PropTypes.node.isRequired,
+  inverse: PropTypes.bool,
 };
 
-const Marquee = ({ text }) => {
-  const chunk = Array(6).fill(`${text} ✦ `).join('');
+const SmartLink = ({ href, className, children, ariaLabel }) => {
+  if (href.startsWith('/')) {
+    return (
+      <Link to={href} className={className} aria-label={ariaLabel}>
+        {children}
+      </Link>
+    );
+  }
+
   return (
-    <div className="overflow-hidden whitespace-nowrap border-2 border-ultra bg-ultra text-acid">
-      <div className="marquee-track inline-block py-2 font-offbit101Bold text-xl md:text-2xl">
-        <span>{chunk}</span>
-        <span>{chunk}</span>
-      </div>
-    </div>
+    <a
+      href={href}
+      className={className}
+      target='_blank'
+      rel='noreferrer'
+      aria-label={ariaLabel}
+    >
+      {children}
+    </a>
   );
 };
 
-Marquee.propTypes = {
-  text: PropTypes.string.isRequired,
+SmartLink.propTypes = {
+  href: PropTypes.string.isRequired,
+  className: PropTypes.string.isRequired,
+  children: PropTypes.node.isRequired,
+  ariaLabel: PropTypes.string,
+};
+
+const PillLink = ({ href, children, primary = false }) => (
+  <SmartLink
+    href={href}
+    className={`cs-pill-link${primary ? ' cs-pill-link--primary' : ''}`}
+    ariaLabel={`${children}${href.startsWith('/') ? '' : ' (opens in a new tab)'}`}
+  >
+    <span>{children}</span>
+    <i aria-hidden='true' />
+  </SmartLink>
+);
+
+PillLink.propTypes = {
+  href: PropTypes.string.isRequired,
+  children: PropTypes.node.isRequired,
+  primary: PropTypes.bool,
+};
+
+const TopBar = () => (
+  <header className='cs-topbar'>
+    <Link to='/' className='cs-wordmark' aria-label='Kevin Rufino, home'>
+      KEVIN RUFINO
+    </Link>
+    <nav aria-label='Portfolio navigation'>
+      <Link className='is-current' to='/#projects'>
+        Work
+      </Link>
+      <Link to='/#intro'>About</Link>
+      <a href="/Kevin Rufino's Resume.pdf" target='_blank' rel='noreferrer'>
+        Résumé
+      </a>
+    </nav>
+  </header>
+);
+
+const BackLink = () => (
+  <Link className='cs-back-link' to='/#projects'>
+    <span aria-hidden='true' />
+    Back to work
+  </Link>
+);
+
+const SectionIntro = ({ label, title, body, inverse = false }) => (
+  <div
+    className={`cs-section-intro${inverse ? ' cs-section-intro--inverse' : ''}`}
+  >
+    <Kicker inverse={inverse}>{label}</Kicker>
+    <h2>{title}</h2>
+    {body && <p>{body}</p>}
+  </div>
+);
+
+SectionIntro.propTypes = {
+  label: PropTypes.string.isRequired,
+  title: PropTypes.string.isRequired,
+  body: PropTypes.string,
+  inverse: PropTypes.bool,
+};
+
+const ArtifactFrame = ({ source, title, caption, index, children }) => (
+  <figure className='cs-artifact'>
+    <div className='cs-artifact__well'>
+      {children ||
+        (isVideoAsset(source) ? (
+          <video
+            src={source}
+            autoPlay
+            loop
+            muted
+            playsInline
+            controls
+            aria-label={title}
+          />
+        ) : (
+          <img src={source} alt={title} loading='lazy' />
+        ))}
+    </div>
+    <figcaption>
+      <span>FIG {String(index).padStart(2, '0')}</span>
+      <p>{caption}</p>
+    </figcaption>
+  </figure>
+);
+
+ArtifactFrame.propTypes = {
+  source: PropTypes.string,
+  title: PropTypes.string.isRequired,
+  caption: PropTypes.string.isRequired,
+  index: PropTypes.number.isRequired,
+  children: PropTypes.node,
+};
+
+const PipelineArtifact = () => (
+  <div className='cs-pipeline' aria-label='Moodie data pipeline diagram'>
+    <div>
+      <span>01</span>
+      <strong>Collect</strong>
+      <p>Saved images</p>
+    </div>
+    <i aria-hidden='true'>→</i>
+    <div>
+      <span>02</span>
+      <strong>Embed</strong>
+      <p>CLIP · 768d</p>
+    </div>
+    <i aria-hidden='true'>→</i>
+    <div>
+      <span>03</span>
+      <strong>Project</strong>
+      <p>UMAP · x/y</p>
+    </div>
+    <i aria-hidden='true'>→</i>
+    <div>
+      <span>04</span>
+      <strong>Explore</strong>
+      <p>Viewport canvas</p>
+    </div>
+  </div>
+);
+
+const DesignMoment = ({ moment }) => (
+  <article className={`cs-moment cs-moment--${moment.tone}`}>
+    <div className='cs-moment__accent' />
+    <div className='cs-moment__content'>
+      <header>
+        <span>{moment.index}</span>
+        <p>{moment.type}</p>
+      </header>
+      <div className='cs-moment__rule' />
+      <div className='cs-moment__tension'>
+        <small>The tension</small>
+        <h3>{moment.tension}</h3>
+      </div>
+      <div className='cs-options'>
+        <small>Options on the table</small>
+        {moment.options.map(option => (
+          <div className='cs-option' key={option.label}>
+            <span>{option.label}</span>
+            <div>
+              <strong>{option.title}</strong>
+              <p>{option.cost}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className='cs-call'>
+        <small>The call</small>
+        <p>{moment.call}</p>
+      </div>
+      <div className='cs-why'>
+        <small>Why this held up</small>
+        <p>{moment.why}</p>
+      </div>
+    </div>
+  </article>
+);
+
+DesignMoment.propTypes = {
+  moment: PropTypes.shape({
+    index: PropTypes.string.isRequired,
+    tone: PropTypes.string.isRequired,
+    type: PropTypes.string.isRequired,
+    tension: PropTypes.string.isRequired,
+    call: PropTypes.string.isRequired,
+    why: PropTypes.string.isRequired,
+    options: PropTypes.arrayOf(
+      PropTypes.shape({
+        label: PropTypes.string.isRequired,
+        title: PropTypes.string.isRequired,
+        cost: PropTypes.string.isRequired,
+      }),
+    ).isRequired,
+  }).isRequired,
+};
+
+const ProjectFooter = ({ nextProject, original = false }) => (
+  <footer className='cs-project-footer'>
+    <div>
+      <small>Next project</small>
+      <Link
+        to={`/projects/${toSlug(nextProject.title)}${
+          original ? '?style=original' : ''
+        }`}
+      >
+        {nextProject.title} — {nextProject.type.toLowerCase()}
+      </Link>
+    </div>
+    <PillLink href='/#projects'>All work</PillLink>
+  </footer>
+);
+
+ProjectFooter.propTypes = {
+  nextProject: PropTypes.shape({
+    title: PropTypes.string.isRequired,
+    type: PropTypes.string.isRequired,
+  }).isRequired,
+  original: PropTypes.bool,
+};
+
+const getProjectLinks = (project, slug) => {
+  const links = project.links.map(link => {
+    const label = Object.keys(link)[0];
+    return { label, href: link[label] };
+  });
+
+  if (project.liveLink && !links.some(link => link.href === project.liveLink)) {
+    links.unshift({
+      label: `View live — ${project.title}`,
+      href: project.liveLink,
+    });
+  }
+
+  if (project.liveLink) {
+    links.push({
+      label: 'Open site preview',
+      href: `/projects/${slug}/preview`,
+    });
+  }
+
+  return links.slice(0, 2);
+};
+
+const MoodieCaseStudy = ({
+  project,
+  nextProject,
+  slug,
+  reducedMotion,
+  original,
+}) => {
+  const links = getProjectLinks(project, slug);
+
+  return (
+    <>
+      <section className='cs-hero'>
+        <BackLink />
+        <div className='cs-project-cover'>
+          <HalftoneField
+            variant={original ? 'pixel-cover' : 'cover'}
+            tone='yellow'
+            label={
+              original
+                ? 'Interactive halftone graph. Drag or use arrow keys to reshape the pixel lattice.'
+                : undefined
+            }
+          />
+          <div className='cs-cover-content'>
+            <div className='cs-cover-topline'>
+              <Kicker inverse>{moodieCaseStudy.status}</Kicker>
+              <p className='cs-drag-chip'>
+                <span aria-hidden='true' />
+                {original ? 'Drag to explore the graph' : 'Drag to explore'}
+              </p>
+            </div>
+            <h1>{moodieCaseStudy.title}</h1>
+            <p className='cs-cover-summary'>{moodieCaseStudy.summary}</p>
+          </div>
+        </div>
+
+        <div className='cs-meta-grid'>
+          {moodieCaseStudy.meta.map(item => (
+            <div className='cs-meta-item' key={item.label}>
+              <small>{item.label}</small>
+              <p>
+                {item.values.map(value => (
+                  <React.Fragment key={value}>
+                    {value}
+                    <br />
+                  </React.Fragment>
+                ))}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <div className='cs-link-row'>
+          {links.map((link, linkIndex) => (
+            <PillLink
+              key={link.href}
+              href={link.href}
+              primary={linkIndex === 0}
+            >
+              {link.label}
+            </PillLink>
+          ))}
+        </div>
+      </section>
+
+      <motion.section
+        className='cs-context'
+        initial={reducedMotion ? false : { opacity: 0, y: 36 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.16 }}
+      >
+        {moodieCaseStudy.context.map(item => (
+          <SectionIntro key={item.label} {...item} />
+        ))}
+      </motion.section>
+
+      <section className='cs-artifacts-section'>
+        <SectionIntro {...moodieCaseStudy.artifacts} inverse />
+        <ArtifactFrame
+          source={project.scrapeGif}
+          title='Moodie taste canvas'
+          caption={moodieCaseStudy.artifacts.captions[0]}
+          index={1}
+        />
+        <ArtifactFrame
+          title='Moodie embedding and layout pipeline'
+          caption={moodieCaseStudy.artifacts.captions[1]}
+          index={2}
+        >
+          <PipelineArtifact />
+        </ArtifactFrame>
+      </section>
+
+      {!original && (
+        <HalftoneField
+          className='cs-halftone-divider'
+          tone='ink'
+          variant='divider'
+          label='Interactive halftone divider. Drag or use arrow keys to reshape it.'
+        />
+      )}
+
+      <section className='cs-moments-section'>
+        <SectionIntro {...moodieCaseStudy.momentsIntro} />
+        <div className='cs-moments-list'>
+          {moodieCaseStudy.moments.map(moment => (
+            <DesignMoment key={moment.index} moment={moment} />
+          ))}
+        </div>
+      </section>
+
+      <section className='cs-impact'>
+        <Kicker inverse>Impact</Kicker>
+        <h2>{moodieCaseStudy.impact.title}</h2>
+        <p className='cs-impact__body'>{moodieCaseStudy.impact.body}</p>
+        <div className='cs-impact__stats'>
+          {moodieCaseStudy.impact.stats.map(stat => (
+            <div className='cs-stat' key={stat.label}>
+              <strong>{stat.figure}</strong>
+              <small>{stat.label}</small>
+              <p>{stat.context}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className='cs-reflections'>
+        <SectionIntro
+          label='Reflections'
+          title='What I would carry into the next build.'
+        />
+        <div className='cs-reflection-list'>
+          {moodieCaseStudy.reflections.map((reflection, index) => (
+            <article className='cs-reflection' key={reflection.title}>
+              <span>{String(index + 1).padStart(2, '0')}</span>
+              <div>
+                <h3>{reflection.title}</h3>
+                <p>{reflection.body}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <ProjectFooter nextProject={nextProject} original={original} />
+    </>
+  );
+};
+
+MoodieCaseStudy.propTypes = {
+  project: PropTypes.object.isRequired,
+  nextProject: PropTypes.object.isRequired,
+  slug: PropTypes.string.isRequired,
+  reducedMotion: PropTypes.bool.isRequired,
+  original: PropTypes.bool.isRequired,
+};
+
+const ProjectShowcase = ({ project, nextProject, slug, original }) => {
+  const links = getProjectLinks(project, slug);
+  const assets = [project.scrapeGif, ...(project.assets || [])].filter(
+    (asset, index, list) => asset && list.indexOf(asset) === index,
+  );
+
+  return (
+    <>
+      <section className='cs-showcase-header'>
+        <BackLink />
+        <Kicker>
+          Showcase · {project.client} · {project.year}
+        </Kicker>
+        <h1>{project.title}</h1>
+        <p>{project.description}</p>
+        <div className='cs-tag-row' aria-label='Technology used'>
+          {project.technology.map(technology => (
+            <span key={technology}>{technology}</span>
+          ))}
+        </div>
+        <div className='cs-link-row'>
+          {links.map((link, linkIndex) => (
+            <PillLink
+              key={link.href}
+              href={link.href}
+              primary={linkIndex === 0}
+            >
+              {link.label}
+            </PillLink>
+          ))}
+        </div>
+      </section>
+
+      <section className='cs-showcase-assets' aria-label='Project artifacts'>
+        {assets.map((asset, assetIndex) => (
+          <ArtifactFrame
+            key={asset}
+            source={asset}
+            title={`${project.title} project artifact ${assetIndex + 1}`}
+            caption={
+              assetIndex === 0
+                ? `A live capture from ${project.title}.`
+                : `A supporting artifact from the ${project.type.toLowerCase()} build.`
+            }
+            index={assetIndex + 1}
+          />
+        ))}
+      </section>
+
+      <ProjectFooter nextProject={nextProject} original={original} />
+    </>
+  );
+};
+
+ProjectShowcase.propTypes = {
+  project: PropTypes.object.isRequired,
+  nextProject: PropTypes.object.isRequired,
+  slug: PropTypes.string.isRequired,
+  original: PropTypes.bool.isRequired,
 };
 
 const ProjectPage = () => {
   const { slug } = useParams();
-  const { setCursorType, type: cursorType } = useCursor();
-  const prefersReducedMotion = useReducedMotion();
-
-  const index = ProjectsData.findIndex(p => toSlug(p.title) === slug);
-  const project = index !== -1 ? ProjectsData[index] : null;
-  const prev =
-    ProjectsData[(index - 1 + ProjectsData.length) % ProjectsData.length];
-  const next = ProjectsData[(index + 1) % ProjectsData.length];
-  const fileNo = String(index + 1).padStart(2, '0');
+  const [searchParams] = useSearchParams();
+  const reducedMotion = useReducedMotion();
+  const original = searchParams.get('style') === 'original';
+  const index = ProjectsData.findIndex(
+    project => toSlug(project.title) === slug,
+  );
+  const project = index >= 0 ? ProjectsData[index] : null;
+  const nextProject =
+    ProjectsData[index >= 0 ? (index + 1) % ProjectsData.length : 0];
 
   useEffect(() => {
-    setCursorType('');
     window.scrollTo(0, 0);
-  }, [slug, setCursorType]);
+  }, [slug]);
 
   useEffect(() => {
     if (project) document.title = `${project.title} — Kevin Rufino`;
@@ -58,264 +513,54 @@ const ProjectPage = () => {
     };
   }, [project]);
 
-  const container = {
-    hidden: {},
-    show: {
-      transition: { staggerChildren: prefersReducedMotion ? 0 : 0.07 },
-    },
-  };
-
-  const cell = {
-    hidden: prefersReducedMotion ? {} : { opacity: 0, y: 24 },
-    show: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] },
-    },
-  };
-
   if (!project) {
     return (
-      <div className="min-h-screen bg-acid text-ultra grain">
-        <Cursor cursor={cursorType} />
-        <NavBar setCursor={setCursorType} />
-        <div className="flex flex-col items-center justify-center min-h-screen gap-6 px-6">
-          <p className="font-offbitDot text-sm tracking-[0.3em]">ERROR 404</p>
-          <h1 className="font-offbit101Bold text-5xl md:text-7xl text-center">
-            Project not found
-          </h1>
-          <Link
-            to="/"
-            className="cell-hard font-offbit101Bold text-xl px-6 py-3 bg-acid"
-          >
-            ← Back to home
-          </Link>
-        </div>
+      <div className='case-study-page cs-not-found'>
+        <TopBar />
+        <main>
+          <Kicker>404 / Project not found</Kicker>
+          <h1>This project slipped out of the archive.</h1>
+          <PillLink href='/#projects' primary>
+            Back to work
+          </PillLink>
+        </main>
       </div>
     );
   }
 
+  const isMoodie = project.title.toLowerCase() === 'moodie';
+
   return (
-    <div className="min-h-screen bg-acid text-ultra grain">
-      <Cursor cursor={cursorType} />
-      <NavBar setCursor={setCursorType} />
-
-      <main className="max-w-7xl mx-auto px-4 md:px-8 pt-20 md:pt-48 lg:pt-56 pb-16">
-        {/* Dossier header */}
-        <div className="flex items-end justify-between gap-4 mb-4 md:mb-6">
-          <Link
-            to="/#projects"
-            className="font-offbit101Bold text-lg md:text-xl border-b-2 border-ultra hover:bg-ultra hover:text-acid transition-colors px-1"
-          >
-            ← INDEX
-          </Link>
-          <p className="font-offbitDot text-xs md:text-sm tracking-[0.3em] text-right">
-            PROJECT FILE {fileNo}/{String(ProjectsData.length).padStart(2, '0')}
-            <span className="blink">_</span>
-          </p>
-        </div>
-
-        {/* Bento hero */}
-        <motion.div
-          variants={container}
-          initial="hidden"
-          animate="show"
-          className="grid grid-cols-2 lg:grid-cols-12 gap-3 md:gap-4"
-        >
-          {/* Title cell */}
-          <motion.div
-            variants={cell}
-            className="cell-hard col-span-2 lg:col-span-5 bg-acid p-5 md:p-8 flex flex-col justify-between gap-6 min-h-[260px]"
-          >
-            <div className="flex items-start justify-between">
-              <Label>{project.client}</Label>
-              <span className="font-plumpelo text-5xl md:text-6xl leading-none opacity-20">
-                {fileNo}
-              </span>
-            </div>
-            <h1 className="font-offbit101Bold text-[clamp(2.4rem,6vw,4.8rem)] leading-[0.95] break-words">
-              {project.title}
-            </h1>
-            <Label>{project.type}</Label>
-          </motion.div>
-
-          {/* Media cell */}
-          <motion.div
-            variants={cell}
-            className="cell-hard relative col-span-2 lg:col-span-7 bg-ultra overflow-hidden"
-          >
-            <video
-              className="w-full h-full object-cover aspect-video"
-              src={project.scrapeGif}
-              autoPlay
-              loop
-              muted
-              playsInline
+    <div
+      className={`case-study-page${
+        original ? ' case-study-page--original' : ''
+      }`}
+      data-design-direction={original ? 'original' : 'soft'}
+    >
+      <a className='cs-skip-link' href='#case-study-content'>
+        Skip to case study
+      </a>
+      <div className='case-study-shell'>
+        <TopBar />
+        <main id='case-study-content'>
+          {isMoodie ? (
+            <MoodieCaseStudy
+              project={project}
+              nextProject={nextProject}
+              slug={slug}
+              reducedMotion={reducedMotion}
+              original={original}
             />
-            <p className="absolute top-3 left-3 font-offbitDot text-[10px] md:text-xs tracking-[0.25em] bg-acid text-ultra px-2 py-1 border-2 border-ultra">
-              ● LIVE CAPTURE
-            </p>
-          </motion.div>
-
-          {/* Meta cells */}
-          <motion.div
-            variants={cell}
-            className="cell-hard col-span-1 lg:col-span-2 bg-acid p-4 md:p-5 flex flex-col justify-between gap-2 min-h-[100px]"
-          >
-            <Label>Year</Label>
-            <p className="font-offbit101Bold text-3xl md:text-4xl">
-              {project.year}
-            </p>
-          </motion.div>
-          <motion.div
-            variants={cell}
-            className="cell-hard col-span-1 lg:col-span-3 bg-acid p-4 md:p-5 flex flex-col justify-between gap-2 min-h-[100px]"
-          >
-            <Label>Role</Label>
-            <p className="font-offbit101Bold text-2xl md:text-3xl">
-              {project.role}
-            </p>
-          </motion.div>
-
-          {/* Live preview link cell — if available */}
-          {project.liveLink && (
-            <motion.div
-              variants={cell}
-              className="cell-hard col-span-2 lg:col-span-12 bg-ultra text-acid p-5 md:p-8 flex items-center justify-center"
-            >
-              <Link
-                to={`/projects/${slug}/preview`}
-                className="font-offbit101Bold text-2xl md:text-4xl border-2 border-acid px-6 py-4 shadow-hard-sm hover:shadow-hard hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all bg-acid text-ultra"
-              >
-                ▶ Open Live Preview
-              </Link>
-            </motion.div>
-          )}
-
-          {/* Description cell — inverted */}
-          <motion.div
-            variants={cell}
-            className="cell-hard col-span-2 lg:col-span-7 lg:row-span-2 bg-ultra text-acid p-5 md:p-8 flex flex-col gap-4"
-          >
-            <Label>Briefing</Label>
-            <p className="font-offbit text-lg md:text-xl leading-relaxed">
-              {project.description}
-            </p>
-          </motion.div>
-
-          {/* Stack cell */}
-          <motion.div
-            variants={cell}
-            className="cell-hard col-span-2 lg:col-span-5 bg-acid p-5 md:p-6 flex flex-col gap-3"
-          >
-            <Label>Stack</Label>
-            <div className="flex flex-wrap gap-2">
-              {project.technology.map(tech => (
-                <span
-                  key={tech}
-                  className="font-offbit101 text-base md:text-lg border-2 border-ultra px-2 pt-1 hover:bg-ultra hover:text-acid transition-colors"
-                >
-                  {tech}
-                </span>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Links cell */}
-          <motion.div
-            variants={cell}
-            className="cell-hard col-span-2 lg:col-span-5 bg-acid p-5 md:p-6 flex flex-col gap-3"
-          >
-            <Label>Transmissions</Label>
-            <div className="flex flex-wrap gap-3">
-              {project.links.map(link => {
-                const key = Object.keys(link)[0];
-                return (
-                  <a
-                    key={key}
-                    href={link[key]}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-offbit101Bold text-base md:text-lg border-2 border-ultra px-3 py-2 shadow-hard-sm hover:shadow-hard hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all bg-acid"
-                  >
-                    {key} ↗
-                  </a>
-                );
-              })}
-            </div>
-          </motion.div>
-
-          {/* Asset cells — pixel artifacts from the project */}
-          {project.assets && project.assets.length > 0 ? (
-            project.assets.map((asset, i) => (
-              <motion.div
-                key={asset}
-                variants={cell}
-                className="cell-hard relative col-span-1 lg:col-span-3 bg-acid overflow-hidden flex items-center justify-center aspect-square"
-              >
-                <img
-                  src={asset}
-                  alt={`${project.title} artifact ${i + 1}`}
-                  className="max-w-[70%] max-h-[70%] object-contain"
-                  style={{ imageRendering: 'pixelated' }}
-                />
-                <p className="absolute bottom-2 left-2 font-offbitDot text-[10px] tracking-[0.25em]">
-                  ARTIFACT_{String(i + 1).padStart(2, '0')}
-                </p>
-              </motion.div>
-            ))
           ) : (
-            <motion.div
-              variants={cell}
-              className="cell-hard col-span-1 lg:col-span-3 pixel-checker opacity-60 aspect-square"
-              aria-hidden="true"
+            <ProjectShowcase
+              project={project}
+              nextProject={nextProject}
+              slug={slug}
+              original={original}
             />
           )}
-
-          {/* Decorative filler keeps the grid dense */}
-          <motion.div
-            variants={cell}
-            className="cell-hard col-span-1 lg:col-span-2 bg-ultra text-acid p-4 flex flex-col items-center justify-center gap-1 aspect-square"
-          >
-            <span className="font-plumpelo text-4xl md:text-5xl leading-none">
-              KR
-            </span>
-            <Label>EST. 1997</Label>
-          </motion.div>
-
-          <motion.div variants={cell} className="col-span-2 lg:col-span-12">
-            <Marquee
-              text={`${project.title} — ${project.type} — ${project.year}`}
-            />
-          </motion.div>
-        </motion.div>
-
-        {/* Prev / Next dossier navigation */}
-        <nav className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mt-3 md:mt-4">
-          <Link
-            to={`/projects/${toSlug(prev.title)}`}
-            className="cell-hard bg-acid p-5 md:p-6 flex flex-col gap-2 group"
-          >
-            <Label>← Previous file</Label>
-            <p className="font-offbit101Bold text-2xl md:text-4xl type-outline group-hover:[-webkit-text-fill-color:var(--ultra)] break-words">
-              {prev.title}
-            </p>
-          </Link>
-          <Link
-            to={`/projects/${toSlug(next.title)}`}
-            className="cell-hard bg-acid p-5 md:p-6 flex flex-col gap-2 items-end text-right group"
-          >
-            <Label>Next file →</Label>
-            <p className="font-offbit101Bold text-2xl md:text-4xl type-outline group-hover:[-webkit-text-fill-color:var(--ultra)] break-words">
-              {next.title}
-            </p>
-          </Link>
-        </nav>
-
-        <p className="font-offbitDot text-center text-xs tracking-[0.3em] mt-10 opacity-70">
-          * KEVIN RUFINO — PROJECT ARCHIVE *
-        </p>
-      </main>
+        </main>
+      </div>
     </div>
   );
 };

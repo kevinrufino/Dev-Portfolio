@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@fontsource-variable/geist": "^5.3.0",
     "@p5-wrapper/react": "^4.4.2",
     "@react-three/drei": "^9.88.17",
     "@react-three/fiber": "^8.15.12",
