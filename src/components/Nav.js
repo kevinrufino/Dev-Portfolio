@@ -26,6 +26,9 @@ const FOLLOWER_RANGE = 300;
 const FOLLOWER_TINT = '#ffd9f2';
 const HOVER_PILL_TINT = '#d9e6ff';
 const ACTIVE_PILL_FILL = '#ffffff';
+// Fixed-height selected pill, vertically centered in the item box, so it reads
+// as a compact rounded chip rather than filling the link's full padded height.
+const ACTIVE_PILL_HEIGHT = 36;
 const ACTIVE_TEXT = '#000000';
 const HOVER_TEXT = '#1e1e1e';
 
@@ -186,9 +189,11 @@ export const NavBar = ({ setCursor }) => {
   const activePillStyle = {
     position: 'absolute',
     left: activeRect ? activeRect.x + GOO_PAD : GOO_PAD,
-    top: activeRect ? activeRect.y + GOO_PAD : GOO_PAD,
+    top: activeRect
+      ? activeRect.y + GOO_PAD + (activeRect.h - ACTIVE_PILL_HEIGHT) / 2
+      : GOO_PAD,
     width: activeRect ? activeRect.w : 0,
-    height: activeRect ? activeRect.h : 0,
+    height: ACTIVE_PILL_HEIGHT,
     borderRadius: 9,
     background: ACTIVE_PILL_FILL,
     transformOrigin: '50% 50%',
