@@ -41,6 +41,7 @@ import ProjectsLab from './pages/ProjectsLab.js';
 import PageTransition from './components/PageTransition.js';
 import Reveal from './components/Reveal.js';
 import { watchGrids } from './utils/grid.js';
+import PalmScene from './components/Palm/PalmScene.js';
 import { ENABLE_SHADER_BACKGROUND } from './featureFlags.js';
 
 // Only referenced when the flag is on, so the Three.js chunk is never fetched
@@ -108,6 +109,10 @@ const AppContent = () => {
           <MikaShaderEffect />
         </Suspense>
       )}
+
+      {/* Pixel palm — fixed, z:1, above the physics and below the content.
+          Behind ENABLE_PALM_SCENE; renders nothing when off. */}
+      <PalmScene />
 
       {/* Full-page physics canvas — z:0, between shader and content.
           Fills the header on handoff, then drains down the page on scroll. */}
