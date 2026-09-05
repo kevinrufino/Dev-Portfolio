@@ -40,6 +40,7 @@ import ProjectPreview from './pages/ProjectPreview.js';
 import ProjectsLab from './pages/ProjectsLab.js';
 import PageTransition from './components/PageTransition.js';
 import Reveal from './components/Reveal.js';
+import { watchGrids } from './utils/grid.js';
 import { ENABLE_SHADER_BACKGROUND } from './featureFlags.js';
 
 // Only referenced when the flag is on, so the Three.js chunk is never fetched
@@ -80,6 +81,9 @@ const AppContent = () => {
     setCursorType('');
   }, [setCursorType]);
 
+  // Keep every section's 6px background grid phased to the document origin.
+  useEffect(() => watchGrids(), []);
+
   // Scroll to the hash target after SPA navigation (e.g. "← INDEX" → /#projects)
   const { hash } = useLocation();
   useEffect(() => {
@@ -116,7 +120,7 @@ const AppContent = () => {
 
       {/* Page content — z:2, on top */}
       <div
-        className="text-ultra scroll-smooth relative overflow-hidden grain"
+        className="text-ultra scroll-smooth relative overflow-hidden"
         style={{ position: 'relative' }}
       >
         {/* Hidden easter egg text */}

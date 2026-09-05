@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -41,6 +43,26 @@
 :root {
   --acid: #f1f43b;
   --ultra: #3e3bf4;
+
+  /* Paper — the intro/marquee ground, and its ink ramp. */
+  --paper: #f7f8f5;
+  --paper-ink: #252c24;
+  --paper-ink-2: #5d6259;
+  --paper-rule: #e0e3dc;
+
+  /* Charcoal — the contact footer. */
+  --charcoal: #202020;
+  --charcoal-ink: #f0efeb;
+  --charcoal-ink-2: #b0afa9;
+  --charcoal-rule: #454540;
+
+  /* The palm's gold, also the trail's ink over the charcoal ground. */
+  --palm-gold: #ebc035;
+
+  /* One 6px lattice shared by the palm, the pixel trail and the section
+     grids. Every grid-aligned size downstream is a multiple of this. */
+  --grid: 6px;
+
   --shadow-hard: 6px 6px 0 0 var(--ultra);
   --shadow-hard-sm: 3px 3px 0 0 var(--ultra);
   background-color: var(--acid);
@@ -127,17 +149,6 @@ body {
   .portfolio-pixel-trail {
     display: none;
   }
-}
-
-/* Subtle CRT grain over everything — matches the pixel-font language */
-.grain::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  pointer-events: none;
-  opacity: 0.05;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 /* Pixel checkerboard texture for decorative bento cells */
@@ -677,4 +688,56 @@ code {
   to {
     stroke-dashoffset: 0;
   }
+}
+
+/* ── 6px lattice ──────────────────────────────────────────────────────────
+   One grid for the whole page. `alignGrids()` (see src/utils/grid.js) locks
+   each section's background-position to the document origin, so a section that
+   starts on a fractional pixel still lands its cells on the same lattice as
+   its neighbours — otherwise every section draws a grid a pixel or two out of
+   step with the one above it. Sizes stay in px, not var(--grid), because
+   background-size does not accept a custom property in every engine we ship
+   to. */
+.grid-rule {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(
+      to right,
+      var(--grid-line) 1px,
+      transparent 1px
+    ),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+  background-size: 6px 6px;
+}
+
+.grid-rule--acid {
+  --grid-line: rgba(62, 59, 244, 0.075);
+}
+
+.grid-rule--paper {
+  --grid-line: rgba(103, 113, 124, 0.055);
+}
+
+.grid-rule--charcoal {
+  --grid-line: rgba(241, 244, 59, 0.045);
+}
+
+/* ── type roles (G4) ──────────────────────────────────────────────────────
+   OffBit-101-Bold is a display face: it sets headings and nothing else.
+   OffBit-Dot carries the numbered section eyebrows. Running copy is DM Sans —
+   the pixel faces were never drawn for paragraph text and lose legibility
+   below ~20px. */
+.type-label {
+  font-family: "OffBit-Dot", monospace;
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
+.type-body {
+  font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  line-height: 1.75;
+  text-wrap: pretty;
 }

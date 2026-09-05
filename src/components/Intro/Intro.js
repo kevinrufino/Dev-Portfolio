@@ -5,13 +5,14 @@ import React from 'react';
 export const Intro = ({ setCursor }) => {
   return (
     <section
-      className='max-w-4xl my-16 px-5 md:my-32 flex flex-col flex-wrap space-y-16 md:space-y-0 patterns m-4 md:m-auto'
+      className='relative max-w-4xl my-16 px-5 md:my-32 flex flex-col flex-wrap space-y-16 md:space-y-0 patterns m-4 md:m-auto'
       id='intro'
       onMouseEnter={() => {
         setCursor('');
       }}
     >
-      <div className='mb-auto space-y-5'>
+      <div className='grid-rule grid-rule--paper' aria-hidden='true' />
+      <div className='relative z-[1] mb-auto space-y-5'>
         <h1 className='font-offbit101Bold text-5xl md:text-7xl mt-16 '>
           Hey!{' '}
           <span className='wave' role='img' aria-labelledby='wave'>

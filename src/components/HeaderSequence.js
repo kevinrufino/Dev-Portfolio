@@ -80,6 +80,7 @@ export const HeaderSequence = ({
       {/* Hero fold: empty flow region the document-sized physics canvas fills
           behind the page content. Also the nav's scroll anchor. */}
       <section id='home' className='relative w-full h-screen'>
+        <div className='grid-rule grid-rule--acid' aria-hidden='true' />
         <button
           type='button'
           aria-label='Scroll to content'

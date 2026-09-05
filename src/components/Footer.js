@@ -234,6 +234,8 @@ export const Footer = ({ setCursor }) => {
         setCursor?.('');
       }}
     >
+      <div className='grid-rule grid-rule--charcoal' aria-hidden='true' />
+
       <div className='footer-curtain' aria-hidden='true'>
         <div className='footer-curtain__texture' />
       </div>
