@@ -4,20 +4,15 @@ import App from './App';
 
 test('renders portfolio application', () => {
   render(<App />);
-  // The app should render without crashing
-  expect(document.body).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: /kevin rufino/i })).toBeInTheDocument();
 });
 
-test('renders loading screen initially', () => {
+test('renders boot screen initially', () => {
   render(<App />);
-  // The app should show loading screen initially
-  const loadingText = screen.getByText(/loading/i);
-  expect(loadingText).toBeInTheDocument();
+  expect(screen.getByText(/starting kevin os/i)).toBeInTheDocument();
 });
 
-test('loading progress is displayed', () => {
+test('renders all selected projects', () => {
   render(<App />);
-  // Should show loading percentage
-  const progressText = screen.getByText(/loading.*\d+%/i);
-  expect(progressText).toBeInTheDocument();
+  expect(screen.getByRole('list', { name: /select a project/i }).children).toHaveLength(6);
 });
