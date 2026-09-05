@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef } from 'react';
 
+// 18px cells = three of the page's 6px grid cells, so a trail cell always
+// lands on the lattice the sections and (later) the palm share.
 const TRAIL = {
-  pixelSize: 28,
+  pixelSize: 18,
   gap: 0,
   maxOpacity: 0.82,
   attackDuration: 32,
@@ -15,6 +17,27 @@ const TRAIL = {
 };
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+// Ink per ground: ultra over the acid hero and the paper intro, gold over the
+// charcoal footer. Over the projects section — the one surface with no grid —
+// the trail doesn't paint at all, so it never fights the index's own type.
+//
+// Canvas fillStyle does not resolve CSS custom properties, so the tokens are
+// read into real values once per resize rather than per cell (getComputedStyle
+// is a layout read, and a fast pointer paints up to 24 cells per event).
+const INK_FALLBACK = { ultra: '#3e3bf4', gold: '#ebc035' };
+
+const readToken = (name, fallback) =>
+  getComputedStyle(document.documentElement).getPropertyValue(name).trim() ||
+  fallback;
+
+const inkAt = (clientY, ctx) => {
+  const footer = ctx.footer?.getBoundingClientRect();
+  if (footer && clientY >= footer.top) return ctx.gold;
+  const works = ctx.works?.getBoundingClientRect();
+  if (works && clientY >= works.top && clientY < works.bottom) return null;
+  return ctx.ultra;
+};
 
 const GooeyFilter = ({ id }) => (
   <svg className='gooey-defs' aria-hidden='true' focusable='false'>
@@ -43,8 +66,8 @@ const PixelTrail = () => {
   const rafRef = useRef(0);
   const lastPointerRef = useRef(null);
   const sizeRef = useRef({ width: 0, height: 0, dpr: 1 });
-  const colorRef = useRef('#3e3bf4');
   const reducedMotionRef = useRef(false);
+  const inkRef = useRef({ ...INK_FALLBACK });
   const filterId = useMemo(
     () => `portfolio-pixel-trail-${Math.random().toString(36).slice(2)}`,
     [],
@@ -61,12 +84,15 @@ const PixelTrail = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const width = window.innerWidth;
       const height = window.innerHeight;
-      const ultra = getComputedStyle(document.documentElement)
-        .getPropertyValue('--ultra')
-        .trim();
-
       sizeRef.current = { width, height, dpr };
-      colorRef.current = ultra || '#3e3bf4';
+      // Re-resolved here so a token change (or a theme swap) is picked up, and
+      // the section lookups survive route changes that remount the page.
+      inkRef.current = {
+        ultra: readToken('--ultra', INK_FALLBACK.ultra),
+        gold: readToken('--palm-gold', INK_FALLBACK.gold),
+        works: document.getElementById('projects'),
+        footer: document.getElementById('contact'),
+      };
       canvas.width = Math.ceil(width * dpr);
       canvas.height = Math.ceil(height * dpr);
       canvas.style.width = `${width}px`;
@@ -85,7 +111,6 @@ const PixelTrail = () => {
         TRAIL.attackDuration + TRAIL.holdDuration + TRAIL.fadeDuration;
 
       clearCanvas();
-      ctx.fillStyle = colorRef.current;
 
       for (const [key, cell] of cells) {
         const age = now - cell.startedAt;
@@ -109,9 +134,11 @@ const PixelTrail = () => {
         if (opacity <= 0) continue;
 
         ctx.globalAlpha = opacity;
+        ctx.fillStyle = cell.color;
+        // Rows are document-space, so subtract the scroll to place the cell.
         ctx.fillRect(
           cell.column * pitch,
-          cell.row * pitch,
+          cell.row * pitch - window.scrollY,
           TRAIL.pixelSize,
           TRAIL.pixelSize,
         );
@@ -139,13 +166,19 @@ const PixelTrail = () => {
         return;
       }
 
+      const color = inkAt(clientY, inkRef.current);
+      if (!color) return;
+
       const column = Math.floor(clientX / pitch);
-      const row = Math.floor(clientY / pitch);
+      // Document-space row: the cell belongs to the page, not the viewport, so
+      // it stays under the same content while the page scrolls beneath it.
+      const row = Math.floor((clientY + window.scrollY) / pitch);
       const key = `${column}:${row}`;
       activeCellsRef.current.set(key, {
         column,
         row,
         velocity,
+        color,
         startedAt: performance.now(),
       });
       scheduleDraw();
@@ -198,6 +231,12 @@ const PixelTrail = () => {
       };
     };
 
+    // Live cells have to be redrawn while scrolling now that their rows are
+    // anchored to the document rather than the viewport.
+    const onScroll = () => {
+      if (activeCellsRef.current.size > 0) scheduleDraw();
+    };
+
     const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     const syncMotion = () => {
       reducedMotionRef.current = motionQuery.matches;
@@ -210,12 +249,14 @@ const PixelTrail = () => {
     resize();
     syncMotion();
 
+    window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', resize);
     window.addEventListener('pointermove', handlePointer, { passive: true });
     window.addEventListener('pointerdown', handlePointer, { passive: true });
     motionQuery.addEventListener('change', syncMotion);
 
     return () => {
+      window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', resize);
       window.removeEventListener('pointermove', handlePointer);
       window.removeEventListener('pointerdown', handlePointer);

@@ -56,7 +56,7 @@ const MikaShaderEffect = React.lazy(
  */
 const AppContent = () => {
   // Use context hooks instead of local state
-  const { setCursorType, type: cursorType } = useCursor();
+  const { setCursorType } = useCursor();
   const { getThemeColors } = useTheme();
   const seq = useLandingSequence();
   // Freeze scroll until the loader has handed off AND every name row has
@@ -135,7 +135,7 @@ const AppContent = () => {
 
         {/* Global cursor component */}
         <PixelTrail />
-        <Cursor cursor={cursorType} />
+        <Cursor />
 
         {/* Navigation header */}
         <NavBar setCursor={setCursorType} />
