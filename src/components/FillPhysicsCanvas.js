@@ -195,6 +195,10 @@ const GRAVITY_FILL = 1.8; // heavier gravity while the stack drops, so the fill 
 const FILL_TIMEOUT_MS = 7000; // report "filled" even if a body never quite settles
 const FLOOR_T = 16; // floor bar thickness (collision only — invisible)
 const SCROLL_RANGE = 1.2; // fold-heights of scroll to fully open the floor
+// Fraction of the width that stays solid. The floor opens to the right only,
+// so the pile slides along the fixed left section and exits down the right
+// edge rather than dropping straight through a widening centre gap.
+const FLOOR_SPLIT = 0.42;
 const DRAIN_TICK_MS = 400; // wake/cull cadence while the floor is open
 const CULL_MARGIN = 600; // px past the document bottom before a name is retired
 const IMPULSE_RADIUS_FRAC = 0.28; // click impulse reach, as a fraction of viewport width
@@ -309,17 +313,20 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
           friction: 0.05, // slippery so the pile slides off as it retracts
           render: invisible,
         };
+        // The left section never moves; only the right one slides away.
+        let leftW = W * FLOOR_SPLIT;
+        let rightW = W - leftW;
         const leftFloor = Matter.Bodies.rectangle(
-          W / 4,
+          leftW / 2,
           floorY,
-          W / 2,
+          leftW,
           FLOOR_T,
           floorOpts,
         );
         const rightFloor = Matter.Bodies.rectangle(
-          (3 * W) / 4,
+          leftW + rightW / 2,
           floorY,
-          W / 2,
+          rightW,
           FLOOR_T,
           floorOpts,
         );
@@ -454,13 +461,14 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
             1,
             Math.max(0, window.scrollY / (fold * SCROLL_RANGE)),
           );
-          const shift = p * (W / 2);
+          // +40 so the right section is fully clear of the viewport edge at
+          // p = 1 and cannot catch a name on its trailing corner.
+          const shift = p * (rightW + 40);
           engine.enableSleeping = p === 0;
           if (shift !== lastShift) {
             lastShift = shift;
-            Matter.Body.setPosition(leftFloor, { x: W / 4 - shift, y: floorY });
             Matter.Body.setPosition(rightFloor, {
-              x: (3 * W) / 4 + shift,
+              x: leftW + rightW / 2 + shift,
               y: floorY,
             });
           }
@@ -653,6 +661,26 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
           render.options.height = fold;
           render.canvas.width = W;
           render.canvas.height = fold;
+          // The split is a fraction of the width, so both sections have to be
+          // rebuilt at the new size before updateFloor re-places the right one.
+          const nextLeftW = W * FLOOR_SPLIT;
+          const nextRightW = W - nextLeftW;
+          Matter.Body.setPosition(leftFloor, {
+            x: nextLeftW / 2,
+            y: floorY,
+          });
+          Matter.Body.scale(
+            leftFloor,
+            nextLeftW / leftW,
+            1,
+          );
+          Matter.Body.scale(
+            rightFloor,
+            nextRightW / rightW,
+            1,
+          );
+          leftW = nextLeftW;
+          rightW = nextRightW;
           Matter.Body.setPosition(leftWall, { x: -30, y: 0 });
           Matter.Body.setPosition(rightWall, { x: W + 30, y: 0 });
           lastShift = -1; // force floor reposition on the next scroll tick
