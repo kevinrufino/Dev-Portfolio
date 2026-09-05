@@ -2,15 +2,8 @@ import { useRef, useEffect, useState } from 'react';
 import Reveal from './Reveal.js';
 
 const footerLinks = [
-  {
-    href: 'mailto:kevinrufino97@gmail.com',
-    label: 'Email',
-  },
-  {
-    href: "./Kevin Rufino's Resume.pdf",
-    label: 'Resume',
-    isExternal: true,
-  },
+  { href: 'mailto:kevinrufino97@gmail.com', label: 'Email' },
+  { href: "./Kevin Rufino's Resume.pdf", label: 'Resume', isExternal: true },
   {
     href: 'https://www.linkedin.com/in/kevinrufino/',
     label: 'LinkedIn',
@@ -23,41 +16,19 @@ const footerLinks = [
   },
 ];
 
-const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
-
-const noise = seed => {
-  const value = Math.sin(seed) * 10000;
-  return value - Math.floor(value);
-};
-
-const smoothNoise = (x, y) => {
-  const xi = Math.floor(x);
-  const yi = Math.floor(y);
-  const xf = x - xi;
-  const yf = y - yi;
-  const easeX = xf * xf * (3 - 2 * xf);
-  const easeY = yf * yf * (3 - 2 * yf);
-
-  const top =
-    noise(xi * 12.9898 + yi * 78.233) * (1 - easeX) +
-    noise((xi + 1) * 12.9898 + yi * 78.233) * easeX;
-  const bottom =
-    noise(xi * 12.9898 + (yi + 1) * 78.233) * (1 - easeX) +
-    noise((xi + 1) * 12.9898 + (yi + 1) * 78.233) * easeX;
-
-  return top * (1 - easeY) + bottom * easeY;
-};
-
-const PixelSmiley = () => (
-  <div className='footer-pixel-smiley' aria-hidden='true'>
-    <span className='footer-pixel-smiley__eye footer-pixel-smiley__eye--left' />
-    <span className='footer-pixel-smiley__eye footer-pixel-smiley__eye--right' />
-    <span className='footer-pixel-smiley__mouth footer-pixel-smiley__mouth--left' />
-    <span className='footer-pixel-smiley__mouth footer-pixel-smiley__mouth--center' />
-    <span className='footer-pixel-smiley__mouth footer-pixel-smiley__mouth--right' />
-  </div>
-);
-
+/**
+ * Section 03 — contact.
+ *
+ * Charcoal rather than ultra: the page has spent three sections in acid and
+ * blue, and the footer is where it lands. The curtain reveal is kept and
+ * retinted to match.
+ *
+ * The section is deliberately much taller than its content (165svh) and is
+ * pulled up under the section above it with a negative margin. That overlap is
+ * the run-in the palm scene needs to travel from the projects index into the
+ * footer without the transition being cut off by a section boundary; the
+ * content itself is offset back down so it still reads as a normal footer.
+ */
 export const Footer = ({ setCursor }) => {
   const footerRef = useRef(null);
   const [isCurtainLifted, setIsCurtainLifted] = useState(false);
@@ -89,144 +60,10 @@ export const Footer = ({ setCursor }) => {
     return () => observer.disconnect();
   }, []);
 
-  useEffect(() => {
-    const node = footerRef.current;
-    if (!node) return undefined;
-
-    let frame = 0;
-    const updateSmileyOffset = () => {
-      frame = 0;
-      const rect = node.getBoundingClientRect();
-      const viewportHeight =
-        window.innerHeight || document.documentElement.clientHeight;
-      const progress = clamp(
-        (viewportHeight - rect.top) / viewportHeight,
-        0,
-        1,
-      );
-      const offset = 34 + progress * 106;
-
-      node.style.setProperty('--footer-smiley-progress', progress.toFixed(3));
-      node.style.setProperty('--footer-smiley-offset', `${offset.toFixed(1)}%`);
-    };
-
-    const requestUpdate = () => {
-      if (frame) return;
-      frame = requestAnimationFrame(updateSmileyOffset);
-    };
-
-    updateSmileyOffset();
-    window.addEventListener('scroll', requestUpdate, { passive: true });
-    window.addEventListener('resize', requestUpdate);
-
-    return () => {
-      if (frame) cancelAnimationFrame(frame);
-      window.removeEventListener('scroll', requestUpdate);
-      window.removeEventListener('resize', requestUpdate);
-    };
-  }, []);
-
-  useEffect(() => {
-    const node = footerRef.current;
-    if (!node) return undefined;
-
-    let pointerFrame = 0;
-    let gridX = 0;
-    let gridY = 0;
-
-    const updateGridLight = () => {
-      pointerFrame = 0;
-      const fieldX = gridX / 86;
-      const fieldY = gridY / 86;
-      const wave =
-        Math.sin(fieldX * 1.7 + fieldY * 0.55) * 0.5 +
-        Math.cos(fieldY * 1.45 - fieldX * 0.35) * 0.5;
-      const grain = smoothNoise(fieldX, fieldY);
-      const lobeOne = smoothNoise(fieldX + 7.2, fieldY - 3.4);
-      const lobeTwo = smoothNoise(fieldX - 2.6, fieldY + 6.1);
-      const lobeThree = smoothNoise(fieldX + 3.8, fieldY + 2.5);
-
-      node.style.setProperty('--footer-grid-x', `${gridX.toFixed(1)}px`);
-      node.style.setProperty('--footer-grid-y', `${gridY.toFixed(1)}px`);
-      node.style.setProperty(
-        '--footer-grid-line-alpha',
-        clamp(0.42 + grain * 0.12 + wave * 0.04, 0.34, 0.56).toFixed(3),
-      );
-      node.style.setProperty(
-        '--footer-grid-mask-alpha',
-        clamp(0.58 + grain * 0.16 + wave * 0.05, 0.48, 0.74).toFixed(3),
-      );
-      node.style.setProperty(
-        '--footer-grid-lobe-1-x',
-        `${(gridX + Math.sin(fieldY * 1.8) * 78).toFixed(1)}px`,
-      );
-      node.style.setProperty(
-        '--footer-grid-lobe-1-y',
-        `${(gridY + Math.cos(fieldX * 1.4) * 58).toFixed(1)}px`,
-      );
-      node.style.setProperty(
-        '--footer-grid-lobe-2-x',
-        `${(gridX + Math.cos(fieldY * 1.2 + 1.4) * 96).toFixed(1)}px`,
-      );
-      node.style.setProperty(
-        '--footer-grid-lobe-2-y',
-        `${(gridY + Math.sin(fieldX * 1.5 - 0.6) * 72).toFixed(1)}px`,
-      );
-      node.style.setProperty(
-        '--footer-grid-lobe-3-x',
-        `${(gridX + Math.sin((fieldX + fieldY) * 0.9) * 54).toFixed(1)}px`,
-      );
-      node.style.setProperty(
-        '--footer-grid-lobe-3-y',
-        `${(gridY + Math.cos((fieldX - fieldY) * 1.1) * 92).toFixed(1)}px`,
-      );
-      node.style.setProperty(
-        '--footer-grid-lobe-1-alpha',
-        clamp(0.2 + lobeOne * 0.32, 0.18, 0.48).toFixed(3),
-      );
-      node.style.setProperty(
-        '--footer-grid-lobe-2-alpha',
-        clamp(0.16 + lobeTwo * 0.28, 0.14, 0.4).toFixed(3),
-      );
-      node.style.setProperty(
-        '--footer-grid-lobe-3-alpha',
-        clamp(0.12 + lobeThree * 0.24, 0.1, 0.32).toFixed(3),
-      );
-    };
-
-    const requestGridLight = event => {
-      const rect = node.getBoundingClientRect();
-      gridX = event.clientX - rect.left;
-      gridY = event.clientY - rect.top;
-      node.style.setProperty('--footer-grid-opacity', '1');
-
-      if (pointerFrame) return;
-      pointerFrame = requestAnimationFrame(updateGridLight);
-    };
-
-    const hideGridLight = () => {
-      node.style.setProperty('--footer-grid-opacity', '0');
-    };
-
-    node.addEventListener('pointerenter', requestGridLight);
-    node.addEventListener('pointermove', requestGridLight);
-    node.addEventListener('pointerleave', hideGridLight);
-
-    return () => {
-      if (pointerFrame) cancelAnimationFrame(pointerFrame);
-      node.removeEventListener('pointerenter', requestGridLight);
-      node.removeEventListener('pointermove', requestGridLight);
-      node.removeEventListener('pointerleave', hideGridLight);
-    };
-  }, []);
-
-  const contactLinkClass =
-    'w-max hover:bg-acid hover:text-ultra transition-colors px-1 -mx-1 focus-visible:bg-acid focus-visible:text-ultra';
-
   return (
     <footer
       ref={footerRef}
-      className={`footer-curtain-stage relative mt-24 overflow-hidden bg-ultra text-acid ${
+      className={`footer-curtain-stage relative h-[165svh] min-h-[780px] w-full overflow-hidden bg-charcoal text-charcoal-ink [margin-top:-60svh] ${
         isCurtainLifted ? 'footer-curtain-stage--lifted' : ''
       }`}
       id='contact'
@@ -240,55 +77,55 @@ export const Footer = ({ setCursor }) => {
         <div className='footer-curtain__texture' />
       </div>
 
-      <PixelSmiley />
-
-      <div className='footer-curtain-content relative z-10 max-w-4xl m-auto flex min-h-[100svh] flex-col justify-center font-offbit101Bold px-4 md:px-0 py-14 md:py-20'>
+      {/* Pushed back down by the same 60svh the section was pulled up, so the
+          content sits where a normal footer would. */}
+      <div className='footer-curtain-content relative z-10 mx-auto max-w-[1440px] px-[clamp(24px,7.4vw,110px)] pt-[calc(60svh+clamp(40px,6vh,80px))]'>
         <Reveal>
-          <div className='flex items-center max-w-xl'>
-            <p className='font-offbitDot text-[10px] md:text-xs tracking-[0.3em] uppercase m-2 self-start mt-4 opacity-80'>
-              {'04 — Contact'}
+          <div className='max-w-[46%] min-w-[280px]'>
+            <p className='type-label mb-[26px] text-charcoal-muted'>
+              03 — Contact
             </p>
-          </div>
-          <div className='flex max-w-xl items-start'>
-            <p className='text-4xl md:text-7xl m-2 leading-[0.95]'>
-              {'Lets Connect'}
+            <h2 className='mb-[clamp(26px,3.4vh,36px)] font-offbit101Bold text-[clamp(44px,5.4vw,82px)] leading-[.92] tracking-[-.01em] text-charcoal-ink'>
+              {'Let’s connect.'}
+            </h2>
+            <p className='type-body mb-[clamp(30px,4vh,42px)] text-[15px] leading-[1.8] text-charcoal-muted'>
+              <strong className='font-medium text-charcoal-ink'>
+                Kevin Rufino
+              </strong>
+              <br />
+              Brooklyn, NY
             </p>
-            <img
-              src='/smile.svg'
-              alt='smile'
-              className='footer-contact-smile p-2 mt-1 md:mt-2'
-            />
-          </div>
-        </Reveal>
-        <div className='flex flex-col md:flex-row md:text-3xl m-2 md:m-4 w-max max-w-full'>
-          <img
-            src='/pixel-selfie.png'
-            alt="it's a me"
-            width={240}
-            className='m-2 h-[200px] w-[200px] md:h-[240px] md:w-[240px] object-cover border-2 border-acid shadow-hard-acid'
-          />
-          <div className='m-2'>
-            <p>{'Kevin Rufino'}</p>
-            <p>{'Brooklyn, NY'}</p>
-            <br />
-            <div className='flex flex-col'>
+
+            <nav
+              aria-label='Contact links'
+              className='grid w-max grid-cols-2 gap-x-[38px] gap-y-[14px]'
+            >
               {footerLinks.map(link => (
                 <a
-                  className={contactLinkClass}
+                  className='type-body border-b border-[#50504b] py-[6px] text-[19px] text-[#dedbd0] transition-colors hover:text-charcoal-ink focus-visible:text-charcoal-ink'
                   href={link.href}
                   key={link.label}
                   target={link.isExternal ? '_blank' : undefined}
                   rel={link.isExternal ? 'noreferrer' : undefined}
                 >
-                  {link.label}
+                  {link.label} ↗
                 </a>
               ))}
-            </div>
+            </nav>
           </div>
-        </div>
-        <p className='text-xs md:text-2xl font-offbitDot text-center self-center m-2 pb-8 md:pb-12'>
-          {'* Designed and Developed by Kevin Rufino *'}
-        </p>
+        </Reveal>
+      </div>
+
+      {/* Baseline rule + credits, pinned to the bottom of the tall section. */}
+      <div
+        aria-hidden='true'
+        className='absolute bottom-[53px] left-0 right-0 z-10 h-px bg-charcoal-rule'
+      />
+      <div className='type-label absolute bottom-[17px] left-0 right-0 z-10 mx-auto flex max-w-[1440px] items-center justify-between gap-4 px-[clamp(24px,7.4vw,110px)] text-charcoal-muted'>
+        <span>Designed and developed by Kevin Rufino</span>
+        <a href='#home' className='p-[5px] text-charcoal-muted'>
+          Back to top ↑
+        </a>
       </div>
     </footer>
   );
