@@ -118,9 +118,14 @@ const AppContent = () => {
         onFilled={seq.onFilled}
       />
 
-      {/* Page content — z:2, on top */}
+      {/* Page content — z:2, on top.
+          overflow-x: clip rather than overflow: hidden. `hidden` makes this
+          element a scroll container, which silently defeats `position: sticky`
+          on every descendant — the sticky element pins to this box instead of
+          the viewport and so never moves relative to its section. `clip` gives
+          the same horizontal clipping without establishing that container. */}
       <div
-        className="text-ultra scroll-smooth relative overflow-hidden"
+        className="text-ultra scroll-smooth relative [overflow-x:clip]"
         style={{ position: 'relative' }}
       >
         {/* Hidden easter egg text */}
