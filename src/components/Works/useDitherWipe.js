@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { THEMES } from './themes.js';
 
 const CELL = 12;
@@ -179,5 +179,11 @@ export default function useDitherWipe({ canvasRef, paneRef, sectionRef, glyphRef
     rafRef.current = 0;
   }, []);
 
-  return { run, cancel, isRunning: () => rafRef.current !== 0 };
+  const isRunning = useCallback(() => rafRef.current !== 0, []);
+
+  // Stable identity. Returning a fresh object literal would change on every
+  // render, and WorksPane's scroll effect depends on it — the listeners would
+  // be torn down and re-added continuously, and the effect's cleanup would
+  // cancel any selection update still pending in a requestAnimationFrame.
+  return useMemo(() => ({ run, cancel, isRunning }), [run, cancel, isRunning]);
 }
