@@ -3,6 +3,18 @@ import { useEffect, useRef, useCallback } from 'react';
 /**
  * Scroll-jack for the landing hero.
  *
+ * Once the hero has been left behind it is COLLAPSED to zero height rather
+ * than merely locked off. The drained hero is a viewport of empty acid, and
+ * keeping it in the document meant the top of the page was somewhere the
+ * reader could never reach — the scrollbar showed content above them that
+ * scrolling would not reveal, which reads as the page being stuck.
+ *
+ * The collapse and the matching scroll correction happen in the same
+ * synchronous block, so the content below does not move on screen: the page
+ * loses a viewport of height above the reader at the same instant the reader's
+ * scroll position loses a viewport. After that the jack has nothing left to
+ * guard and removes itself.
+ *
  * Until the fill completes (`ready`), the page can't scroll at all — the
  * loader is a gate, the physics handoff assumes scrollY = 0, and the name
  * rows should finish landing before the user can leave. Once ready:
@@ -26,7 +38,7 @@ const SWIPE_THRESHOLD_PX = 8;
 const easeInOutCubic = t =>
   t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
-export default function useHeroScrollJack(ready) {
+export default function useHeroScrollJack(ready, heroRef) {
   // Lets the scroll cue trigger the same snap the wheel/swipe uses.
   const snapRef = useRef(null);
 
@@ -47,6 +59,24 @@ export default function useHeroScrollJack(ready) {
     const fold = window.innerHeight;
     let state = window.scrollY >= fold ? 'locked' : 'hero';
     let raf = 0;
+    let collapsed = false;
+    let teardown = () => {};
+
+    // Take the empty hero out of the document and remove the same distance
+    // from the scroll position in one go, so nothing on screen moves.
+    const collapseHero = () => {
+      if (collapsed) return;
+      const hero = heroRef?.current;
+      if (!hero) return;
+      collapsed = true;
+      const y = window.scrollY;
+      hero.style.height = '0px';
+      hero.style.minHeight = '0px';
+      hero.style.overflow = 'hidden';
+      window.scrollTo({ top: Math.max(0, y - fold), behavior: 'instant' });
+      // The hero is gone, so there is no dead space left to guard.
+      teardown();
+    };
 
     const snapToIntro = () => {
       state = 'animating';
@@ -54,9 +84,18 @@ export default function useHeroScrollJack(ready) {
       const start = performance.now();
       const step = now => {
         const t = Math.min(1, (now - start) / SNAP_MS);
-        window.scrollTo(0, from + (fold - from) * easeInOutCubic(t));
-        if (t < 1) raf = requestAnimationFrame(step);
-        else state = 'locked';
+        // Instant per frame: this IS the animation, and letting CSS smooth
+        // scrolling ease each step would fight it into a crawl.
+        window.scrollTo({
+          top: from + (fold - from) * easeInOutCubic(t),
+          behavior: 'instant',
+        });
+        if (t < 1) {
+          raf = requestAnimationFrame(step);
+        } else {
+          state = 'locked';
+          collapseHero();
+        }
       };
       raf = requestAnimationFrame(step);
     };
@@ -118,10 +157,13 @@ export default function useHeroScrollJack(ready) {
     // Safety net for inputs that bypass wheel/touch/key (scrollbar drags,
     // anchor navigation): engage the lock when the fold is passed, and never
     // reveal the drained hero again once locked.
+    // Reaching the fold by any other means (a scrollbar drag, an anchor)
+    // collapses the hero too, rather than clamping the reader against it.
     const onScroll = () => {
-      if (state === 'hero' && window.scrollY >= fold) state = 'locked';
-      else if (state === 'locked' && window.scrollY < fold)
-        window.scrollTo(0, fold);
+      if (state === 'hero' && window.scrollY >= fold) {
+        state = 'locked';
+        collapseHero();
+      }
     };
 
     window.addEventListener('wheel', onWheel, { passive: false });
@@ -135,7 +177,7 @@ export default function useHeroScrollJack(ready) {
       if (state === 'hero') snapToIntro();
     };
 
-    return () => {
+    teardown = () => {
       cancelAnimationFrame(raf);
       snapRef.current = null;
       window.removeEventListener('wheel', onWheel);
@@ -144,7 +186,8 @@ export default function useHeroScrollJack(ready) {
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('scroll', onScroll);
     };
-  }, [ready]);
+    return teardown;
+  }, [ready, heroRef]);
 
   return useCallback(() => snapRef.current?.(), []);
 }
