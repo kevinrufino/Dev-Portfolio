@@ -15,15 +15,25 @@ import { ENABLE_SHADER_BACKGROUND } from '../featureFlags.js';
  * the loader overlay and the document-sized FillPhysicsCanvas, which live in
  * different parts of the tree.
  */
+// The landing sequence is an arrival, not a route transition: it belongs to
+// the page load, not to every mount of the homepage. Without this, navigating
+// back from a project page replayed the whole loader — freezing scroll and
+// re-dropping the names on a page the visitor had already arrived at.
+// Module scope, so it resets on a real reload and only on a real reload.
+let hasPlayed = false;
+
 const MIN_LOADING_MS = 2200; // ≥2s so the water fill always reads
 const READINESS_CAP_MS = 8000; // hard stop if a signal never fires (e.g. no WebGL)
 const EASE = 0.18; // per-frame approach toward the target fill
 
 export default function useLandingSequence() {
-  const [pct, setPct] = useState(0);
+  // On a re-mount the sequence is already over: no overlay, no scroll freeze,
+  // and `filling` stays false so the physics canvas never re-activates — the
+  // hero reads as the drained space the visitor left behind.
+  const [pct, setPct] = useState(hasPlayed ? 100 : 0);
   const [filling, setFilling] = useState(false);
-  const [handedOff, setHandedOff] = useState(false);
-  const [filled, setFilled] = useState(false);
+  const [handedOff, setHandedOff] = useState(hasPlayed);
+  const [filled, setFilled] = useState(hasPlayed);
   const nameRef = useRef(null);
   const pctRef = useRef(0); // synchronous source of truth for the eased fill
 
@@ -33,6 +43,7 @@ export default function useLandingSequence() {
   // loader over the middle of the page and dropped the names off-screen.
   // Take over restoration and start at the top.
   useEffect(() => {
+    if (hasPlayed) return;
     if ('scrollRestoration' in window.history) {
       window.history.scrollRestoration = 'manual';
     }
@@ -41,6 +52,7 @@ export default function useLandingSequence() {
 
   // Pre-warm the matter-js chunk while the loader plays.
   useEffect(() => {
+    if (hasPlayed) return;
     import('matter-js');
   }, []);
 
@@ -48,6 +60,7 @@ export default function useLandingSequence() {
   // target each frame. Hands off once the minimum time has elapsed AND every
   // readiness milestone has landed AND the eased fill has reached ~100%.
   useEffect(() => {
+    if (hasPlayed) return undefined;
     const start = Date.now();
     // The shader paint is only a real signal when the background is on —
     // otherwise it would never arrive and the fill would sit at ~85% until the
@@ -79,6 +92,10 @@ export default function useLandingSequence() {
         pctRef.current = 100;
         setPct(100);
         setFilling(true);
+        // Marked here rather than when the effect starts: StrictMode mounts
+        // effects twice in development, so a flag set on entry would make the
+        // second mount skip the sequence and the loader would never play.
+        hasPlayed = true;
         return;
       }
       raf = requestAnimationFrame(tick);
