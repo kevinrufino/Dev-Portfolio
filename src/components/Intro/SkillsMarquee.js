@@ -9,6 +9,10 @@ import React from 'react';
  * browsers). The track holds two identical segments and translates by -50% for
  * a seamless loop; the duplicate is hidden from assistive tech. By request this
  * one keeps scrolling even under prefers-reduced-motion (see .marquee-skills).
+ *
+ * Sits on acid: it is the band between the paper intro and the projects index,
+ * and giving it the page's own ground makes it read as a rule between the two
+ * rather than as a third surface competing with both.
  */
 const Segment = ({ ariaHidden = false }) => (
   <div
@@ -28,7 +32,7 @@ const Segment = ({ ariaHidden = false }) => (
 
 export const SkillsMarquee = () => {
   return (
-    <div className='overflow-hidden w-full text-3xl'>
+    <div className='w-full overflow-hidden border-y border-ultra/20 bg-acid py-3 text-3xl text-ultra'>
       <div className='marquee-skills'>
         <Segment />
         <Segment ariaHidden />
