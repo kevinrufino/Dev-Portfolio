@@ -495,6 +495,10 @@ body {
   animation: blink-caret 1.1s step-end infinite;
 }
 
+/* NOTE: `.marquee-skills` is deliberately absent from every reduced-motion
+   block on this page — the skills marquee keeps scrolling by request (see
+   SkillsMarquee.js). Do not "tidy" this by adding a blanket
+   `* { animation: none !important }`: it would silently stop the marquee. */
 @media (prefers-reduced-motion: reduce) {
   .marquee-track,
   .blink,

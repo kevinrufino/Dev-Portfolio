@@ -152,14 +152,12 @@ const AppContent = () => {
           secondaryColor={themeColors.secondary}
         />
 
-        {/* Introduction section */}
-        <Reveal>
-          <Intro
-            secondaryColor={themeColors.secondary}
-            cursor={''}
-            setCursor={setCursorType}
-          />
-        </Reveal>
+        {/* Introduction section.
+            Deliberately NOT wrapped in <Reveal>: the section is sticky, and a
+            transformed ancestor becomes its containing block — the wrapper is
+            exactly the section's height, so sticky would have no travel and
+            never engage. */}
+        <Intro setCursor={setCursorType} />
 
         {/* Skills marquee */}
         <Reveal delay={0.1}>
