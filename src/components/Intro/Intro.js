@@ -1,5 +1,6 @@
 import React from 'react';
 import useTypewriter from '../../hooks/useTypewriter.js';
+import useCursorFx from '../../hooks/useCursorFx.js';
 import { scrollToSection } from '../../utils/navigateToSection.js';
 
 const ROLES = [
@@ -7,6 +8,12 @@ const ROLES = [
   'Full Stack Developer',
   'Creative Engineer',
 ];
+
+// How far out each of the two pulls starts. The role line is a wide target
+// and only wants a nudge; the call to action is the one thing on this screen
+// the reader is meant to press, so it reaches further.
+const ROLE_GRAVITY_PX = 64;
+const CTA_GRAVITY_PX = 130;
 
 /**
  * Section 01 — the introduction.
@@ -20,12 +27,19 @@ const ROLES = [
  * edge is the boundary the palm scene clips against, so the band to its right
  * is deliberately kept empty.
  *
+ * Two things here pull the cursor: the line that keeps retyping itself, and
+ * the way out of the section. Both let go the moment the pointer is actually
+ * over them, so the pull only ever covers the last few pixels of the journey
+ * and never the thing itself.
+ *
  * Running copy is DM Sans. OffBit is a display face; below about 20px its
  * counters close up and paragraph text stops being comfortable to read.
  */
 // eslint-disable-next-line react/prop-types
 export const Intro = ({ setCursor }) => {
   const typed = useTypewriter(ROLES);
+  const roleRef = useCursorFx({ gravity: ROLE_GRAVITY_PX, strength: 0.9 });
+  const ctaRef = useCursorFx({ gravity: CTA_GRAVITY_PX });
 
   return (
     <section
@@ -62,9 +76,14 @@ export const Intro = ({ setCursor }) => {
           </h1>
 
           <h2 className='mb-[clamp(26px,3.6vh,38px)] min-h-[1.1em] font-offbit101Bold text-[clamp(28px,3.4vw,46px)] leading-[1.05] text-ultra'>
-            <span>{typed}</span>
-            <span className='blink' aria-hidden='true'>
-              _
+            {/* Inline-block so the gravity field is the width of the words
+                rather than the width of the column — a full-width target would
+                pull the cursor sideways from halfway across the page. */}
+            <span ref={roleRef} className='inline-block'>
+              <span>{typed}</span>
+              <span className='blink' aria-hidden='true'>
+                _
+              </span>
             </span>
           </h2>
 
@@ -75,11 +94,12 @@ export const Intro = ({ setCursor }) => {
           </p>
 
           <button
+            ref={ctaRef}
             type='button'
             onClick={() => scrollToSection('work')}
-            className='type-body inline-flex items-center gap-[10px] border-0 border-b border-[#b8bcb3] bg-transparent py-[6px] text-[15px] font-medium text-ultra'
+            className='pixel-cta type-body text-[15px] font-medium'
           >
-            See selected work
+            <span>See selected work</span>
             <span aria-hidden='true'>↓</span>
           </button>
         </div>
