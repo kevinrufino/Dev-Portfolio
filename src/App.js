@@ -140,15 +140,6 @@ const AppContent = () => {
         </Suspense>
       )}
 
-      {/* Full-page physics canvas — z:0, between shader and content.
-          Fills the header on handoff, then drains down the page on scroll. */}
-      <FillPhysicsCanvas
-        active={seq.filling}
-        getSpawnRect={seq.getSpawnRect}
-        onHandoff={seq.onHandoff}
-        onFilled={seq.onFilled}
-      />
-
       {/* Page content — rides over the fixed footer, so it needs an opaque
           background of its own and a stacking position above it. The bottom
           margin is the footer's measured height: that is the scroll distance
@@ -166,8 +157,28 @@ const AppContent = () => {
           marginBottom: 'var(--footer-reveal-h, 100svh)',
         }}
       >
-        {/* Hidden easter egg text */}
-        <p style={{ color: themeColors.primary }}>
+        {/* The physics canvas lives INSIDE this wrapper, and first. The
+            wrapper is opaque — it has to be, to cover the fixed footer during
+            the reveal — so a canvas outside it is simply painted over, and the
+            hero came up empty. As the wrapper's first positioned child it sits
+            above the wrapper's ground and below every section, which is where
+            the falling names belong. */}
+        <FillPhysicsCanvas
+          active={seq.filling}
+          getSpawnRect={seq.getSpawnRect}
+          onHandoff={seq.onHandoff}
+          onFilled={seq.onFilled}
+        />
+
+        {/* Hidden easter egg text — acid on acid, found by selecting it.
+            Taken out of flow: in flow it reserved a line of height above the
+            hero, which showed as a strip of bare acid at the very top of the
+            page once the hero collapsed, and meant "home" never scrolled to
+            something that looked like the top. */}
+        <p
+          className='pointer-events-none absolute left-0 top-0 m-0'
+          style={{ color: themeColors.primary }}
+        >
           {`if you're reading this, you found a secret ;p`}
         </p>
 

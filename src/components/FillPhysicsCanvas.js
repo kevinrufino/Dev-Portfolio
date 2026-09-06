@@ -270,7 +270,21 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
 
         let W = window.innerWidth;
         let fold = window.innerHeight; // the hero fold — where the floor sits
-        let docH = Math.max(document.body.scrollHeight, fold);
+        // The end of the CONTENT, not the end of the document. The footer is
+        // fixed behind the page and uncovered by the content's bottom margin,
+        // so the last `--footer-reveal-h` pixels of scroll are the reveal —
+        // names that fall into that range land on top of the footer instead of
+        // disappearing off the page. Retiring them at the content's end is
+        // what "drains off the page" means once the footer stopped scrolling.
+        const revealH = () =>
+          parseFloat(
+            getComputedStyle(document.documentElement).getPropertyValue(
+              '--footer-reveal-h',
+            ),
+          ) || 0;
+        const contentEnd = () =>
+          Math.max(document.body.scrollHeight - revealH(), fold);
+        let docH = contentEnd();
 
         const engine = Matter.Engine.create({ enableSleeping: true });
         // Heavier gravity while the stack drops in, so the fill animation is
@@ -343,7 +357,7 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
         // grows (images/videos below the fold change it) — it sets the depth a
         // falling name has to clear before it can be retired.
         const docObserver = new ResizeObserver(() => {
-          const h = Math.max(document.body.scrollHeight, fold);
+          const h = contentEnd();
           if (h === docH) return;
           docH = h;
         });
@@ -648,7 +662,7 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
         const handleResize = () => {
           W = window.innerWidth;
           fold = window.innerHeight;
-          docH = Math.max(document.body.scrollHeight, fold);
+          docH = contentEnd();
           render.options.width = W;
           render.options.height = fold;
           render.canvas.width = W;
