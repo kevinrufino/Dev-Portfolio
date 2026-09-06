@@ -3,7 +3,8 @@ import PropTypes from 'prop-types';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { FirstNameComponent } from './Hero/components/FirstNameComponent.js';
 import { LastNameComponent } from './Hero/components/LastNameComponent.js';
-import { getLeafColliders } from './Palm/leafColliders.js';
+import { getLeafColliders, shakePalm } from './Palm/leafColliders.js';
+import { addSource } from '../utils/cursorFx.js';
 import { HERO_MIN_SCALE, HERO_SHRINK_PX } from '../utils/heroRunway.js';
 
 /**
@@ -27,6 +28,8 @@ import { HERO_MIN_SCALE, HERO_SHRINK_PX } from '../utils/heroRunway.js';
  */
 const ACID = '#F1F43B';
 const ULTRA = '#3e3bf4';
+// Fully transparent, spelled as a colour so the SVG's `fill` still parses.
+const CLEAR = '#00000000';
 
 // ── Firework burst (ported from the retired MatterJSCanvas) ──────────────────
 // Clicking a name sprite in the pile pops a pixel/cell firework at the hit
@@ -211,6 +214,10 @@ const LEAF_RADIUS = 12;
 const LEAF_WINDOW_MS = 2000;
 const LEAF_PARK = { x: -5000, y: -5000 };
 const CULL_MARGIN = 600; // px past the document bottom before a name is retired
+// A name landing on a frond shakes the tree; a pile grinding along one must
+// not hold it there. Long enough for the shake to ring out and be re-triggered
+// by the next name rather than the next contact.
+const SHAKE_THROTTLE_MS = 260;
 const IMPULSE_RADIUS_FRAC = 0.28; // click impulse reach, as a fraction of viewport width
 const IMPULSE_UP = 12; // upward kick strength on click
 const IMPULSE_PUSH = 8; // radial push strength on click
@@ -261,7 +268,12 @@ const FillPhysicsCanvas = ({
 
     // Colorways follow NameInstance's convention:
     // Component(primaryColor=outline, secondaryColor=fill)
-    // filled = solid ultra (the loader's end state); unfilled = the outline variant.
+    //
+    // `filled` is solid ultra — the loader's end state. The other variant
+    // leaves the letterforms CLEAR rather than acid: painted yellow they only
+    // ever matched the hero's own ground, and the moment the pile left it the
+    // names carried a patch of the hero down onto the paper with them. Empty,
+    // the counters show whatever the names happen to be falling across.
     Promise.all([
       import('matter-js'),
       svgToImage(
@@ -269,7 +281,7 @@ const FillPhysicsCanvas = ({
         FIRST_VB,
       ),
       svgToImage(
-        <FirstNameComponent primaryColor={ULTRA} secondaryColor={ACID} />,
+        <FirstNameComponent primaryColor={ULTRA} secondaryColor={CLEAR} />,
         FIRST_VB,
       ),
       svgToImage(
@@ -277,7 +289,7 @@ const FillPhysicsCanvas = ({
         LAST_VB,
       ),
       svgToImage(
-        <LastNameComponent primaryColor={ULTRA} secondaryColor={ACID} />,
+        <LastNameComponent primaryColor={ULTRA} secondaryColor={CLEAR} />,
         LAST_VB,
       ),
     ]).then(
@@ -601,6 +613,28 @@ const FillPhysicsCanvas = ({
         );
         Matter.World.add(world, leafBodies);
 
+        // A name that hits a frond shakes the tree.
+        //
+        // The collision is already in the solver — the names visibly deflect
+        // off the palm on their way down — so the only thing missing was the
+        // palm being told. Throttled, because a pile sliding along a frond
+        // generates contacts every step, and re-arming the shake on each of
+        // them would hold the tree at full amplitude instead of letting it
+        // ring out.
+        const leafSet = new Set(leafBodies);
+        let lastShakeAt = 0;
+        Matter.Events.on(engine, 'collisionStart', event => {
+          if (reduceMotion) return;
+          const now = performance.now();
+          if (now - lastShakeAt < SHAKE_THROTTLE_MS) return;
+          for (const pair of event.pairs) {
+            if (!leafSet.has(pair.bodyA) && !leafSet.has(pair.bodyB)) continue;
+            lastShakeAt = now;
+            shakePalm();
+            return;
+          }
+        });
+
         // The intro's copy column, as a solid body. The names must never end
         // up over the text, and the honest way to guarantee that is to make
         // the text something they cannot pass through. Parked off-page until
@@ -731,6 +765,47 @@ const FillPhysicsCanvas = ({
             drawFireworks(ctx, fireworks, performance.now());
           }
           ctx.restore();
+        });
+
+        // The names are canvas, so they cannot carry a hover of their own.
+        // They answer the cursor through a source instead: asked what is at a
+        // point, this reports the sprite drawn there, and the chip says what
+        // clicking it will do.
+        //
+        // The box is the one the sprite is actually DRAWN in, not the body's,
+        // because before the pile is released the two are different — the pile
+        // is pinned to the viewport and scaled while the page moves behind it.
+        const spriteBoxAt = (clientX, clientY) => {
+          const k = drawScale();
+          const scale = opened ? spriteScale : k;
+          const offset = opened ? window.scrollY : 0;
+          const cx = W / 2;
+          const cy = fold / 2;
+          for (let i = sprites.length - 1; i >= 0; i--) {
+            const sp = sprites[i];
+            const b = sp.body;
+            const bx = opened ? b.position.x : cx + (b.position.x - cx) * k;
+            const by = opened ? b.position.y : cy + (b.position.y - cy) * k;
+            const w = sp.width * scale;
+            const h = sp.height * scale;
+            const left = bx - w / 2;
+            const top = by - offset + drawTop * scale;
+            if (
+              clientX >= left &&
+              clientX <= left + w &&
+              clientY >= top &&
+              clientY <= top + h
+            ) {
+              return { left, top, right: left + w, bottom: top + h };
+            }
+          }
+          return null;
+        };
+
+        const dropSource = addSource((x, y) => {
+          if (stopped || sprites.length === 0) return null;
+          const geom = spriteBoxAt(x, y);
+          return geom ? { label: 'explode', geom } : null;
         });
 
         // Click anywhere to poke the pile: radial + upward impulse on nearby
@@ -887,6 +962,7 @@ const FillPhysicsCanvas = ({
         });
 
         teardown = () => {
+          dropSource();
           if (spawnTimer) clearInterval(spawnTimer);
           if (fillTimeout) clearTimeout(fillTimeout);
           clearInterval(drainTimer);

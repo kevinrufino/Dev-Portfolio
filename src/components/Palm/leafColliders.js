@@ -7,15 +7,38 @@
  * rather than lifting a ref through App and threading it down two branches,
  * the palm registers a provider here and the physics reads it.
  *
- * The registry is deliberately tiny and one-way: physics never calls back into
- * the palm, and if the palm is disabled (or its flag is off) the provider is
- * simply absent and the physics runs with no leaf colliders at all.
+ * The registry is deliberately tiny: if the palm is disabled (or its flag is
+ * off) the provider is simply absent and the physics runs with no leaf
+ * colliders at all, and the one call that goes the other way — a name landing
+ * on a frond shakes the tree — is a no-op rather than an error.
  */
 let provider = null;
+let shaker = null;
 
 /** Called by the palm scene on mount; pass `null` on unmount. */
 export function setLeafColliderProvider(fn) {
   provider = fn;
+}
+
+/** Called by the palm scene on mount to publish its shake; `null` on unmount. */
+export function setPalmShaker(fn) {
+  shaker = fn;
+}
+
+/**
+ * Shake the tree from outside the palm.
+ *
+ * The names bounce off the fronds on their way down, and a frond that a name
+ * visibly hits ought to move — the collision is already there in the physics,
+ * so all that was missing was the palm being told about it.
+ */
+export function shakePalm() {
+  if (!shaker) return;
+  try {
+    shaker();
+  } catch {
+    // Decoration. Never let it interrupt the fall.
+  }
 }
 
 /**
