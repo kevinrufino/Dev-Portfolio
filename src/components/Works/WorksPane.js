@@ -164,7 +164,9 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
       selectedRef.current = index;
 
       requestAnimationFrame(() => {
-        window.scrollTo(0, target);
+        // Instant: the pane is pinned, so this jump is invisible by design.
+        // Easing it would animate the very seam it exists to hide.
+        window.scrollTo({ top: target, behavior: 'instant' });
         glyph.current?.setItem(WORKS[key][index]);
         syncList();
         moveDot();
