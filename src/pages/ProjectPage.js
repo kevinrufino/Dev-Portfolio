@@ -55,8 +55,21 @@ const ProjectPage = () => {
     if (!project) return;
     const display = story?.display || project.title;
     document.title = `${display} — Kevin Rufino`;
-    window.scrollTo(0, 0);
+    window.scrollTo({ top: 0, behavior: 'instant' });
   }, [project, story]);
+
+  // The cat belongs to the homepage. It is spawned by a global script, so it
+  // is hidden here rather than removed — removing it would mean it never came
+  // back when the reader returns to the index.
+  useEffect(() => {
+    const cat = document.getElementById('oneko');
+    if (!cat) return undefined;
+    const previous = cat.style.display;
+    cat.style.display = 'none';
+    return () => {
+      cat.style.display = previous;
+    };
+  }, []);
 
   // Progress rule + cover push-in. One rAF-coalesced scroll listener for both:
   // they read the same scroll position and write only transforms and a width,
