@@ -52,10 +52,17 @@ export default function useDitherWipe({ canvasRef, paneRef, sectionRef, glyphRef
         }
       };
 
-      const commit = () => {
+      // `done` drops the dither cover. It runs only after the new palette has
+      // actually been painted — dropping it as soon as the animation ends
+      // showed one frame of the OLD ground through the gap between the last
+      // dither frame and React's re-render, which read as a flash.
+      const commit = done => {
         onSettled(key, () => {
           glyph.current?.setColors(THEMES[key]);
-          requestAnimationFrame(settle);
+          requestAnimationFrame(() => {
+            settle();
+            done?.();
+          });
         });
       };
 
@@ -164,9 +171,10 @@ export default function useDitherWipe({ canvasRef, paneRef, sectionRef, glyphRef
           return;
         }
         rafRef.current = 0;
-        commit();
-        canvas.style.opacity = '0';
-        ctx.clearRect(0, 0, w, h);
+        commit(() => {
+          canvas.style.opacity = '0';
+          ctx.clearRect(0, 0, w, h);
+        });
       };
 
       rafRef.current = requestAnimationFrame(frame);
