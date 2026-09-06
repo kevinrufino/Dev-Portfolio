@@ -38,19 +38,25 @@ export const Intro = ({ setCursor }) => {
 
       <div className='relative z-[1] mx-auto w-full max-w-[1440px] px-[clamp(24px,7.4vw,110px)]'>
         {/* Capped at 58% so the palm has a clear band to its right. */}
-        <div className='max-w-[min(620px,58%)]'>
+        <div data-palm-clip className='max-w-[min(620px,58%)]'>
           <p className='type-label mb-[clamp(28px,4vh,44px)] text-paper-muted'>
             01 — Introduction
           </p>
 
-          <h1 className='mb-[18px] font-offbit101Bold text-[clamp(52px,7vw,104px)] leading-[.9] tracking-[-.01em] text-ultra'>
-            {'Hey, I’m Kevin'}
-            <span
-              role='img'
-              aria-label='waving hand'
-              className='wave ml-[.18em] inline-block'
-            >
-              👋🏾
+          {/* The hand is kept on the same line as the last word. Left to wrap
+              it dropped onto a line of its own and collided with the descenders
+              above it, because the display leading is tighter than 1. */}
+          <h1 className='mb-[18px] font-offbit101Bold text-[clamp(44px,5.2vw,88px)] leading-[.95] tracking-[-.01em] text-ultra'>
+            {'Hey, I’m '}
+            <span className='whitespace-nowrap'>
+              Kevin
+              <span
+                role='img'
+                aria-label='waving hand'
+                className='wave ml-[.18em] inline-block'
+              >
+                👋🏾
+              </span>
             </span>
           </h1>
 
