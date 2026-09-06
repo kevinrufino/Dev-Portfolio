@@ -32,14 +32,19 @@
   // Following the TRAIL, not the pointer.
   //
   // `PixelTrail` publishes the path it painted along as `window.__pixelTrail`.
-  // Walking that queue in order means the cat retraces the route the reader's
-  // hand took — round the loops and doublings-back — instead of cutting the
-  // corner to wherever the cursor ended up. When the trail has faded there is
-  // nothing left to walk, and it goes back to chasing the cursor itself.
+  // The cat goes for the NEAR END of what is still lit: the closest point on
+  // the trail it has not already reached. Walking the queue in order looked
+  // right until the far end faded — the cat would keep trudging toward ink
+  // that was no longer there while a fresh stroke sat right beside it. Going
+  // for the near end means a closer trail always wins, and following the ink
+  // toward the cursor falls out of it, because each point it reaches puts the
+  // next one along the stroke in front of it.
+  //
+  // When nothing is lit there is nothing to chase, and it goes back to the
+  // cursor itself.
   const TRAIL_MAX_AGE_MS = 1400; // roughly how long a trail cell stays visible
   const TRAIL_ARRIVE_PX = 24; // close enough to call a point reached
   const MOUSE_ARRIVE_PX = 48; // the cat sits this far off the cursor
-  let followedId = -1;
   const spriteSets = {
     idle: [[-3, -3]],
     alert: [[-7, -3]],
@@ -219,13 +224,17 @@
     idleAnimationFrame += 1;
   }
 
+  // Hearts are drawn in VIEWPORT space, above the page.
+  //
+  // They used to be absolutely positioned in document coordinates on the
+  // body, which put them underneath the page's own content wrapper — an
+  // opaque, z-indexed element — so every burst happened out of sight behind
+  // the section the cat was standing on.
   function explodeHearts() {
-    const parent = nekoEl.parentElement;
+    const parent = document.body;
     const rect = nekoEl.getBoundingClientRect();
-    const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
-    const scrollTop = window.scrollY || document.documentElement.scrollTop;
-    const centerX = rect.left + rect.width / 2 + scrollLeft;
-    const centerY = rect.top + rect.height / 2 + scrollTop;
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
 
     for (let i = 0; i < 10; i++) {
       const heart = document.createElement("div");
@@ -253,7 +262,9 @@
 			  100% { transform: scale(1); opacity: 0; }
 		  }
 		  .heart {
-			  position: absolute;
+			  position: fixed;
+			  z-index: 9997;
+			  pointer-events: none;
 			  font-size: 2em;
 			  animation: heartBurst 1s ease-out;
 			  animation-fill-mode: forwards;
@@ -285,31 +296,31 @@
     return false;
   }
 
-  // The oldest point on the trail the cat has not reached yet. Points it has
-  // arrived at, and points that have faded before it could get to them, are
-  // marked off by advancing `followedId` past them.
+  // The nearest still-lit point the cat has not already reached.
+  //
+  // Points inside the arrival radius are skipped rather than returned: they
+  // are where the cat already is, and treating one as a target would park it
+  // there. Skipping them is what makes it walk on — the nearest remaining
+  // point is always the next bit of ink along the stroke. Later points win
+  // ties, so a stroke drawn back over itself is followed forwards.
   function trailTarget() {
     const trail = window.__pixelTrail;
     if (!trail || trail.points.length === 0) return null;
     const now = performance.now();
     const scrollY = window.scrollY;
+    let best = null;
+    let bestDistance = Infinity;
     for (const point of trail.points) {
-      if (point.id <= followedId) continue;
-      if (now - point.at > TRAIL_MAX_AGE_MS) {
-        followedId = point.id;
-        continue;
-      }
+      if (now - point.at > TRAIL_MAX_AGE_MS) continue;
       const y = point.docY - scrollY;
-      const reached =
-        Math.sqrt((nekoPosX - point.x) ** 2 + (nekoPosY - y) ** 2) <=
-        TRAIL_ARRIVE_PX;
-      if (reached) {
-        followedId = point.id;
-        continue;
-      }
-      return { x: point.x, y: y };
+      const distance = Math.sqrt(
+        (nekoPosX - point.x) ** 2 + (nekoPosY - y) ** 2,
+      );
+      if (distance <= TRAIL_ARRIVE_PX || distance > bestDistance) continue;
+      bestDistance = distance;
+      best = { x: point.x, y: y };
     }
-    return null;
+    return best;
   }
 
   function frame() {
