@@ -151,7 +151,10 @@ const HomeNav = ({ setCursor }) => {
       // intro, which by then is the top of the document.
       const hero = document.getElementById('home');
       const heroGone = !hero || hero.offsetHeight === 0;
-      setShown(heroGone || window.scrollY >= window.innerHeight * 0.55);
+      // Measured against the hero's own height, not a viewport fraction: the
+      // hero is a viewport PLUS the shrink runway, and the nav belongs to the
+      // page below it rather than to the runway.
+      setShown(heroGone || window.scrollY >= hero.offsetHeight * 0.55);
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     onScroll();

@@ -4,8 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { FirstNameComponent } from './Hero/components/FirstNameComponent.js';
 import { LastNameComponent } from './Hero/components/LastNameComponent.js';
 import { getLeafColliders } from './Palm/leafColliders.js';
-import { ENABLE_PIXELATED_NAMES } from '../featureFlags.js';
-import { GRID } from '../utils/grid.js';
+import { HERO_MIN_SCALE, HERO_SHRINK_PX } from '../utils/heroRunway.js';
 
 /**
  * Full-page physics canvas for the landing sequence.
@@ -197,7 +196,6 @@ const ROW_CAP = 40; // sanity cap on the computed row count
 const GRAVITY_FILL = 1.8; // heavier gravity while the stack drops, so the fill reads fast
 const FILL_TIMEOUT_MS = 7000; // report "filled" even if a body never quite settles
 const FLOOR_T = 16; // floor bar thickness (collision only — invisible)
-const SCROLL_RANGE = 1.2; // fold-heights of scroll to fully open the floor
 // Fraction of the width that stays solid. The floor opens to the right only,
 // so the pile slides along the fixed left section and exits down the right
 // edge rather than dropping straight through a widening centre gap.
@@ -212,12 +210,6 @@ const LEAF_RADIUS = 12;
 // palm waiting for the window to close, which at five seconds it visibly did.
 const LEAF_WINDOW_MS = 2000;
 const LEAF_PARK = { x: -5000, y: -5000 };
-// The names are spent by the middle of the intro: they scale from full size
-// where the hero left off to nothing at the intro's midpoint, so they read as
-// receding into the page rather than dropping out of the bottom of it.
-const VANISH_AT = 0.5;
-// Below this a name is too small to be worth drawing, and is retired.
-const MIN_SCALE = 0.04;
 const CULL_MARGIN = 600; // px past the document bottom before a name is retired
 const IMPULSE_RADIUS_FRAC = 0.28; // click impulse reach, as a fraction of viewport width
 const IMPULSE_UP = 12; // upward kick strength on click
@@ -388,7 +380,6 @@ const FillPhysicsCanvas = ({
         );
         Matter.World.add(world, [leftFloor, rightFloor, leftWall, rightWall]);
 
-
         // Track the real document height as content lazy-loads in and the page
         // grows (images/videos below the fold change it) — it sets the depth a
         // falling name has to clear before it can be retired.
@@ -497,14 +488,24 @@ const FillPhysicsCanvas = ({
         // closed, for the fill gauge.
         let lastShift = 0;
         let opened = false;
+
+        // How big the pile is drawn. One while it sits at full size in the
+        // hero, easing to HERO_MIN_SCALE across the shrink runway, then held
+        // there — once the bodies themselves have been scaled at the handoff,
+        // the drawing is 1:1 with the physics again.
+        let spriteScale = 1;
+        const shrinkNow = () =>
+          Math.min(1, Math.max(0, window.scrollY / HERO_SHRINK_PX));
+        const drawScale = () =>
+          opened ? 1 : 1 - (1 - HERO_MIN_SCALE) * shrinkNow();
+
         const wakeAll = () => {
           for (const { body } of sprites) Matter.Sleeping.set(body, false);
         };
         const updateFloor = () => {
-          const p = Math.min(
-            1,
-            Math.max(0, window.scrollY / (fold * SCROLL_RANGE)),
-          );
+          // 0 while the pile is still shrinking in place, 1 once the runway
+          // is spent and it is time for it to go.
+          const p = window.scrollY >= HERO_SHRINK_PX ? 1 : 0;
           // Leaving the hero takes the box apart: the floor and the right
           // wall are removed outright, and only the left wall stays. From then
           // on the pile is held up by nothing, and the only things in its way
@@ -513,6 +514,24 @@ const FillPhysicsCanvas = ({
           engine.enableSleeping = p === 0;
           if (p > 0 && !opened) {
             opened = true;
+            // Until now the pile has been drawn pinned to the viewport while
+            // the page scrolled behind it, and scaled about the middle of the
+            // screen. Move and scale the bodies to match exactly where they
+            // were last drawn, so the moment it starts to fall is the one
+            // frame where nothing jumps.
+            const k = HERO_MIN_SCALE;
+            const cx = W / 2;
+            const cy = fold / 2;
+            const drop = window.scrollY;
+            for (const sp of sprites) {
+              const b = sp.body;
+              Matter.Body.setPosition(b, {
+                x: cx + (b.position.x - cx) * k,
+                y: cy + (b.position.y - cy) * k + drop,
+              });
+              Matter.Body.scale(b, k, k);
+            }
+            spriteScale = k;
             Matter.World.remove(world, [leftFloor, rightFloor, rightWall]);
             // A pronounced lean, so the pile tips off whatever it lands on
             // rather than balancing there. Gently sloped, names sat on the
@@ -547,16 +566,10 @@ const FillPhysicsCanvas = ({
           onDrainedRef.current?.();
         };
         const cullFallen = () => {
-          measureVanish();
           const limit = docH + CULL_MARGIN;
           for (let i = sprites.length - 1; i >= 0; i--) {
             const { body } = sprites[i];
-            // Gone once it has shrunk to nothing, whether or not it has
-            // physically left the page — an invisible body is still a body the
-            // solver has to step, and the landing is not over until they are
-            // all retired.
-            const spent = lifeAt(body.position.y) <= MIN_SCALE;
-            if (body.position.y < limit && !spent) continue;
+            if (body.position.y < limit) continue;
             culled.add(body);
             Matter.World.remove(world, body);
             sprites.splice(i, 1);
@@ -642,96 +655,6 @@ const FillPhysicsCanvas = ({
           });
         };
 
-        // 1 while the name is still where the hero was, easing to 0 by the
-        // intro's midpoint. Everything below reads from this: how big to draw
-        // the name, how coarsely to resample it, and when to retire it.
-        let vanishTop = fold;
-        let vanishSpan = fold;
-        const measureVanish = () => {
-          const intro = document.getElementById('intro');
-          if (!intro) return;
-          const r = intro.getBoundingClientRect();
-          vanishTop = r.top + window.scrollY;
-          vanishSpan = Math.max(120, r.height * VANISH_AT);
-        };
-        measureVanish();
-
-        const lifeAt = y => {
-          const t = (y - vanishTop) / vanishSpan;
-          if (t <= 0) return 1;
-          if (t >= 1) return 0;
-          // Ease out, so most of the shrink happens late and the name stays
-          // legible for the first part of the fall.
-          return 1 - t * t;
-        };
-
-        // ── the shared pixel grid ────────────────────────────────────────
-        // Names inside the intro are rasterised the same way the palm is: not
-        // by shrinking each sprite's own bitmap, but by drawing them into one
-        // low-resolution buffer whose cells are LOCKED TO THE PAGE LATTICE.
-        //
-        // That distinction is the whole effect. Downsampling a sprite in its
-        // own rotated space gives cells that travel and rotate with it, which
-        // reads as a blurry image sliding about. Sampling into a fixed lattice
-        // means the cells never move: as a name passes over them they light up
-        // and switch off in place, and it shares its grid with the section
-        // rules, the pixel trail and the palm.
-        //
-        // The vertical phase follows the scroll so the lattice stays pinned to
-        // the document rather than the viewport, alpha is quantised to four
-        // steps to harden the edges, and the 1px cell gaps are punched out
-        // with a cached pattern — the same three-op presentation the palm
-        // uses, rather than a fillRect per cell.
-        const GAP = 1;
-        const scene = document.createElement('canvas');
-        const sceneCtx = scene.getContext('2d', { willReadFrequently: true });
-        const quant = document.createElement('canvas');
-        const quantCtx = quant.getContext('2d');
-        const gapTile = document.createElement('canvas');
-        gapTile.width = GRID;
-        gapTile.height = GRID;
-        const gapCtx = gapTile.getContext('2d');
-        gapCtx.fillStyle = '#000';
-        gapCtx.fillRect(0, 0, GRID, GAP);
-        gapCtx.fillRect(0, 0, GAP, GRID);
-        let gapPattern = null;
-
-        const presentGrid = (ctx, gridOffset) => {
-          const gw = scene.width;
-          const gh = scene.height;
-          const img = sceneCtx.getImageData(0, 0, gw, gh);
-          const d = img.data;
-          let any = false;
-          for (let i = 3; i < d.length; i += 4) {
-            const a = d[i];
-            if (a < 12) {
-              d[i] = 0;
-              continue;
-            }
-            any = true;
-            d[i] = ((Math.ceil(Math.sqrt(a / 255) * 4) / 4) * 255) | 0;
-          }
-          if (!any) return;
-          if (quant.width !== gw || quant.height !== gh) {
-            quant.width = gw;
-            quant.height = gh;
-          }
-          quantCtx.putImageData(img, 0, 0);
-
-          ctx.save();
-          ctx.imageSmoothingEnabled = false;
-          ctx.drawImage(quant, 0, -gridOffset, gw * GRID, gh * GRID);
-          if (!gapPattern) gapPattern = ctx.createPattern(gapTile, 'repeat');
-          if (gapPattern) {
-            gapPattern.setTransform(new DOMMatrix([1, 0, 0, 1, 0, -gridOffset]));
-            ctx.globalCompositeOperation = 'destination-out';
-            ctx.fillStyle = gapPattern;
-            ctx.fillRect(0, 0, W, fold);
-            ctx.globalCompositeOperation = 'source-over';
-          }
-          ctx.restore();
-        };
-
         let drainStart = 0;
         Matter.Events.on(engine, 'beforeUpdate', () => {
           trackCopyColumn();
@@ -766,86 +689,47 @@ const FillPhysicsCanvas = ({
         // fixed viewport slice, so shift everything up by scrollY.
         Matter.Events.on(render, 'afterRender', () => {
           const ctx = render.context;
-          const offset = window.scrollY;
+
+          // Two regimes.
+          //
+          // Before the pile is released it is pinned to the viewport and
+          // scaled about the middle of the screen: the page scrolls behind it
+          // while it shrinks in place, which is what makes the hero feel
+          // elongated rather than simply tall.
+          //
+          // After release the bodies have been moved and scaled to match, so
+          // this goes back to plain document-space drawing and the physics is
+          // what moves them.
+          const offset = opened ? window.scrollY : 0;
+          const k = drawScale();
+          const cx = W / 2;
+          const cy = fold / 2;
+
           ctx.save();
           ctx.translate(0, -offset);
-          // The grid begins at the intro's top edge, and it is a line in
-          // SPACE, not a state a name is in. A name straddling that edge is
-          // drawn crisp above it and sampled into the lattice below it, so it
-          // is the pixels that cross the border, not the object.
-          const introEl = document.getElementById('intro');
-          const introRect = introEl?.getBoundingClientRect();
-          const border =
-            ENABLE_PIXELATED_NAMES && introRect
-              ? Math.max(0, Math.min(fold, introRect.top))
-              : fold;
-
-          const paintSprites = target => {
-            for (const { body, img, width, height } of sprites) {
-              const life = lifeAt(body.position.y);
-              if (life <= MIN_SCALE) continue;
-              target.save();
-              target.translate(body.position.x, body.position.y - offset);
-              target.rotate(body.angle);
-              target.drawImage(
-                img,
-                (-width * life) / 2,
-                drawTop * life,
-                width * life,
-                height * life,
+          for (const { body, img, width, height } of sprites) {
+            ctx.save();
+            if (opened) {
+              ctx.translate(body.position.x, body.position.y);
+            } else {
+              // Scale the whole composition toward the centre of the screen,
+              // not each name about its own middle — the pile has to hold its
+              // arrangement as it shrinks, or it just develops gaps.
+              ctx.translate(
+                cx + (body.position.x - cx) * k,
+                cy + (body.position.y - cy) * k,
               );
-              target.restore();
             }
-          };
-
-          // Above the border: the names as themselves.
-          ctx.save();
-          if (border > 0) {
-            ctx.beginPath();
-            ctx.rect(0, 0, W, border);
-            ctx.clip();
-            paintSprites(ctx);
+            ctx.rotate(body.angle);
+            const w = width * (opened ? spriteScale : k);
+            const h = height * (opened ? spriteScale : k);
+            const top = drawTop * (opened ? spriteScale : k);
+            ctx.drawImage(img, -w / 2, top, w, h);
+            ctx.restore();
           }
-          ctx.restore();
-
           if (fireworks.length > 0) {
             drawFireworks(ctx, fireworks, performance.now());
           }
-          ctx.restore();
-
-          if (!ENABLE_PIXELATED_NAMES || border >= fold) return;
-          if (!sprites.some(sp => lifeAt(sp.body.position.y) > MIN_SCALE)) {
-            return;
-          }
-
-          const gridOffset = ((offset % GRID) + GRID) % GRID;
-          const gw = Math.ceil(W / GRID);
-          const gh = Math.ceil(fold / GRID) + 1;
-          if (scene.width !== gw || scene.height !== gh) {
-            scene.width = gw;
-            scene.height = gh;
-          }
-          sceneCtx.setTransform(1, 0, 0, 1, 0, 0);
-          sceneCtx.clearRect(0, 0, gw, gh);
-          // One cell of the buffer is one GRID-sized cell on screen, phased by
-          // the scroll so the lattice belongs to the page, not the viewport.
-          sceneCtx.setTransform(
-            1 / GRID,
-            0,
-            0,
-            1 / GRID,
-            0,
-            gridOffset / GRID,
-          );
-          paintSprites(sceneCtx);
-
-          // Below the border: the same names, but only ever seen through the
-          // lattice.
-          ctx.save();
-          ctx.beginPath();
-          ctx.rect(0, border, W, fold - border);
-          ctx.clip();
-          presentGrid(ctx, gridOffset);
           ctx.restore();
         });
 
@@ -980,16 +864,8 @@ const FillPhysicsCanvas = ({
             x: nextLeftW / 2,
             y: floorY,
           });
-          Matter.Body.scale(
-            leftFloor,
-            nextLeftW / leftW,
-            1,
-          );
-          Matter.Body.scale(
-            rightFloor,
-            nextRightW / rightW,
-            1,
-          );
+          Matter.Body.scale(leftFloor, nextLeftW / leftW, 1);
+          Matter.Body.scale(rightFloor, nextRightW / rightW, 1);
           leftW = nextLeftW;
           rightW = nextRightW;
           Matter.Body.setPosition(leftWall, { x: -30, y: 0 });

@@ -1,6 +1,7 @@
 import PropTypes from 'prop-types';
 import { HeroName } from './Hero/components/HeroName.js';
 import PixelWaterFill from './PixelWaterFill.js';
+import { HERO_SHRINK_PX } from '../utils/heroRunway.js';
 
 /**
  * Landing header: the loader overlay + the hero-fold region the physics fills.
@@ -79,20 +80,34 @@ export const HeaderSequence = ({
       )}
 
       {/* Hero fold: empty flow region the document-sized physics canvas fills
-          behind the page content. Also the nav's scroll anchor. */}
-      <section id='home' ref={heroRef} className='relative w-full h-screen'>
-        <button
-          type='button'
-          aria-label='Scroll to content'
-          onClick={onCue}
-          className={`absolute bottom-8 left-1/2 -translate-x-1/2 transition-opacity duration-700 ${
-            filled ? 'opacity-100' : 'opacity-0 pointer-events-none'
-          }`}
-        >
-          <span className='block cue-bob'>
-            <PixelScrollCue />
-          </span>
-        </button>
+          behind the page content. Also the nav's scroll anchor.
+
+          A viewport tall PLUS the shrink runway. Scrolling that runway is
+          still being in the hero — the pile is pinned to the screen and
+          shrinking — so the section has to own that scroll distance. */}
+      <section
+        id='home'
+        ref={heroRef}
+        className='relative w-full'
+        style={{ height: `calc(100svh + ${HERO_SHRINK_PX}px)` }}
+      >
+        {/* Stuck to the viewport for the length of the runway, so the cue
+            stays where the reader is rather than sliding up out of view
+            while the names shrink. */}
+        <div className='sticky top-0 h-[100svh]'>
+          <button
+            type='button'
+            aria-label='Scroll to content'
+            onClick={onCue}
+            className={`absolute bottom-8 left-1/2 -translate-x-1/2 transition-opacity duration-700 ${
+              filled ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+          >
+            <span className='block cue-bob'>
+              <PixelScrollCue />
+            </span>
+          </button>
+        </div>
       </section>
     </>
   );

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
+import { HERO_SHRINK_PX } from '../utils/heroRunway.js';
 
 /**
  * Scroll-jack for the landing hero.
@@ -24,10 +25,13 @@ import { useEffect, useRef, useCallback } from 'react';
  * loader is a gate, the physics handoff assumes scrollY = 0, and the name
  * rows should finish landing before the user can leave. Once ready:
  *
- * - hero:      the first downward wheel / swipe / key is intercepted and
- *              replaced with a smooth animated scroll to the next viewport
- *              (the Intro). The floor split is scroll-driven, so the pile
- *              drains as the animation rides down.
+ * - hero:      the runway (the first HERO_SHRINK_PX of scroll) is the
+ *              reader's to scroll normally — that is where the pile shrinks
+ *              in place, and jacking it would take the gesture away from
+ *              them. Only once the runway is spent is the next downward
+ *              wheel / swipe / key intercepted and replaced with a smooth
+ *              animated scroll to the Intro. The floor opens on scroll, so
+ *              the pile lets go and drains as the animation rides down.
  * - animating: all scroll input is swallowed until the snap lands.
  * - locked:    the drained hero is empty space, so the fold becomes the top
  *              of the page: upward input at the boundary is blocked, and a
@@ -35,7 +39,7 @@ import { useEffect, useRef, useCallback } from 'react';
  *              #home anchor navigation).
  *
  * Reaching the fold by any other means (e.g. dragging the scrollbar) also
- * engages the lock.
+ * engages the lock, and spending the runway by any means starts the snap.
  */
 const SNAP_MS = 700;
 const SWIPE_THRESHOLD_PX = 8;
@@ -66,8 +70,14 @@ export default function useHeroScrollJack(ready, heroRef, drained) {
   useEffect(() => {
     if (!ready) return undefined;
 
-    const fold = window.innerHeight;
+    // The hero's full height: a viewport plus the shrink runway. This is
+    // both where the intro begins and how much the document loses when the
+    // spent hero collapses.
+    const fold = window.innerHeight + HERO_SHRINK_PX;
     let state = window.scrollY >= fold ? 'locked' : 'hero';
+    // Scrolling inside the runway is ordinary scrolling; the snap only takes
+    // over at the end of it.
+    const runwaySpent = () => window.scrollY >= HERO_SHRINK_PX;
     let raf = 0;
     let collapsed = false;
     let teardown = () => {};
@@ -121,7 +131,7 @@ export default function useHeroScrollJack(ready, heroRef, drained) {
 
     const onWheel = e => {
       if (state === 'hero') {
-        if (e.deltaY > 0) {
+        if (e.deltaY > 0 && runwaySpent()) {
           e.preventDefault();
           snapToIntro();
         }
@@ -139,7 +149,7 @@ export default function useHeroScrollJack(ready, heroRef, drained) {
     const onTouchMove = e => {
       const dy = touchStartY - e.touches[0].clientY; // > 0 = scrolling down
       if (state === 'hero') {
-        if (dy > SWIPE_THRESHOLD_PX) {
+        if (dy > SWIPE_THRESHOLD_PX && runwaySpent()) {
           e.preventDefault();
           snapToIntro();
         }
@@ -156,7 +166,7 @@ export default function useHeroScrollJack(ready, heroRef, drained) {
       // Only hijack page-level scrolling, not focused controls.
       if (e.target !== document.body && e.target !== document.documentElement)
         return;
-      if (state === 'hero' && DOWN_KEYS.includes(e.key)) {
+      if (state === 'hero' && DOWN_KEYS.includes(e.key) && runwaySpent()) {
         e.preventDefault();
         snapToIntro();
       } else if (
@@ -179,10 +189,18 @@ export default function useHeroScrollJack(ready, heroRef, drained) {
     // Reaching the fold by any other means (a scrollbar drag, an anchor)
     // collapses the hero too, rather than clamping the reader against it.
     const onScroll = () => {
-      if (state === 'hero' && window.scrollY >= fold) {
+      if (state !== 'hero') return;
+      if (window.scrollY >= fold) {
         state = 'locked';
         maybeCollapse();
+        return;
       }
+      // The runway is the whole of the reader's business in the hero, and
+      // spending it is what releases the pile. Ride down with it the instant
+      // that happens, however the scroll was made — left to a second gesture,
+      // the names fall out of the bottom of a hero the reader is still
+      // sitting in, and they miss the landing entirely.
+      if (runwaySpent()) snapToIntro();
     };
 
     window.addEventListener('wheel', onWheel, { passive: false });
