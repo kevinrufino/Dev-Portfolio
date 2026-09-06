@@ -165,8 +165,12 @@ const PalmScene = () => {
         inset: 0,
         width: '100vw',
         height: '100vh',
-        zIndex: 1,
         pointerEvents: 'none',
+        // Above the sections, not behind them. The intro and footer both have
+        // opaque grounds and the palm is drawn ON them — the engine clips it
+        // to the band beside the intro copy and out of the works section, so
+        // being on top never means covering anything that has to be read.
+        zIndex: 1,
       }}
     />
   );

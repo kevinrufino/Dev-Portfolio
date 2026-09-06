@@ -51,6 +51,7 @@ export const HeaderSequence = ({
   filled,
   onCue,
   nameRef,
+  heroRef,
   secondaryColor,
 }) => {
   return (
@@ -79,7 +80,7 @@ export const HeaderSequence = ({
 
       {/* Hero fold: empty flow region the document-sized physics canvas fills
           behind the page content. Also the nav's scroll anchor. */}
-      <section id='home' className='relative w-full h-screen'>
+      <section id='home' ref={heroRef} className='relative w-full h-screen'>
         <div className='grid-rule grid-rule--acid' aria-hidden='true' />
         <button
           type='button'
@@ -108,6 +109,7 @@ HeaderSequence.propTypes = {
     PropTypes.func,
     PropTypes.shape({ current: PropTypes.any }),
   ]).isRequired,
+  heroRef: PropTypes.shape({ current: PropTypes.any }),
   secondaryColor: PropTypes.string.isRequired,
 };
 

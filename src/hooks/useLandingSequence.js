@@ -36,7 +36,7 @@ export default function useLandingSequence() {
     if ('scrollRestoration' in window.history) {
       window.history.scrollRestoration = 'manual';
     }
-    window.scrollTo(0, 0);
+    window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
 
   // Pre-warm the matter-js chunk while the loader plays.
