@@ -486,14 +486,23 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
             1,
             Math.max(0, window.scrollY / (fold * SCROLL_RANGE)),
           );
-          // +40 so the right section is fully clear of the viewport edge at
-          // p = 1 and cannot catch a name on its trailing corner.
-          const shift = p * (rightW + 40);
+          // Both sections retract to the RIGHT, but not together. The right
+          // one goes first, so the stack tips and pours off that edge rather
+          // than dropping straight down; the left follows once the pour is
+          // under way, so nothing is left standing on a permanent ledge. +40
+          // clears the viewport edge so a trailing corner can never catch a
+          // name.
+          const rightShift = Math.min(1, p / 0.6) * (rightW + 40);
+          const leftShift = Math.max(0, (p - 0.5) / 0.5) * (W + 40);
           engine.enableSleeping = p === 0;
-          if (shift !== lastShift) {
-            lastShift = shift;
+          if (rightShift !== lastShift) {
+            lastShift = rightShift;
             Matter.Body.setPosition(rightFloor, {
-              x: leftW + rightW / 2 + shift,
+              x: leftW + rightW / 2 + rightShift,
+              y: floorY,
+            });
+            Matter.Body.setPosition(leftFloor, {
+              x: leftW / 2 + leftShift,
               y: floorY,
             });
           }
