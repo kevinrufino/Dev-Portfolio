@@ -158,12 +158,19 @@ const AppContent = () => {
           marginBottom: 'var(--footer-reveal-h, 100svh)',
         }}
       >
-        {/* The physics canvas lives INSIDE this wrapper, and first. The
-            wrapper is opaque — it has to be, to cover the fixed footer during
-            the reveal — so a canvas outside it is simply painted over, and the
-            hero came up empty. As the wrapper's first positioned child it sits
-            above the wrapper's ground and below every section, which is where
-            the falling names belong. */}
+        {/* Both full-page canvases live INSIDE this wrapper. The wrapper is
+            opaque — it has to be, to cover the fixed footer during the reveal
+            — so a canvas outside it is simply painted over, and the hero came
+            up empty.
+
+            They sit at different depths on purpose: the physics canvas is
+            unpositioned, so it falls below every section and the names read as
+            being behind the page; the palm carries z-index 1 and sits above
+            them, because the intro and footer have opaque grounds and the palm
+            is drawn ON them. The engine clips the palm to the band beside the
+            intro copy and out of the works section, so being on top never
+            covers anything that has to be read. */}
+        <PalmScene />
         <FillPhysicsCanvas
           active={seq.filling}
           getSpawnRect={seq.getSpawnRect}
