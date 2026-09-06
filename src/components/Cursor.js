@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { pullOffset } from '../utils/cursorFx.js';
 
 /**
  * The page cursor.
@@ -11,8 +12,11 @@ import { useEffect, useRef } from 'react';
  * four.
  *
  * Position is written straight to the element's transform from the pointer
- * event; there is no state and no rAF loop, so moving the mouse never costs a
- * React render or a frame of scheduling.
+ * event, so moving the mouse never costs a React render. A frame loop runs
+ * alongside it only while a gravity field is pulling: `cursorFx` publishes an
+ * offset when the pointer nears something that wants to be hovered, and this
+ * is where that offset becomes visible. Only the drawing moves — the real
+ * pointer, and everything hit-tested against it, stays where the hand put it.
  *
  * Bails out entirely for coarse pointers (there is no cursor to replace on
  * touch) and for reduced motion, both of which leave the native cursor in
@@ -41,10 +45,20 @@ const Cursor = () => {
     // The arrow's tip is its top-left, so the -4px offset seats the drawn tip
     // on the actual pointer position rather than a few pixels down-right.
     const write = () => {
+      const pull = pullOffset();
       el.style.transform =
-        `translate3d(${x - 4}px, ${y - 4}px, 0)` +
+        `translate3d(${x - 4 + pull.x}px, ${y - 4 + pull.y}px, 0)` +
         (down ? ' rotate(-12deg) scale(.96)' : '');
     };
+
+    // The pull eases in and out on its own clock, so the arrow has to be
+    // redrawn even while the mouse is perfectly still.
+    let raf = 0;
+    const tick = () => {
+      raf = requestAnimationFrame(tick);
+      if (shown) write();
+    };
+    raf = requestAnimationFrame(tick);
 
     const onMove = event => {
       x = event.clientX;
@@ -76,6 +90,7 @@ const Cursor = () => {
     document.addEventListener('pointerleave', onLeave);
 
     return () => {
+      cancelAnimationFrame(raf);
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerdown', onDown);
       window.removeEventListener('pointerup', onUp);

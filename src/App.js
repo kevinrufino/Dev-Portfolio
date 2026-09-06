@@ -31,6 +31,7 @@ import { NavBar } from './components/Nav.js';
 import { Projects } from './components/Projects/Projects.js';
 import { SkillsMarquee } from './components/Intro/SkillsMarquee.js';
 import Cursor from './components/Cursor.js';
+import CursorAnnotation from './components/CursorAnnotation.js';
 import BetaBadge from './components/BetaBadge.js';
 import { HeaderSequence } from './components/HeaderSequence.js';
 import PixelTrail from './components/PixelTrail.js';
@@ -279,6 +280,11 @@ const AppRefactored = () => {
             visible cursor at all. Keeping it outside <Routes> also means it
             survives the page transition instead of unmounting mid-navigation. */}
         <Cursor />
+        {/* One annotation chip for the whole app, beside the cursor and for
+            the same reason: every route can label what is under the pointer,
+            and it must survive the page transition rather than unmounting
+            mid-navigation. */}
+        <CursorAnnotation />
         <AnimatedRoutes />
       </AppProviders>
     </BrowserRouter>
