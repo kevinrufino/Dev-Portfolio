@@ -51,5 +51,8 @@ export const ENABLE_SHADER_BACKGROUND = readFlag(
  */
 export const ENABLE_PALM_SCENE = readFlag(
   process.env.REACT_APP_PALM_SCENE,
-  false,
+  // REVIEW BRANCH ONLY: defaulted on so the palm is visible without setting an
+  // env var. On feat/palm-08-palm-scene (and therefore in PR #27) this stays
+  // `false` — the scene wants profiling before it is on by default.
+  true,
 );
