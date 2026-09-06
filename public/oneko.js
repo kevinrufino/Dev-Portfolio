@@ -21,6 +21,25 @@
   let idleAnimationFrame = 0;
 
   const nekoSpeed = 20;
+
+  // The cat belongs to the intro and the footer, and to nothing else. It is
+  // one script for the whole document, so rather than mounting and unmounting
+  // it, it fades out wherever it has no business being — over the hero, the
+  // works pane, the marquee — and keeps walking behind the scenes so it is
+  // already in the right place when the reader comes back.
+  const HOME_SECTIONS = '#intro, #contact';
+
+  // Following the TRAIL, not the pointer.
+  //
+  // `PixelTrail` publishes the path it painted along as `window.__pixelTrail`.
+  // Walking that queue in order means the cat retraces the route the reader's
+  // hand took — round the loops and doublings-back — instead of cutting the
+  // corner to wherever the cursor ended up. When the trail has faded there is
+  // nothing left to walk, and it goes back to chasing the cursor itself.
+  const TRAIL_MAX_AGE_MS = 1400; // roughly how long a trail cell stays visible
+  const TRAIL_ARRIVE_PX = 24; // close enough to call a point reached
+  const MOUSE_ARRIVE_PX = 48; // the cat sits this far off the cursor
+  let followedId = -1;
   const spriteSets = {
     idle: [[-3, -3]],
     alert: [[-7, -3]],
@@ -92,10 +111,13 @@
     nekoEl.style.position = "fixed";
     nekoEl.style.pointerEvents = "auto";
     nekoEl.style.imageRendering = "pixelated";
-    nekoEl.style.right = `${nekoPosX - 16}px`;
+    // Left, not right: `frame` writes `left` on every move, and starting from
+    // the opposite edge made the first step jump the width of the screen.
+    nekoEl.style.left = `${nekoPosX - 16}px`;
     nekoEl.style.top = `${nekoPosY - 16}px`;
     nekoEl.style.zIndex = 20;
     nekoEl.style.mixBlendMode = "difference";
+    nekoEl.style.transition = "opacity 260ms ease";
 
     let nekoFile = "./oneko-white.png";
     const curScript = document.currentScript;
@@ -242,15 +264,72 @@
   document.head.appendChild(style);
   nekoEl.addEventListener("click", explodeHearts);
 
+  // Is the cat standing on ground it is allowed to be seen on?
+  //
+  // A hit test rather than a rect comparison, for the same reason the trail
+  // uses one: the footer is fixed behind the page and its rect claims the
+  // whole viewport at every scroll position, so only asking what is actually
+  // on top at this point can tell the covered footer from the revealed one.
+  // The cat itself is skipped — it is the topmost thing at its own position.
+  function onHomeGround() {
+    const x = Math.round(nekoPosX);
+    const y = Math.round(nekoPosY);
+    if (x < 0 || y < 0 || x > window.innerWidth || y > window.innerHeight) {
+      return false;
+    }
+    const stack = document.elementsFromPoint(x, y);
+    for (const el of stack) {
+      if (el === nekoEl || nekoEl.contains(el)) continue;
+      return !!el.closest?.(HOME_SECTIONS);
+    }
+    return false;
+  }
+
+  // The oldest point on the trail the cat has not reached yet. Points it has
+  // arrived at, and points that have faded before it could get to them, are
+  // marked off by advancing `followedId` past them.
+  function trailTarget() {
+    const trail = window.__pixelTrail;
+    if (!trail || trail.points.length === 0) return null;
+    const now = performance.now();
+    const scrollY = window.scrollY;
+    for (const point of trail.points) {
+      if (point.id <= followedId) continue;
+      if (now - point.at > TRAIL_MAX_AGE_MS) {
+        followedId = point.id;
+        continue;
+      }
+      const y = point.docY - scrollY;
+      const reached =
+        Math.sqrt((nekoPosX - point.x) ** 2 + (nekoPosY - y) ** 2) <=
+        TRAIL_ARRIVE_PX;
+      if (reached) {
+        followedId = point.id;
+        continue;
+      }
+      return { x: point.x, y: y };
+    }
+    return null;
+  }
+
   function frame() {
     frameCount += 1;
-    const diffX =
-      nekoPosX -
-      (nekoEl.parentElement.getBoundingClientRect().width - mousePosX);
-    const diffY = nekoPosY - mousePosY;
+
+    const home = onHomeGround();
+    nekoEl.style.opacity = home ? "1" : "0";
+    // An invisible cat should not be catching clicks meant for the page.
+    nekoEl.style.pointerEvents = home ? "auto" : "none";
+
+    const trail = trailTarget();
+    const targetX = trail ? trail.x : mousePosX;
+    const targetY = trail ? trail.y : mousePosY;
+    const arrive = trail ? TRAIL_ARRIVE_PX : MOUSE_ARRIVE_PX;
+
+    const diffX = nekoPosX - targetX;
+    const diffY = nekoPosY - targetY;
     const distance = Math.sqrt(diffX ** 2 + diffY ** 2);
 
-    if (distance < nekoSpeed || distance < 48) {
+    if (distance < nekoSpeed || distance < arrive) {
       idle();
       return;
     }

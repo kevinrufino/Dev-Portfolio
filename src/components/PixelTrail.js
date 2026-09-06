@@ -18,6 +18,31 @@ const TRAIL = {
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
+// The path the trail was painted along, published for anything that wants to
+// walk it rather than cut across it. `oneko` is the one consumer: the cat
+// chases the trail instead of the pointer, so it retraces the route the
+// reader's hand actually took.
+//
+// A plain global rather than a React value on purpose — the cat is a vendored
+// script in `public/`, outside the bundle, and this is the only surface the
+// two share. Points carry a document-space y so they stay put under the
+// content while the page scrolls, and a monotonic id so a follower can keep
+// its place in the queue without owning the array.
+const TRAIL_PATH_MAX = 96;
+
+const publishTrailPoint = (x, y) => {
+  const trail = (window.__pixelTrail ??= { points: [], nextId: 0 });
+  trail.points.push({
+    id: trail.nextId++,
+    x,
+    docY: y + window.scrollY,
+    at: performance.now(),
+  });
+  if (trail.points.length > TRAIL_PATH_MAX) {
+    trail.points.splice(0, trail.points.length - TRAIL_PATH_MAX);
+  }
+};
+
 // Ink per ground: ultra over the acid hero and the paper intro, gold over the
 // charcoal footer. Over the projects section — the one surface with no grid —
 // the trail doesn't paint at all, so it never fights the index's own type.
@@ -209,6 +234,7 @@ const PixelTrail = () => {
       // One hit-test per event, not per interpolated cell: the sampled path is
       // short enough that its two ends are always on the same ground.
       const color = inkUnder(event.clientX, event.clientY, inkRef.current);
+      publishTrailPoint(event.clientX, event.clientY);
 
       if (!previous) {
         paintAt(event.clientX, event.clientY, velocity, color);
@@ -276,6 +302,9 @@ const PixelTrail = () => {
       motionQuery.removeEventListener('change', syncMotion);
       cancelAnimationFrame(rafRef.current);
       activeCellsRef.current.clear();
+      // The path outlives this component otherwise, and the cat would spend
+      // its first seconds on the next route walking a route from the last one.
+      if (window.__pixelTrail) window.__pixelTrail.points.length = 0;
     };
   }, []);
 
