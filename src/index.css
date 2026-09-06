@@ -487,3 +487,17 @@ code {
   line-height: 1.75;
   text-wrap: pretty;
 }
+
+/* The chapter rail scrolls horizontally to keep the active chapter visible.
+   Its own scrollbar would sit across the reading line, so it is hidden — the
+   bar is an indicator, and the page's main scrollbar already reports position. */
+[data-chapters] {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+[data-chapters]::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
