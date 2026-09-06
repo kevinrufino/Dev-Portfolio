@@ -769,30 +769,54 @@ const FillPhysicsCanvas = ({
           const offset = window.scrollY;
           ctx.save();
           ctx.translate(0, -offset);
-          // Above the intro the names are themselves — full size, crisp, no
-          // grid. The grid is something they fall INTO.
-          for (const { body, img, width, height } of sprites) {
-            if (ENABLE_PIXELATED_NAMES && lifeAt(body.position.y) < 1) continue;
-            ctx.save();
-            ctx.translate(body.position.x, body.position.y);
-            ctx.rotate(body.angle);
-            ctx.drawImage(img, -width / 2, drawTop, width, height);
-            ctx.restore();
+          // The grid begins at the intro's top edge, and it is a line in
+          // SPACE, not a state a name is in. A name straddling that edge is
+          // drawn crisp above it and sampled into the lattice below it, so it
+          // is the pixels that cross the border, not the object.
+          const introEl = document.getElementById('intro');
+          const introRect = introEl?.getBoundingClientRect();
+          const border =
+            ENABLE_PIXELATED_NAMES && introRect
+              ? Math.max(0, Math.min(fold, introRect.top))
+              : fold;
+
+          const paintSprites = target => {
+            for (const { body, img, width, height } of sprites) {
+              const life = lifeAt(body.position.y);
+              if (life <= MIN_SCALE) continue;
+              target.save();
+              target.translate(body.position.x, body.position.y - offset);
+              target.rotate(body.angle);
+              target.drawImage(
+                img,
+                (-width * life) / 2,
+                drawTop * life,
+                width * life,
+                height * life,
+              );
+              target.restore();
+            }
+          };
+
+          // Above the border: the names as themselves.
+          ctx.save();
+          if (border > 0) {
+            ctx.beginPath();
+            ctx.rect(0, 0, W, border);
+            ctx.clip();
+            paintSprites(ctx);
           }
-          // Bursts live in document coords too, so they ride the same offset.
+          ctx.restore();
+
           if (fireworks.length > 0) {
             drawFireworks(ctx, fireworks, performance.now());
           }
           ctx.restore();
 
-          if (!ENABLE_PIXELATED_NAMES) return;
-
-          // Everything inside the intro goes through the lattice instead.
-          const inGrid = sprites.filter(sp => {
-            const life = lifeAt(sp.body.position.y);
-            return life < 1 && life > MIN_SCALE;
-          });
-          if (!inGrid.length) return;
+          if (!ENABLE_PIXELATED_NAMES || border >= fold) return;
+          if (!sprites.some(sp => lifeAt(sp.body.position.y) > MIN_SCALE)) {
+            return;
+          }
 
           const gridOffset = ((offset % GRID) + GRID) % GRID;
           const gw = Math.ceil(W / GRID);
@@ -813,21 +837,16 @@ const FillPhysicsCanvas = ({
             0,
             gridOffset / GRID,
           );
-          for (const { body, img, width, height } of inGrid) {
-            const life = lifeAt(body.position.y);
-            sceneCtx.save();
-            sceneCtx.translate(body.position.x, body.position.y - offset);
-            sceneCtx.rotate(body.angle);
-            sceneCtx.drawImage(
-              img,
-              (-width * life) / 2,
-              drawTop * life,
-              width * life,
-              height * life,
-            );
-            sceneCtx.restore();
-          }
+          paintSprites(sceneCtx);
+
+          // Below the border: the same names, but only ever seen through the
+          // lattice.
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(0, border, W, fold - border);
+          ctx.clip();
           presentGrid(ctx, gridOffset);
+          ctx.restore();
         });
 
         // Click anywhere to poke the pile: radial + upward impulse on nearby
