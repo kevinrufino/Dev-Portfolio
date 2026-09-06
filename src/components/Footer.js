@@ -67,7 +67,7 @@ export const Footer = ({ setCursor }) => {
   return (
     <footer
       ref={footerRef}
-      className='fixed inset-x-0 bottom-0 z-0 w-full overflow-hidden bg-charcoal text-charcoal-ink'
+      className='fixed inset-x-0 bottom-0 z-0 flex h-[100svh] min-h-[560px] w-full flex-col justify-center overflow-hidden bg-charcoal text-charcoal-ink'
       id='contact'
       onMouseEnter={() => {
         setCursor?.('');
@@ -75,7 +75,7 @@ export const Footer = ({ setCursor }) => {
     >
       <div className='grid-rule grid-rule--charcoal' aria-hidden='true' />
 
-      <div className='relative z-10 mx-auto max-w-[1440px] px-[clamp(24px,7.4vw,110px)] pb-[76px] pt-[clamp(56px,9vh,104px)]'>
+      <div className='relative z-10 mx-auto w-full max-w-[1440px] px-[clamp(24px,7.4vw,110px)]'>
         <Reveal>
           <div className='max-w-[46%] min-w-[280px]'>
             <p className='type-label mb-[26px] text-charcoal-muted'>

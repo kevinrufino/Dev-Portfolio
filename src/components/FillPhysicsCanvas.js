@@ -270,20 +270,22 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
 
         let W = window.innerWidth;
         let fold = window.innerHeight; // the hero fold — where the floor sits
-        // The end of the CONTENT, not the end of the document. The footer is
-        // fixed behind the page and uncovered by the content's bottom margin,
-        // so the last `--footer-reveal-h` pixels of scroll are the reveal —
-        // names that fall into that range land on top of the footer instead of
-        // disappearing off the page. Retiring them at the content's end is
-        // what "drains off the page" means once the footer stopped scrolling.
-        const revealH = () =>
-          parseFloat(
-            getComputedStyle(document.documentElement).getPropertyValue(
-              '--footer-reveal-h',
-            ),
-          ) || 0;
-        const contentEnd = () =>
-          Math.max(document.body.scrollHeight - revealH(), fold);
+        // Names are retired at the top of the projects section, not at the end
+        // of the document. They belong to the landing: they fall through the
+        // hero and the intro and off the page, and they must never reach the
+        // works pane or the footer — both of which they would otherwise be
+        // drawn over, since this canvas sits above the sections.
+        //
+        // The boundary is always below the viewport while the reader is still
+        // in the intro, so nothing is ever seen to vanish.
+        const contentEnd = () => {
+          const works = document.getElementById('projects');
+          if (!works) return Math.max(document.body.scrollHeight, fold);
+          return Math.max(
+            works.getBoundingClientRect().top + window.scrollY,
+            fold,
+          );
+        };
         let docH = contentEnd();
 
         const engine = Matter.Engine.create({ enableSleeping: true });
@@ -718,7 +720,10 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
         top: 0,
         left: 0,
         pointerEvents: 'none',
-        zIndex: 0,
+        // Above the sections, like the palm. The names are meant to fall INTO
+        // the intro and glance off the palm's fronds on the way past — behind
+        // the sections they simply vanished under the intro's paper ground.
+        zIndex: 1,
       }}
     />
   );

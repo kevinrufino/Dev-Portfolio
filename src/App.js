@@ -107,7 +107,16 @@ const AppContent = () => {
       const behavior = smooth ? 'smooth' : 'instant';
 
       if (hash === '#home') {
-        window.scrollTo({ top: 0, behavior });
+        // The intro, not scroll position 0. Before the hero collapses those
+        // are different places, and "home" should never land the reader back
+        // on a hero they have already left.
+        const intro = document.getElementById('intro');
+        window.scrollTo({
+          top: intro
+            ? Math.max(0, intro.getBoundingClientRect().top + window.scrollY)
+            : 0,
+          behavior,
+        });
         return;
       }
       if (hash === '#contact') {
