@@ -32,7 +32,7 @@ const Segment = ({ ariaHidden = false }) => (
 
 export const SkillsMarquee = () => {
   return (
-    <div className='w-full overflow-hidden border-y border-ultra/20 bg-acid py-3 text-3xl text-ultra'>
+    <div className='relative z-[2] w-full overflow-hidden border-y-2 border-ultra bg-acid py-3 text-3xl text-ultra'>
       <div className='marquee-skills'>
         <Segment />
         <Segment ariaHidden />
