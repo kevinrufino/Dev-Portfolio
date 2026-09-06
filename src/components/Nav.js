@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import {
+  goToSection,
+  SECTIONS,
+  documentTop,
+  revealStart,
+} from '../utils/navigateToSection.js';
 import ArrowBackUpIcon from './ArrowBackUpIcon.js';
 
 /**
@@ -15,10 +21,12 @@ import ArrowBackUpIcon from './ArrowBackUpIcon.js';
  * background and the ultra name pile, no per-section palette needed.
  */
 
+// `key` addresses a section; the element it resolves to is SECTIONS[key].
+// No URLs here on purpose — see utils/navigateToSection.js.
 const NAV_LINKS = [
-  { label: 'home', href: '/#home', sectionId: 'home' },
-  { label: 'work', href: '/#projects', sectionId: 'projects' },
-  { label: 'connect', href: '/#contact', sectionId: 'contact' },
+  { label: 'home', key: 'home' },
+  { label: 'work', key: 'work' },
+  { label: 'connect', key: 'contact' },
 ];
 
 const GOO_PAD = 90;
@@ -65,6 +73,8 @@ GooeyNavFilter.propTypes = {
 };
 
 const HomeNav = ({ setCursor }) => {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
   const navRef = useRef(null);
   const followerRef = useRef(null);
   const linkRefs = useRef([]);
@@ -117,13 +127,17 @@ const HomeNav = ({ setCursor }) => {
 
     // Active item follows scroll position; shown once the hero has scrolled
     // into the intro (~55% of the fold), hidden (and unclickable) on the hero.
+    // Compared against DOCUMENT positions, not viewport rects. Two sections
+    // lie about their rect: the intro is sticky, so it reports top 0 for as
+    // long as it is pinned, and the footer is fixed, so it reports the same
+    // box at every scroll position — which made "connect" look active from the
+    // moment the page loaded.
     const onScroll = () => {
-      const line = window.innerHeight * 0.38;
-      let idx = 0;
-      NAV_LINKS.forEach((link, i) => {
-        const el = document.getElementById(link.sectionId);
-        if (el && el.getBoundingClientRect().top <= line) idx = i;
-      });
+      const line = window.scrollY + window.innerHeight * 0.38;
+      const works = document.getElementById(SECTIONS.work);
+      const worksTop = works ? documentTop(works) : Infinity;
+      const contactTop = revealStart();
+      const idx = line >= contactTop ? 2 : line >= worksTop ? 1 : 0;
       setActiveIndex(prev => {
         if (idx === prev) return prev;
         setSliding(true);
@@ -278,18 +292,19 @@ const HomeNav = ({ setCursor }) => {
       <ul className='relative flex items-center gap-0.5 list-none m-0 p-0 font-offbit101Bold text-[22px] leading-none text-white'>
         {NAV_LINKS.map((link, i) => (
           <li key={link.label}>
-            <a
+            <button
+              type='button'
               ref={el => {
                 linkRefs.current[i] = el;
               }}
-              href={link.href}
-              className='block px-5 py-3 no-underline tracking-[0.02em] transition-colors duration-200'
+              onClick={() => goToSection(navigate, pathname, link.key)}
+              className='block border-0 bg-transparent px-5 py-3 font-[inherit] text-[inherit] tracking-[0.02em] transition-colors duration-200'
               style={{ color: navColor(i) }}
               onMouseEnter={() => setHotIndex(i)}
               onMouseLeave={() => setHotIndex(-1)}
             >
               {link.label}
-            </a>
+            </button>
           </li>
         ))}
       </ul>
