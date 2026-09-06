@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { goToSection } from '../utils/navigateToSection.js';
 import { ProjectsData } from '../constants.js';
 import { toSlug } from '../utils/helpers.js';
 import { PROJECT_STORIES } from '../components/Project/projectStories.js';
@@ -14,6 +15,8 @@ const REVEAL_DELAY_MS = 300;
 // 0.3 rather than 0.5 because a heading feels current as soon as it is near the
 // top of the viewport, not once it reaches the middle.
 const READING_LINE = 0.3;
+// Height of the sticky chapter bar, so a jumped-to section clears it.
+const RAIL_H = 128;
 
 const firstLink = project => {
   if (project.liveLink) return project.liveLink;
@@ -35,6 +38,7 @@ const firstLink = project => {
  */
 const ProjectPage = () => {
   const { slug } = useParams();
+  const navigate = useNavigate();
   const [active, setActive] = useState(0);
 
   const progressRef = useRef(null);
@@ -207,7 +211,7 @@ const ProjectPage = () => {
         <h1 className='m-0 font-offbit101Bold text-[clamp(36px,6vw,72px)]'>
           No such project.
         </h1>
-        <Link to='/#projects' className='type-body text-acid underline'>
+        <Link to='/' className='type-body text-acid underline'>
           ← selected work
         </Link>
       </main>
@@ -230,12 +234,13 @@ const ProjectPage = () => {
         aria-label='Project navigation'
         className='pointer-events-none fixed left-0 right-0 top-0 z-50 flex items-center justify-between gap-4 px-[clamp(16px,4vw,40px)] py-[14px] mix-blend-difference'
       >
-        <Link
-          to='/#projects'
-          className='pointer-events-auto px-[10px] py-2 font-offbit101Bold text-xl text-white'
+        <button
+          type='button'
+          onClick={() => goToSection(navigate, '/projects', 'work')}
+          className='pointer-events-auto border-0 bg-transparent px-[10px] py-2 font-offbit101Bold text-xl text-white'
         >
           ← selected work
-        </Link>
+        </button>
         {live && (
           <a
             href={live}
@@ -291,11 +296,15 @@ const ProjectPage = () => {
         </div>
       </header>
 
+      {/* The top padding keeps the chapter links clear of the fixed nav, which
+          floats over this bar once it sticks. The bar's charcoal ground runs up
+          behind the nav so the two read as one header rather than as two things
+          fighting over the same line. */}
       {blocks.length > 0 && (
         <div
           ref={railRef}
           data-chapters=''
-          className='sticky top-0 z-40 overflow-x-auto overflow-y-hidden border-b border-[#3a3a36] bg-charcoal'
+          className='sticky top-0 z-40 overflow-x-auto overflow-y-hidden border-b border-[#3a3a36] bg-charcoal pt-[76px]'
         >
           <div className='flex min-w-max items-stretch px-[clamp(24px,6vw,88px)]'>
             {blocks.map((b, i) => (
@@ -373,12 +382,13 @@ const ProjectPage = () => {
             aria-label='Elsewhere'
             className='mt-[clamp(38px,5vh,58px)] flex flex-wrap gap-x-[34px] gap-y-[14px]'
           >
-            <Link
-              to='/#projects'
-              className='type-body border-b border-[#adaf3d] py-[6px] text-lg text-charcoal'
+            <button
+              type='button'
+              onClick={() => goToSection(navigate, '/projects', 'work')}
+              className='type-body border-0 border-b border-[#adaf3d] bg-transparent py-[6px] text-lg text-charcoal'
             >
               All work
-            </Link>
+            </button>
             <a
               href='mailto:kevinrufino97@gmail.com'
               className='type-body border-b border-[#adaf3d] py-[6px] text-lg text-charcoal'
