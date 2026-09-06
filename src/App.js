@@ -140,7 +140,6 @@ const AppContent = () => {
 
         {/* Global cursor component */}
         <PixelTrail />
-        <Cursor />
 
         {/* Navigation header */}
         <NavBar setCursor={setCursorType} />
@@ -236,6 +235,13 @@ const AppRefactored = () => {
   return (
     <BrowserRouter>
       <AppProviders>
+        {/* One cursor for the whole app, outside <Routes>.
+            index.css hides the native cursor under `@media (pointer: fine)`
+            for the entire document, so the replacement has to exist on every
+            route — mounted per-route it left the project pages with no
+            visible cursor at all. Keeping it outside <Routes> also means it
+            survives the page transition instead of unmounting mid-navigation. */}
+        <Cursor />
         <AnimatedRoutes />
       </AppProviders>
     </BrowserRouter>
