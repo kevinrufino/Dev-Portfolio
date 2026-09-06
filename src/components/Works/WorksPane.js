@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
+import { Link } from 'react-router-dom';
+import { toSlug } from '../../utils/helpers.js';
+import useGooFollower from '../../hooks/useGooFollower.js';
+import GooPills from '../common/GooPills.js';
 import { WORKS, WORK_CATEGORIES } from './worksData.js';
 import { THEMES, WORKS_RANGE } from './themes.js';
 import { createWorkGlyph } from './workGlyph.js';
@@ -9,7 +13,9 @@ import useDitherWipe from './useDitherWipe.js';
 // Deliberate gesture before a category swap: a casual flick at either end of a
 // list shouldn't change what you're looking at.
 const OVERSCROLL_PX = 170;
-const LOCK_MS = 1000;
+// Just past the wipe's own 900ms, so the boundary can't re-fire mid-sweep.
+// Only boundary detection is suppressed for this long — scrolling stays live.
+const LOCK_MS = 950;
 // The pane's whole job is one project at a time, so 30fps is plenty and leaves
 // the frame budget to the landing physics and the palm.
 const FRAME_MS = 32;
@@ -36,6 +42,8 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
   const [selected, setSelected] = useState(0);
   const [dotTransform, setDotTransform] = useState('translateY(0px)');
   const [catHot, setCatHot] = useState(-1);
+  const [catSliding, setCatSliding] = useState(false);
+  const slideTimer = useRef(0);
 
   const sectionRef = useRef(null);
   const paneRef = useRef(null);
@@ -43,9 +51,16 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
   const glyphCanvasRef = useRef(null);
   const wakeRef = useRef(null);
   const wipeRef = useRef(null);
-  const catNavRef = useRef(null);
+
 
   const glyph = useRef(null);
+  const {
+    groupRef: catNavRef,
+    followerRef: catFollowerRef,
+    setItemRef: setCatRef,
+    rects: catRects,
+    measure: measureCats,
+  } = useGooFollower(WORK_CATEGORIES.length, 260);
   const lockRef = useRef(false);
   const lockTimer = useRef(0);
   const overscroll = useRef(0);
@@ -142,6 +157,9 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
 
       setCategory(key);
       setSelected(index);
+      setCatSliding(true);
+      clearTimeout(slideTimer.current);
+      slideTimer.current = setTimeout(() => setCatSliding(false), 520);
       categoryRef.current = key;
       selectedRef.current = index;
 
@@ -289,11 +307,12 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
       return false;
     };
 
+    // While a handover is running the boundary is ignored, but the page is
+    // NOT frozen. Swallowing every wheel event for the length of the lock made
+    // the toggle feel like it had hung — the transition is decorative, and
+    // decoration must never take input away from the reader.
     const onWheel = e => {
-      if (lockRef.current) {
-        e.preventDefault();
-        return;
-      }
+      if (lockRef.current) return;
       if (boundary(e.deltaY)) e.preventDefault();
     };
     let touchY = 0;
@@ -303,10 +322,7 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
     const onTouchMove = e => {
       const dy = touchY - e.touches[0].clientY;
       touchY = e.touches[0].clientY;
-      if (lockRef.current) {
-        e.preventDefault();
-        return;
-      }
+      if (lockRef.current) return;
       if (boundary(dy)) e.preventDefault();
     };
 
@@ -324,9 +340,16 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
     };
   }, [progress, selectIndex, handover, wipe]);
 
+  // The two labels differ in width, so the active pill has to be re-measured
+  // after a swap or it keeps the outgoing label's size.
+  useEffect(() => {
+    requestAnimationFrame(measureCats);
+  }, [category, measureCats]);
+
   useEffect(
     () => () => {
       clearTimeout(lockTimer.current);
+      clearTimeout(slideTimer.current);
       wipe.cancel();
     },
     [wipe],
@@ -389,27 +412,33 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
               aria-label='Project category'
               className='relative flex items-center gap-[2px] font-offbit101Bold text-[22px] leading-none'
             >
+              <GooPills
+                rects={catRects}
+                activeIndex={WORK_CATEGORIES.findIndex(c => c.key === category)}
+                hotIndex={catHot}
+                followerRef={catFollowerRef}
+                pillColor={palette.togglePill}
+                hoverColor={palette.toggleHover}
+                followerColor={palette.toggleFollower}
+                sliding={catSliding}
+              />
               {WORK_CATEGORIES.map((cat, i) => {
                 const on = cat.key === category;
                 return (
                   <button
                     key={cat.key}
+                    ref={setCatRef(i)}
                     type='button'
                     aria-pressed={on}
                     data-t-color={on ? 'togglePillInk' : 'toggleIdleInk'}
                     onClick={() => handover(cat.key)}
                     onMouseEnter={() => setCatHot(i)}
                     onMouseLeave={() => setCatHot(-1)}
-                    className='rounded-[9px] border-0 px-[20px] py-[12px] tracking-[.02em] transition-colors'
+                    className='relative border-0 bg-transparent px-[20px] py-[12px] tracking-[.02em] transition-colors'
                     style={{
                       color: on
                         ? palette.togglePillInk
                         : palette.toggleIdleInk,
-                      background: on
-                        ? palette.togglePill
-                        : catHot === i
-                          ? palette.toggleHover
-                          : 'transparent',
                     }}
                   >
                     {cat.label}
@@ -506,20 +535,34 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
                           >
                             {row.description}
                           </p>
-                          <a
-                            data-t-color='link'
-                            data-t-border='linkBorder'
-                            href={row.linkHref}
-                            target='_blank'
-                            rel='noreferrer'
-                            className='type-body border-b pb-[4px] text-[14px] font-medium'
-                            style={{
-                              color: palette.link,
-                              borderColor: palette.linkBorder,
-                            }}
-                          >
-                            View {row.display} ↗
-                          </a>
+                          <div className='flex flex-wrap items-center gap-x-6 gap-y-3'>
+                            <Link
+                              data-t-color='link'
+                              data-t-border='linkBorder'
+                              to={`/projects/${toSlug(row.title)}`}
+                              className='type-body border-b pb-[4px] text-[14px] font-medium'
+                              style={{
+                                color: palette.link,
+                                borderColor: palette.linkBorder,
+                              }}
+                            >
+                              Read the case study →
+                            </Link>
+                            <a
+                              data-t-color='link'
+                              data-t-border='linkBorder'
+                              href={row.linkHref}
+                              target='_blank'
+                              rel='noreferrer'
+                              className='type-body border-b pb-[4px] text-[14px] font-medium'
+                              style={{
+                                color: palette.link,
+                                borderColor: palette.linkBorder,
+                              }}
+                            >
+                              View live ↗
+                            </a>
+                          </div>
                         </div>
                       )}
                     </div>
