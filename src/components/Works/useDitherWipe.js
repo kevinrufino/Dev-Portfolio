@@ -4,7 +4,7 @@ import { THEMES } from './themes.js';
 const CELL = 12;
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
 const FEATHER = 7;
-const DURATION = 900;
+const DURATION = 450;
 
 /**
  * The category swap: a stepped disc of the incoming ground colour grows from
@@ -28,6 +28,13 @@ const DURATION = 900;
  * The disc is drawn into one reused ImageData filled monotonically: a cell that
  * has been dithered in never flickers back out, and each frame only visits the
  * growing disc rather than the whole buffer.
+ *
+ * The toggle itself is deliberately NOT swept. It sits at the sweep's origin,
+ * so it would flip first — and its text and its pill are driven from different
+ * places (the text imperatively from here, the pill from React state), so
+ * flipping the text early left acid ink on an acid pill: the label vanished
+ * for the length of the animation. It keeps the outgoing palette until the
+ * swap commits, when text and pill change together.
  */
 export default function useDitherWipe({ canvasRef, paneRef, sectionRef, glyphRef, glyph, onSettled }) {
   const rafRef = useRef(0);

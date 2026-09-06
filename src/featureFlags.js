@@ -56,3 +56,18 @@ export const ENABLE_PALM_SCENE = readFlag(
   // `false` — the scene wants profiling before it is on by default.
   true,
 );
+
+/**
+ * Names dissolve into the page's pixel grid as they fall through the intro.
+ *
+ * On: each falling name is resampled to the 6px lattice as it shrinks, so it
+ * coarsens into grid cells on the way down rather than just getting smaller —
+ * the same grid the section rules, the trail and the palm are drawn on.
+ * Off: the names simply scale down.
+ *
+ * Exploratory, so it is a flag rather than a decision: flip it to compare.
+ */
+export const ENABLE_PIXELATED_NAMES = readFlag(
+  process.env.REACT_APP_PIXELATED_NAMES,
+  true,
+);

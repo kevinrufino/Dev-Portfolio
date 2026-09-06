@@ -34,6 +34,9 @@ export default function useLandingSequence() {
   const [filling, setFilling] = useState(false);
   const [handedOff, setHandedOff] = useState(hasPlayed);
   const [filled, setFilled] = useState(hasPlayed);
+  // The pile has finished falling and every name has left the page. The hero
+  // is only collapsed once this is true, so the fall is never cut short.
+  const [drained, setDrained] = useState(hasPlayed);
   const nameRef = useRef(null);
   const pctRef = useRef(0); // synchronous source of truth for the eased fill
 
@@ -146,14 +149,18 @@ export default function useLandingSequence() {
   // and fades in the scroll cue.
   const onFilled = useCallback(() => setFilled(true), []);
 
+  const onDrained = useCallback(() => setDrained(true), []);
+
   return {
     pct,
     filling,
     handedOff,
     filled,
+    drained,
     nameRef,
     getSpawnRect,
     onHandoff,
     onFilled,
+    onDrained,
   };
 }

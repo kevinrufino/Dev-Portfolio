@@ -13,9 +13,9 @@ import useDitherWipe from './useDitherWipe.js';
 // Deliberate gesture before a category swap: a casual flick at either end of a
 // list shouldn't change what you're looking at.
 const OVERSCROLL_PX = 170;
-// Just past the wipe's own 900ms, so the boundary can't re-fire mid-sweep.
+// Just past the wipe's own duration, so the boundary can't re-fire mid-sweep.
 // Only boundary detection is suppressed for this long — scrolling stays live.
-const LOCK_MS = 950;
+const LOCK_MS = 500;
 // The pane's whole job is one project at a time, so 30fps is plenty and leaves
 // the frame budget to the landing physics and the palm.
 const FRAME_MS = 32;
@@ -54,6 +54,7 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
 
 
   const glyph = useRef(null);
+  const fluidRef = useRef(null);
   const {
     groupRef: catNavRef,
     followerRef: catFollowerRef,
@@ -150,6 +151,12 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
             }
           : { x: rect ? rect.width / 2 : 0, y: 0 };
 
+      // The wake canvas sits under the dither cover, so anything drawn while
+      // the sweep is running is invisible — and then arrives all at once the
+      // moment the cover lifts, which reads as a glitch. The fluid is held
+      // still and cleared for the length of the sweep instead.
+      fluidRef.current?.setEnabled(false);
+
       const from = theme;
       const index = key === 'personal' ? 0 : WORKS.work.length - 1;
       const target =
@@ -174,6 +181,7 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
         clearTimeout(lockTimer.current);
         lockTimer.current = setTimeout(() => {
           lockRef.current = false;
+          fluidRef.current?.setEnabled(true);
         }, LOCK_MS);
       });
     },
@@ -217,6 +225,7 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
     const pane = paneRef.current || section;
     const wake = wakeRef.current;
     const fluid = wake ? createWorkFluid(pane, wake) : null;
+    fluidRef.current = fluid;
 
     let visible = false;
     let raf = 0;
@@ -259,6 +268,7 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
       ro.disconnect();
       cancelAnimationFrame(raf);
       document.removeEventListener('visibilitychange', sync);
+      fluidRef.current = null;
       fluid?.destroy();
       fluid?.clear();
     };
@@ -432,7 +442,6 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
                     ref={setCatRef(i)}
                     type='button'
                     aria-pressed={on}
-                    data-t-color={on ? 'togglePillInk' : 'toggleIdleInk'}
                     onClick={() => handover(cat.key)}
                     onMouseEnter={() => setCatHot(i)}
                     onMouseLeave={() => setCatHot(-1)}

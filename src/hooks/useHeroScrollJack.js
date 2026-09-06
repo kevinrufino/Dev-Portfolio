@@ -9,6 +9,11 @@ import { useEffect, useRef, useCallback } from 'react';
  * reader could never reach — the scrollbar showed content above them that
  * scrolling would not reveal, which reads as the page being stuck.
  *
+ * The collapse waits for the pile to finish falling. Collapsing at the end of
+ * the snap cut the fall short: the scroll position reset to zero, the floor is
+ * driven by scroll, and the names simply stopped mid-air over the intro. It is
+ * the drain finishing — not the snap — that means the hero is spent.
+ *
  * The collapse and the matching scroll correction happen in the same
  * synchronous block, so the content below does not move on screen: the page
  * loses a viewport of height above the reader at the same instant the reader's
@@ -38,9 +43,14 @@ const SWIPE_THRESHOLD_PX = 8;
 const easeInOutCubic = t =>
   t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
-export default function useHeroScrollJack(ready, heroRef) {
+export default function useHeroScrollJack(ready, heroRef, drained) {
   // Lets the scroll cue trigger the same snap the wheel/swipe uses.
   const snapRef = useRef(null);
+  // Read inside the effect's listeners without re-registering them all when
+  // the drain finishes.
+  const drainedRef = useRef(drained);
+  drainedRef.current = drained;
+  const collapseNowRef = useRef(null);
 
   // Freeze the page entirely until the loader has handed off AND every name
   // row has landed.
@@ -61,6 +71,15 @@ export default function useHeroScrollJack(ready, heroRef) {
     let raf = 0;
     let collapsed = false;
     let teardown = () => {};
+
+    // Only once the reader has left the hero AND the pile has finished
+    // falling. Either alone is not enough: collapsing early stops the fall,
+    // and collapsing while the reader is still on the hero would pull the
+    // ground out from under them.
+    const maybeCollapse = () => {
+      if (state !== 'locked' || !drainedRef.current) return;
+      collapseHero();
+    };
 
     // Take the empty hero out of the document and remove the same distance
     // from the scroll position in one go, so nothing on screen moves.
@@ -94,7 +113,7 @@ export default function useHeroScrollJack(ready, heroRef) {
           raf = requestAnimationFrame(step);
         } else {
           state = 'locked';
-          collapseHero();
+          maybeCollapse();
         }
       };
       raf = requestAnimationFrame(step);
@@ -162,7 +181,7 @@ export default function useHeroScrollJack(ready, heroRef) {
     const onScroll = () => {
       if (state === 'hero' && window.scrollY >= fold) {
         state = 'locked';
-        collapseHero();
+        maybeCollapse();
       }
     };
 
@@ -177,7 +196,12 @@ export default function useHeroScrollJack(ready, heroRef) {
       if (state === 'hero') snapToIntro();
     };
 
+    // The drain usually finishes after the snap has already locked, so the
+    // collapse is triggered from the effect below rather than from here.
+    collapseNowRef.current = maybeCollapse;
+
     teardown = () => {
+      collapseNowRef.current = null;
       cancelAnimationFrame(raf);
       snapRef.current = null;
       window.removeEventListener('wheel', onWheel);
@@ -188,6 +212,12 @@ export default function useHeroScrollJack(ready, heroRef) {
     };
     return teardown;
   }, [ready, heroRef]);
+
+  // Whichever happens last — leaving the hero, or the pile landing — is what
+  // actually collapses it.
+  useEffect(() => {
+    if (drained) collapseNowRef.current?.();
+  }, [drained]);
 
   return useCallback(() => snapRef.current?.(), []);
 }

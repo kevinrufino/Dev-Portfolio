@@ -69,7 +69,7 @@ const AppContent = () => {
   // The hero collapses to nothing once it has been scrolled past, so the jack
   // needs the section itself, not just a signal.
   const heroRef = useRef(null);
-  const snapPastHero = useHeroScrollJack(seq.filled, heroRef);
+  const snapPastHero = useHeroScrollJack(seq.filled, heroRef, seq.drained);
 
   // Preload critical assets
   useEffect(() => {
@@ -144,20 +144,19 @@ const AppContent = () => {
             — so a canvas outside it is simply painted over, and the hero came
             up empty.
 
-            They sit at different depths on purpose: the physics canvas is
-            unpositioned, so it falls below every section and the names read as
-            being behind the page; the palm carries z-index 1 and sits above
-            them, because the intro and footer have opaque grounds and the palm
-            is drawn ON them. The engine clips the palm to the band beside the
-            intro copy and out of the works section, so being on top never
-            covers anything that has to be read. */}
-        <PalmScene />
+            Order matters: the physics canvas comes first so the palm paints
+            over the falling names rather than under them. Both are clipped to
+            the band beside the intro copy, so neither ever crosses the text —
+            the names fall past the palm, down and to the right, through the
+            same band the shooting stars use. */}
         <FillPhysicsCanvas
           active={seq.filling}
           getSpawnRect={seq.getSpawnRect}
           onHandoff={seq.onHandoff}
           onFilled={seq.onFilled}
+          onDrained={seq.onDrained}
         />
+        <PalmScene />
 
         {/* Hidden easter egg text — acid on acid, found by selecting it.
             Taken out of flow: in flow it reserved a line of height above the

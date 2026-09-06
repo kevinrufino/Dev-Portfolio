@@ -145,7 +145,13 @@ const HomeNav = ({ setCursor }) => {
         slideTimerRef.current = setTimeout(() => setSliding(false), 520);
         return idx;
       });
-      setShown(window.scrollY >= window.innerHeight * 0.55);
+      // The nav hides on the hero, not on the top of the page. Once the hero
+      // has collapsed there is no hero to hide from, so it shows immediately —
+      // keying off scroll alone kept it hidden through the first half of the
+      // intro, which by then is the top of the document.
+      const hero = document.getElementById('home');
+      const heroGone = !hero || hero.offsetHeight === 0;
+      setShown(heroGone || window.scrollY >= window.innerHeight * 0.55);
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     onScroll();
