@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { createPalmScene } from './palmEngine.js';
-import { setLeafColliderProvider } from './leafColliders.js';
+import { setLeafColliderProvider, setPalmShaker } from './leafColliders.js';
 import { ENABLE_PALM_SCENE } from '../../featureFlags.js';
+import { addSource } from '../../utils/cursorFx.js';
 
 // The presenter is the page's most expensive pass, so it is capped well below
 // 60fps. The palm is ambient — nothing about it needs to track the pointer
@@ -11,6 +12,14 @@ const FRAME_MS = 31;
 // frame is skipped entirely: between them sits the works section, which the
 // palm is clipped out of anyway.
 const SKIP_MARGIN = 160;
+// Reach of the pull on a coconut still hanging in the tree. Medium: far
+// enough that the cursor leans toward one on the way past, close enough that
+// four of them don't turn the whole footer into a magnet.
+const NUT_GRAVITY_PX = 92;
+// Irregular canvas shapes can't hand the registry a box. A tiny circle on the
+// pointer stands in: the gap is zero exactly when the scene's own hit test
+// said yes, and its area is small enough to beat any section behind it.
+const AT_POINTER = 7;
 
 /**
  * Mounts the palm scene over the page.
@@ -87,6 +96,7 @@ const PalmScene = () => {
     });
     palmRef.current = palm;
     setLeafColliderProvider(time => palm.leafColliders(time));
+    setPalmShaker(() => palm.shake());
 
     let raf = 0;
     let last = 0;
@@ -132,9 +142,63 @@ const PalmScene = () => {
       // Never swallow a click meant for the page's own controls.
       if (e.target.closest('button,a,summary,select,input,textarea')) return;
       const hit = palm.hitTest(e.clientX, e.clientY);
-      if (hit.tree || hit.nut) palm.shake();
-      if (hit.nut) palm.dropCoconut(hit.nut);
+      if (hit.nut) {
+        // Every coconut pops when it is hit, on the tree or rolling about on
+        // the sand — the click should always land somewhere.
+        palm.burstAt(e.clientX, e.clientY);
+        // The tree only moves for the ones still hanging in it. A coconut
+        // already lying on the beach has nothing left to shake.
+        if (hit.nut.state === 'attached') palm.shake();
+        palm.dropCoconut(hit.nut);
+        return;
+      }
+      if (hit.tree) palm.shake();
     };
+
+    // What the pointer can reach in the scene, answered per sample.
+    //
+    // Coconuts come first because they are drawn on top of everything else,
+    // then the tree, then the water behind it — the same order the reader
+    // sees. A coconut still in the tree also pulls the cursor toward it, so
+    // the one thing in the footer worth clicking leans into the hand.
+    const nearestNut = (x, y) => {
+      let best = null;
+      let bestGap = Infinity;
+      for (const nut of palm.nutCircles()) {
+        const gap = Math.max(0, Math.hypot(nut.x - x, nut.y - y) - nut.r);
+        const reach = nut.attached ? NUT_GRAVITY_PX : 0;
+        if (gap > reach || gap >= bestGap) continue;
+        bestGap = gap;
+        best = nut;
+      }
+      return best;
+    };
+
+    const removeSource = addSource((x, y) => {
+      if (x < 0 || y < 0) return null;
+      const nut = nearestNut(x, y);
+      if (nut) {
+        return {
+          label: nut.attached ? 'shake' : 'push',
+          geom: { x: nut.x, y: nut.y, r: nut.r },
+          gravity: nut.attached ? { distance: NUT_GRAVITY_PX } : null,
+        };
+      }
+      if (palm.hitTest(x, y).tree) {
+        return { label: 'shake', geom: { x, y, r: AT_POINTER } };
+      }
+      const water = palm.waterBand();
+      if (
+        water &&
+        x >= water.left &&
+        x <= water.right &&
+        y >= water.top &&
+        y <= water.bottom
+      ) {
+        return { label: 'wavy', geom: water };
+      }
+      return null;
+    });
 
     window.addEventListener('resize', onResize);
     window.addEventListener('pointermove', onMove, { passive: true });
@@ -144,7 +208,9 @@ const PalmScene = () => {
 
     return () => {
       cancelAnimationFrame(raf);
+      removeSource();
       setLeafColliderProvider(null);
+      setPalmShaker(null);
       palmRef.current = null;
       window.removeEventListener('resize', onResize);
       window.removeEventListener('pointermove', onMove);

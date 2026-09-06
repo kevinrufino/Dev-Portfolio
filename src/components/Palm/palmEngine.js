@@ -341,15 +341,21 @@ export function createPalmScene({ displayCanvas, getConfig, getRects }) {
 
   // ── sparse shooting stars, in screen space ────────────────────────────────
   let stars = [], nextStarAt = 0;
+  // Denser than it was. One star every three to seven seconds meant most
+  // readers crossed the intro and the footer without seeing a single one, and
+  // a thing nobody sees is not restraint. Roughly one in the air at any time
+  // now, in ones and occasional pairs so the rhythm stays irregular.
+  const spawnStar = band => ({
+    x: band.left + random() * band.width * 0.55,
+    y: band.top + random() * Math.max(60, band.height * 0.42),
+    age: 0, life: 1.15 + random() * 0.4, speed: 220 + random() * 90,
+  });
   function drawStars(time, dt, band) {
     if (!cfg.stars || !band) { stars = []; return; }
     if (time >= nextStarAt) {
-      stars.push({
-        x: band.left + random() * band.width * 0.55,
-        y: band.top + random() * Math.max(60, band.height * 0.42),
-        age: 0, life: 1.15 + random() * 0.4, speed: 220 + random() * 90,
-      });
-      nextStarAt = time + 3200 + random() * 3600;
+      stars.push(spawnStar(band));
+      if (random() < 0.28) stars.push(spawnStar(band));
+      nextStarAt = time + 650 + random() * 1350;
     }
     stars = stars.filter(s => s.age < s.life);
     const gold = pose ? pose.progress : 0;
@@ -569,7 +575,48 @@ export function createPalmScene({ displayCanvas, getConfig, getRects }) {
     return { tree, nut };
   }
 
+  // ── what the cursor can reach ─────────────────────────────────────────────
+  // The scene is a canvas, so nothing in it can carry a hover of its own. It
+  // publishes the geometry of the parts that answer the pointer instead, in
+  // client coordinates, and the cursor registry does the rest.
+
+  /** Every coconut as a client-space circle, with whether it is still on the tree. */
+  function nutCircles() {
+    if (!pose || !cfg.coconuts || pose.progress < 0.35) return [];
+    const { ox, oy, scale } = pose;
+    return nuts.map(n => ({
+      x: ox + n.x * scale,
+      y: oy + n.y * scale,
+      r: (n.r + 8) * scale,
+      attached: n.state === 'attached',
+    }));
+  }
+
+  /**
+   * The surf, as a client-space box.
+   *
+   * The wave itself is a moving front; this is the band it runs in, which is
+   * what a reader is actually pointing at when they point at the water.
+   */
+  function waterBand() {
+    if (!pose || !cfg.waves || pose.progress < 0.25) return null;
+    const { footer } = getRects();
+    if (!footer) return null;
+    const floor = footer.bottom - 54;
+    const reach = Math.min(footer.width * 0.34, 390) + footer.left;
+    return { left: 0, top: floor - 58, right: reach, bottom: footer.bottom - 38 };
+  }
+
   function shake() { shakeStarted = animTime; }
+
+  /** The pixel snap sprite, on demand — every coconut click gets one. */
+  function burstAt(clientX, clientY) {
+    if (!pose) return;
+    // Bursts are drawn inside the scene transform, so a client position has
+    // to come back out of it first.
+    const { ox, oy, scale } = pose;
+    snapBursts.push({ x: (clientX - ox) / scale, y: (clientY - oy) / scale, age: 0 });
+  }
 
   function dropCoconut(n = nuts.find(x => x.state === 'attached')) {
     if (!n || !cfg.coconuts || !pose || pose.progress < 0.98) return 0;
@@ -592,5 +639,8 @@ export function createPalmScene({ displayCanvas, getConfig, getRects }) {
   const getProgress = () => (pose ? pose.progress : 0);
 
   resize();
-  return { render, resize, leafColliders, hitTest, shake, dropCoconut, resetCoconuts, setPointer, getProgress };
+  return {
+    render, resize, leafColliders, hitTest, shake, dropCoconut, resetCoconuts,
+    setPointer, getProgress, nutCircles, waterBand, burstAt,
+  };
 }
