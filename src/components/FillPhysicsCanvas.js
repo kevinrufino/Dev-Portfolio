@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { FirstNameComponent } from './Hero/components/FirstNameComponent.js';
 import { LastNameComponent } from './Hero/components/LastNameComponent.js';
+import { getLeafColliders } from './Palm/leafColliders.js';
 
 /**
  * Full-page physics canvas for the landing sequence.
@@ -200,6 +201,15 @@ const SCROLL_RANGE = 1.2; // fold-heights of scroll to fully open the floor
 // edge rather than dropping straight through a widening centre gap.
 const FLOOR_SPLIT = 0.42;
 const DRAIN_TICK_MS = 400; // wake/cull cadence while the floor is open
+// Leaf colliders: one static circle per frond sample. The palm emits three
+// samples for each of its ten fronds, so thirty is the exact count.
+const LEAF_COUNT = 30;
+const LEAF_RADIUS = 12;
+// Colliders stay live only for the first seconds of the drain — long enough to
+// deflect the falling pile, short enough that nothing comes to rest on an
+// invisible leaf and hangs in mid-air over the intro.
+const LEAF_WINDOW_MS = 5000;
+const LEAF_PARK = { x: -5000, y: -5000 };
 const CULL_MARGIN = 600; // px past the document bottom before a name is retired
 const IMPULSE_RADIUS_FRAC = 0.28; // click impulse reach, as a fraction of viewport width
 const IMPULSE_UP = 12; // upward kick strength on click
@@ -345,6 +355,7 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
           staticOpts,
         );
         Matter.World.add(world, [leftFloor, rightFloor, leftWall, rightWall]);
+
 
         // Track the real document height as content lazy-loads in and the page
         // grows (images/videos below the fold change it) — it sets the depth a
@@ -515,6 +526,44 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
           wakeAll();
           cullFallen();
         }, DRAIN_TICK_MS);
+
+        // Static circles tracking the palm's fronds, parked far off-page and
+        // moved into place each step while the palm is in its intro pose. The
+        // palm registers itself as the provider; with no palm mounted the
+        // provider returns nothing and these simply stay parked.
+        const leafBodies = Array.from({ length: LEAF_COUNT }, () =>
+          Matter.Bodies.circle(LEAF_PARK.x, LEAF_PARK.y, LEAF_RADIUS, {
+            isStatic: true,
+            restitution: 0.42,
+            friction: 0.02,
+            render: invisible,
+          }),
+        );
+        Matter.World.add(world, leafBodies);
+
+        let drainStart = 0;
+        Matter.Events.on(engine, 'beforeUpdate', () => {
+          if (!drainStart && lastShift > 0) drainStart = performance.now();
+          const live =
+            drainStart && performance.now() - drainStart < LEAF_WINDOW_MS;
+          const colliders = live ? getLeafColliders(performance.now()) : [];
+          for (let i = 0; i < leafBodies.length; i++) {
+            const c = colliders[i];
+            const body = leafBodies[i];
+            if (!c) {
+              if (body.position.x !== LEAF_PARK.x) {
+                Matter.Body.setPosition(body, LEAF_PARK);
+              }
+              continue;
+            }
+            const scale = c.r / body.circleRadius;
+            if (Math.abs(scale - 1) > 0.02) {
+              Matter.Body.scale(body, scale, scale);
+              body.circleRadius = c.r;
+            }
+            Matter.Body.setPosition(body, { x: c.x, y: c.y });
+          }
+        });
 
         // Draw the name sprites each frame, bottom-aligned to the (shorter)
         // collision box. Bodies live in document coordinates; the canvas is a

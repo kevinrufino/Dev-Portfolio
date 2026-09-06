@@ -36,3 +36,20 @@ export const ENABLE_SHADER_BACKGROUND = readFlag(
   process.env.REACT_APP_SHADER_BACKGROUND,
   false,
 );
+
+/**
+ * The pixel palm scene (`PalmScene`).
+ *
+ * Off by default. It is the most expensive thing on the page — a full-viewport
+ * raster presented on the 6px lattice every frame — and it already carries
+ * three internal throttles (a sub-60fps cap, a skip while only the works
+ * section is on screen, and batched frond strokes). Leave it off until it has
+ * been profiled on a mid-range machine.
+ *
+ * With it off, no palm canvas mounts and the landing physics runs with no leaf
+ * colliders, which is its behaviour on main today.
+ */
+export const ENABLE_PALM_SCENE = readFlag(
+  process.env.REACT_APP_PALM_SCENE,
+  false,
+);
