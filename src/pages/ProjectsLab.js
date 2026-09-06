@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { goToSection } from '../utils/navigateToSection.js';
 import clsx from 'clsx';
 import ChannelZapper from '../components/ProjectsLab/ChannelZapper.js';
 import LedgerIndex from '../components/ProjectsLab/LedgerIndex.js';
@@ -36,6 +37,7 @@ const RENDITIONS = [
  * inactive ones don't keep videos or physics alive.
  */
 const ProjectsLab = () => {
+  const navigate = useNavigate();
   const [active, setActive] = useState(0);
   const { Comp, hint } = RENDITIONS[active];
 
@@ -50,12 +52,13 @@ const ProjectsLab = () => {
     <div className="grain min-h-[100svh] text-ultra px-3 md:px-6 pb-10">
       <header className="flex flex-wrap items-end justify-between gap-3 pt-4 pb-4 md:pt-6">
         <div>
-          <Link
-            to="/#projects"
-            className="font-offbitDot text-[10px] md:text-xs tracking-[0.3em] uppercase hover:underline underline-offset-4 decoration-2"
+          <button
+            type="button"
+            onClick={() => goToSection(navigate, '/lab', 'work')}
+            className="border-0 bg-transparent p-0 font-offbitDot text-[10px] md:text-xs tracking-[0.3em] uppercase hover:underline underline-offset-4 decoration-2"
           >
             ← BACK TO SITE
-          </Link>
+          </button>
           <h1 className="font-offbit101Bold uppercase leading-[0.9] text-4xl md:text-6xl pt-1">
             Projects Lab
           </h1>

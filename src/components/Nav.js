@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   goToSection,
   SECTIONS,
@@ -327,6 +327,8 @@ HomeNav.propTypes = {
 
 const ProjectBackNav = ({ setCursor }) => {
   const iconRef = useRef(null);
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
 
   return (
     <nav
@@ -334,15 +336,19 @@ const ProjectBackNav = ({ setCursor }) => {
       className='fixed top-4 left-4 z-20 mix-blend-difference'
       onMouseEnter={() => setCursor('')}
     >
-      <Link
-        to='/#projects'
+      {/* The destination travels as router state like every other nav item —
+          `/#projects` left the section in the address bar, so a reload after
+          coming back landed the reader in the middle of the page. */}
+      <button
+        type='button'
+        onClick={() => goToSection(navigate, pathname, 'work')}
         aria-label='Back to projects'
-        className='flex h-12 w-12 items-center justify-center text-white no-underline transition-transform duration-200 hover:-translate-x-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white'
+        className='flex h-12 w-12 items-center justify-center border-0 bg-transparent text-white transition-transform duration-200 hover:-translate-x-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white'
         onFocus={() => iconRef.current?.startAnimation()}
         onBlur={() => iconRef.current?.stopAnimation()}
       >
         <ArrowBackUpIcon ref={iconRef} size={34} className='h-full w-full' />
-      </Link>
+      </button>
     </nav>
   );
 };

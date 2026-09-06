@@ -1,5 +1,7 @@
 import { useRef, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Reveal from './Reveal.js';
+import { goToSection } from '../utils/navigateToSection.js';
 
 const footerLinks = [
   { href: 'mailto:kevinrufino97@gmail.com', label: 'Email' },
@@ -38,6 +40,8 @@ const footerLinks = [
  */
 export const Footer = ({ setCursor }) => {
   const footerRef = useRef(null);
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
 
   // Publish the footer's height so the content above can reserve exactly that
   // much scroll for the reveal — too little and the footer is never fully
@@ -119,9 +123,17 @@ export const Footer = ({ setCursor }) => {
       />
       <div className='type-label absolute bottom-[17px] left-0 right-0 z-10 mx-auto flex max-w-[1440px] items-center justify-between gap-4 px-[clamp(24px,7.4vw,110px)] text-charcoal-muted'>
         <span>Designed and developed by Kevin Rufino</span>
-        <a href='#home' className='p-[5px] text-charcoal-muted'>
+        {/* The last hash on the page. `#home` put the destination in the URL,
+            so a reload dropped the reader back at whatever they had last
+            jumped to — and it hard-coded a route into a control that only ever
+            means "the top of this page". */}
+        <button
+          type='button'
+          onClick={() => goToSection(navigate, pathname, 'home')}
+          className='border-0 bg-transparent p-[5px] font-[inherit] text-[inherit] text-charcoal-muted'
+        >
           Back to top ↑
-        </a>
+        </button>
       </div>
     </footer>
   );
