@@ -665,27 +665,71 @@ const FillPhysicsCanvas = ({
           return 1 - t * t;
         };
 
-        // Resample the name to the page's 6px lattice as it shrinks, so it
-        // coarsens into grid cells rather than merely getting smaller.
-        const pixelBuf = document.createElement('canvas');
-        const pixelCtx = pixelBuf.getContext('2d');
-        const drawName = (ctx, img, w, h, top) => {
-          if (!ENABLE_PIXELATED_NAMES) {
-            ctx.drawImage(img, -w / 2, top, w, h);
-            return;
+        // ── the shared pixel grid ────────────────────────────────────────
+        // Names inside the intro are rasterised the same way the palm is: not
+        // by shrinking each sprite's own bitmap, but by drawing them into one
+        // low-resolution buffer whose cells are LOCKED TO THE PAGE LATTICE.
+        //
+        // That distinction is the whole effect. Downsampling a sprite in its
+        // own rotated space gives cells that travel and rotate with it, which
+        // reads as a blurry image sliding about. Sampling into a fixed lattice
+        // means the cells never move: as a name passes over them they light up
+        // and switch off in place, and it shares its grid with the section
+        // rules, the pixel trail and the palm.
+        //
+        // The vertical phase follows the scroll so the lattice stays pinned to
+        // the document rather than the viewport, alpha is quantised to four
+        // steps to harden the edges, and the 1px cell gaps are punched out
+        // with a cached pattern — the same three-op presentation the palm
+        // uses, rather than a fillRect per cell.
+        const GAP = 1;
+        const scene = document.createElement('canvas');
+        const sceneCtx = scene.getContext('2d', { willReadFrequently: true });
+        const quant = document.createElement('canvas');
+        const quantCtx = quant.getContext('2d');
+        const gapTile = document.createElement('canvas');
+        gapTile.width = GRID;
+        gapTile.height = GRID;
+        const gapCtx = gapTile.getContext('2d');
+        gapCtx.fillStyle = '#000';
+        gapCtx.fillRect(0, 0, GRID, GAP);
+        gapCtx.fillRect(0, 0, GAP, GRID);
+        let gapPattern = null;
+
+        const presentGrid = (ctx, gridOffset) => {
+          const gw = scene.width;
+          const gh = scene.height;
+          const img = sceneCtx.getImageData(0, 0, gw, gh);
+          const d = img.data;
+          let any = false;
+          for (let i = 3; i < d.length; i += 4) {
+            const a = d[i];
+            if (a < 12) {
+              d[i] = 0;
+              continue;
+            }
+            any = true;
+            d[i] = ((Math.ceil(Math.sqrt(a / 255) * 4) / 4) * 255) | 0;
           }
-          const cols = Math.max(1, Math.round(w / GRID));
-          const rows = Math.max(1, Math.round(h / GRID));
-          if (pixelBuf.width !== cols || pixelBuf.height !== rows) {
-            pixelBuf.width = cols;
-            pixelBuf.height = rows;
+          if (!any) return;
+          if (quant.width !== gw || quant.height !== gh) {
+            quant.width = gw;
+            quant.height = gh;
           }
-          pixelCtx.clearRect(0, 0, cols, rows);
-          pixelCtx.drawImage(img, 0, 0, cols, rows);
-          const smoothing = ctx.imageSmoothingEnabled;
+          quantCtx.putImageData(img, 0, 0);
+
+          ctx.save();
           ctx.imageSmoothingEnabled = false;
-          ctx.drawImage(pixelBuf, -w / 2, top, cols * GRID, rows * GRID);
-          ctx.imageSmoothingEnabled = smoothing;
+          ctx.drawImage(quant, 0, -gridOffset, gw * GRID, gh * GRID);
+          if (!gapPattern) gapPattern = ctx.createPattern(gapTile, 'repeat');
+          if (gapPattern) {
+            gapPattern.setTransform(new DOMMatrix([1, 0, 0, 1, 0, -gridOffset]));
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.fillStyle = gapPattern;
+            ctx.fillRect(0, 0, W, fold);
+            ctx.globalCompositeOperation = 'source-over';
+          }
+          ctx.restore();
         };
 
         let drainStart = 0;
@@ -725,19 +769,14 @@ const FillPhysicsCanvas = ({
           const offset = window.scrollY;
           ctx.save();
           ctx.translate(0, -offset);
+          // Above the intro the names are themselves — full size, crisp, no
+          // grid. The grid is something they fall INTO.
           for (const { body, img, width, height } of sprites) {
-            const life = lifeAt(body.position.y);
-            if (life <= MIN_SCALE) continue;
+            if (ENABLE_PIXELATED_NAMES && lifeAt(body.position.y) < 1) continue;
             ctx.save();
             ctx.translate(body.position.x, body.position.y);
             ctx.rotate(body.angle);
-            drawName(
-              ctx,
-              img,
-              width * life,
-              height * life,
-              drawTop * life,
-            );
+            ctx.drawImage(img, -width / 2, drawTop, width, height);
             ctx.restore();
           }
           // Bursts live in document coords too, so they ride the same offset.
@@ -745,6 +784,50 @@ const FillPhysicsCanvas = ({
             drawFireworks(ctx, fireworks, performance.now());
           }
           ctx.restore();
+
+          if (!ENABLE_PIXELATED_NAMES) return;
+
+          // Everything inside the intro goes through the lattice instead.
+          const inGrid = sprites.filter(sp => {
+            const life = lifeAt(sp.body.position.y);
+            return life < 1 && life > MIN_SCALE;
+          });
+          if (!inGrid.length) return;
+
+          const gridOffset = ((offset % GRID) + GRID) % GRID;
+          const gw = Math.ceil(W / GRID);
+          const gh = Math.ceil(fold / GRID) + 1;
+          if (scene.width !== gw || scene.height !== gh) {
+            scene.width = gw;
+            scene.height = gh;
+          }
+          sceneCtx.setTransform(1, 0, 0, 1, 0, 0);
+          sceneCtx.clearRect(0, 0, gw, gh);
+          // One cell of the buffer is one GRID-sized cell on screen, phased by
+          // the scroll so the lattice belongs to the page, not the viewport.
+          sceneCtx.setTransform(
+            1 / GRID,
+            0,
+            0,
+            1 / GRID,
+            0,
+            gridOffset / GRID,
+          );
+          for (const { body, img, width, height } of inGrid) {
+            const life = lifeAt(body.position.y);
+            sceneCtx.save();
+            sceneCtx.translate(body.position.x, body.position.y - offset);
+            sceneCtx.rotate(body.angle);
+            sceneCtx.drawImage(
+              img,
+              (-width * life) / 2,
+              drawTop * life,
+              width * life,
+              height * life,
+            );
+            sceneCtx.restore();
+          }
+          presentGrid(ctx, gridOffset);
         });
 
         // Click anywhere to poke the pile: radial + upward impulse on nearby
