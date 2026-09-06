@@ -1,5 +1,6 @@
 import React from 'react';
 import useTypewriter from '../../hooks/useTypewriter.js';
+import { scrollToSection } from '../../utils/navigateToSection.js';
 
 const ROLES = [
   'Front-end Developer',
@@ -73,13 +74,14 @@ export const Intro = ({ setCursor }) => {
             Developer. Check out my work below 👇🏾
           </p>
 
-          <a
-            href='#projects'
-            className='type-body inline-flex items-center gap-[10px] border-b border-[#b8bcb3] py-[6px] text-[15px] font-medium text-ultra'
+          <button
+            type='button'
+            onClick={() => scrollToSection('work')}
+            className='type-body inline-flex items-center gap-[10px] border-0 border-b border-[#b8bcb3] bg-transparent py-[6px] text-[15px] font-medium text-ultra'
           >
             See selected work
             <span aria-hidden='true'>↓</span>
-          </a>
+          </button>
         </div>
       </div>
     </section>

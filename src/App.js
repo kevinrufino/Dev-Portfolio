@@ -17,6 +17,7 @@ import {
   Routes,
   Route,
   useLocation,
+  useNavigate,
 } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import AppProviders from './context/AppProviders.js';
@@ -41,6 +42,7 @@ import ProjectsLab from './pages/ProjectsLab.js';
 import PageTransition from './components/PageTransition.js';
 import Reveal from './components/Reveal.js';
 import { watchGrids } from './utils/grid.js';
+import { scrollToSection } from './utils/navigateToSection.js';
 import PalmScene from './components/Palm/PalmScene.js';
 import { ENABLE_SHADER_BACKGROUND } from './featureFlags.js';
 
@@ -88,53 +90,23 @@ const AppContent = () => {
   // Keep every section's 6px background grid phased to the document origin.
   useEffect(() => watchGrids(), []);
 
-  // Scroll to the hash target after SPA navigation (nav items, "← INDEX").
+  // Arriving from another route with a section in mind.
   //
-  // Two targets are not their own elements and cannot be reached by scrolling
-  // to them:
-  //   #home    — the hero collapses to nothing once passed, so "home" means
-  //              the top of the document, not a section that may not exist.
-  //   #contact — the footer is fixed behind the page, so it is never scrolled
-  //              *to*; it is uncovered by scrolling to the very end. Aiming at
-  //              the element itself landed halfway through the reveal.
-  const { hash } = useLocation();
+  // The target travels as router state rather than as a URL hash: the address
+  // bar stays at `/`, so a reload starts the page from the top instead of
+  // dropping the reader back into whichever section they last jumped to. The
+  // state is cleared once consumed, so a later reload cannot replay it either.
+  const location = useLocation();
+  const navigate = useNavigate();
+  const target = location.state?.scrollTo;
   useEffect(() => {
-    if (!hash) return undefined;
-
-    const scroll = () => {
-      const smooth = !window.matchMedia?.(
-        '(prefers-reduced-motion: reduce)',
-      ).matches;
-      const behavior = smooth ? 'smooth' : 'instant';
-
-      if (hash === '#home') {
-        // The intro, not scroll position 0. Before the hero collapses those
-        // are different places, and "home" should never land the reader back
-        // on a hero they have already left.
-        const intro = document.getElementById('intro');
-        window.scrollTo({
-          top: intro
-            ? Math.max(0, intro.getBoundingClientRect().top + window.scrollY)
-            : 0,
-          behavior,
-        });
-        return;
-      }
-      if (hash === '#contact') {
-        window.scrollTo({
-          top: document.documentElement.scrollHeight - window.innerHeight,
-          behavior,
-        });
-        return;
-      }
-      document
-        .querySelector(hash)
-        ?.scrollIntoView({ behavior, block: 'start' });
-    };
-
-    const id = setTimeout(scroll, 80);
+    if (!target) return undefined;
+    const id = setTimeout(() => {
+      scrollToSection(target);
+      navigate(location.pathname, { replace: true, state: null });
+    }, 120);
     return () => clearTimeout(id);
-  }, [hash]);
+  }, [target, navigate, location.pathname]);
 
   // Get theme colors
   const themeColors = getThemeColors();
