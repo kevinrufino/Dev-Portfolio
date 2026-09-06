@@ -688,7 +688,24 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
           fireworks.length = 0;
         };
       },
-    );
+    ).catch(error => {
+      // Never strand the visitor on the loading screen.
+      //
+      // The landing sequence freezes scrolling until `onFilled` fires, and
+      // `onFilled` is only reached from inside the block above. If the
+      // matter-js chunk or one of the name rasterizations fails — an offline
+      // reload with a cold cache, a hashed chunk 404 after a redeploy — none
+      // of that runs, the loader overlay never unmounts, and the page is
+      // permanently stuck at 100%.
+      //
+      // So on failure, hand off and release anyway: the hero loses its pile
+      // of names and is simply empty, which is a survivable degradation, and
+      // the rest of the page becomes reachable.
+      if (cancelled) return;
+      console.error('Landing physics failed to load', error);
+      onHandoffRef.current?.();
+      onFilledRef.current?.();
+    });
 
     return () => {
       cancelled = true;
