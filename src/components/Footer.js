@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect } from 'react';
 import Reveal from './Reveal.js';
 
 const footerLinks = [
@@ -20,52 +20,54 @@ const footerLinks = [
  * Section 03 — contact.
  *
  * Charcoal rather than ultra: the page has spent three sections in acid and
- * blue, and the footer is where it lands. The curtain reveal is kept and
- * retinted to match.
+ * blue, and this is where it lands.
  *
- * The section is deliberately much taller than its content (165svh) and is
- * pulled up under the section above it with a negative margin. That overlap is
- * the run-in the palm scene needs to travel from the projects index into the
- * footer without the transition being cut off by a section boundary; the
- * content itself is offset back down so it still reads as a normal footer.
+ * The footer does not scroll. It is fixed to the bottom of the viewport behind
+ * the page, and the content above — the works section, which is opaque — rides
+ * up over it and off, so the footer is uncovered rather than arriving. The
+ * page content carries a bottom margin the height of this footer, which is the
+ * scroll distance that performs the reveal.
+ *
+ * That makes the works section itself the curtain, which is why there is no
+ * curtain element in here any more: two curtains would fight, and only one of
+ * them can be the thing the reader is actually looking at.
+ *
+ * The measured height is published as `--footer-reveal-h` for the content
+ * above to reserve. Measured rather than assumed because the contact block
+ * rewraps at every breakpoint.
  */
 export const Footer = ({ setCursor }) => {
   const footerRef = useRef(null);
-  const [isCurtainLifted, setIsCurtainLifted] = useState(false);
 
+  // Publish the footer's height so the content above can reserve exactly that
+  // much scroll for the reveal — too little and the footer is never fully
+  // uncovered, too much and the page ends on dead space.
   useEffect(() => {
     const node = footerRef.current;
     if (!node) return undefined;
 
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
-      setIsCurtainLifted(true);
-      return undefined;
-    }
+    const publish = () => {
+      document.documentElement.style.setProperty(
+        '--footer-reveal-h',
+        `${Math.round(node.offsetHeight)}px`,
+      );
+    };
+    publish();
 
-    if (!('IntersectionObserver' in window)) {
-      setIsCurtainLifted(true);
-      return undefined;
-    }
-
-    const observer = new IntersectionObserver(
-      entries => {
-        if (!entries[0]?.isIntersecting) return;
-        setIsCurtainLifted(true);
-        observer.disconnect();
-      },
-      { threshold: 0.35, rootMargin: '0px 0px -12% 0px' },
-    );
-
+    const observer = new ResizeObserver(publish);
     observer.observe(node);
-    return () => observer.disconnect();
+    window.addEventListener('resize', publish);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', publish);
+      document.documentElement.style.removeProperty('--footer-reveal-h');
+    };
   }, []);
 
   return (
     <footer
       ref={footerRef}
-      className={`footer-curtain-stage relative h-[165svh] min-h-[780px] w-full overflow-hidden bg-charcoal text-charcoal-ink [margin-top:-60svh] ${
-        isCurtainLifted ? 'footer-curtain-stage--lifted' : ''
-      }`}
+      className='fixed inset-x-0 bottom-0 z-0 w-full overflow-hidden bg-charcoal text-charcoal-ink'
       id='contact'
       onMouseEnter={() => {
         setCursor?.('');
@@ -73,13 +75,7 @@ export const Footer = ({ setCursor }) => {
     >
       <div className='grid-rule grid-rule--charcoal' aria-hidden='true' />
 
-      <div className='footer-curtain' aria-hidden='true'>
-        <div className='footer-curtain__texture' />
-      </div>
-
-      {/* Pushed back down by the same 60svh the section was pulled up, so the
-          content sits where a normal footer would. */}
-      <div className='footer-curtain-content relative z-10 mx-auto max-w-[1440px] px-[clamp(24px,7.4vw,110px)] pt-[calc(60svh+clamp(40px,6vh,80px))]'>
+      <div className='relative z-10 mx-auto max-w-[1440px] px-[clamp(24px,7.4vw,110px)] pb-[76px] pt-[clamp(56px,9vh,104px)]'>
         <Reveal>
           <div className='max-w-[46%] min-w-[280px]'>
             <p className='type-label mb-[26px] text-charcoal-muted'>
@@ -119,7 +115,7 @@ export const Footer = ({ setCursor }) => {
       {/* Baseline rule + credits, pinned to the bottom of the tall section. */}
       <div
         aria-hidden='true'
-        className='absolute bottom-[53px] left-0 right-0 z-10 h-px bg-charcoal-rule'
+        className='absolute bottom-[53px] left-0 right-0 z-10 mx-[clamp(24px,7.4vw,110px)] h-px bg-charcoal-rule'
       />
       <div className='type-label absolute bottom-[17px] left-0 right-0 z-10 mx-auto flex max-w-[1440px] items-center justify-between gap-4 px-[clamp(24px,7.4vw,110px)] text-charcoal-muted'>
         <span>Designed and developed by Kevin Rufino</span>

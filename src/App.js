@@ -11,7 +11,7 @@
  * @returns {JSX.Element} The rendered application
  */
 
-import React, { useEffect, Suspense } from 'react';
+import React, { useEffect, useRef, Suspense } from 'react';
 import {
   BrowserRouter,
   Routes,
@@ -63,7 +63,10 @@ const AppContent = () => {
   // landed; after that, the first scroll-down (or the scroll cue) snaps past
   // the hero to the Intro and the drained hero is locked off (no scrolling
   // back up into empty space).
-  const snapPastHero = useHeroScrollJack(seq.filled);
+  // The hero collapses to nothing once it has been scrolled past, so the jack
+  // needs the section itself, not just a signal.
+  const heroRef = useRef(null);
+  const snapPastHero = useHeroScrollJack(seq.filled, heroRef);
 
   // Preload critical assets
   useEffect(() => {
@@ -84,15 +87,43 @@ const AppContent = () => {
   // Keep every section's 6px background grid phased to the document origin.
   useEffect(() => watchGrids(), []);
 
-  // Scroll to the hash target after SPA navigation (e.g. "← INDEX" → /#projects)
+  // Scroll to the hash target after SPA navigation (nav items, "← INDEX").
+  //
+  // Two targets are not their own elements and cannot be reached by scrolling
+  // to them:
+  //   #home    — the hero collapses to nothing once passed, so "home" means
+  //              the top of the document, not a section that may not exist.
+  //   #contact — the footer is fixed behind the page, so it is never scrolled
+  //              *to*; it is uncovered by scrolling to the very end. Aiming at
+  //              the element itself landed halfway through the reveal.
   const { hash } = useLocation();
   useEffect(() => {
-    if (!hash) return;
-    const el = document.querySelector(hash);
-    if (el) {
-      const id = setTimeout(() => el.scrollIntoView(), 80);
-      return () => clearTimeout(id);
-    }
+    if (!hash) return undefined;
+
+    const scroll = () => {
+      const smooth = !window.matchMedia?.(
+        '(prefers-reduced-motion: reduce)',
+      ).matches;
+      const behavior = smooth ? 'smooth' : 'instant';
+
+      if (hash === '#home') {
+        window.scrollTo({ top: 0, behavior });
+        return;
+      }
+      if (hash === '#contact') {
+        window.scrollTo({
+          top: document.documentElement.scrollHeight - window.innerHeight,
+          behavior,
+        });
+        return;
+      }
+      document
+        .querySelector(hash)
+        ?.scrollIntoView({ behavior, block: 'start' });
+    };
+
+    const id = setTimeout(scroll, 80);
+    return () => clearTimeout(id);
   }, [hash]);
 
   // Get theme colors
@@ -118,15 +149,22 @@ const AppContent = () => {
         onFilled={seq.onFilled}
       />
 
-      {/* Page content — z:2, on top.
+      {/* Page content — rides over the fixed footer, so it needs an opaque
+          background of its own and a stacking position above it. The bottom
+          margin is the footer's measured height: that is the scroll distance
+          which uncovers the footer, and it is what makes the works section
+          read as a curtain lifting off it.
           overflow-x: clip rather than overflow: hidden. `hidden` makes this
           element a scroll container, which silently defeats `position: sticky`
           on every descendant — the sticky element pins to this box instead of
           the viewport and so never moves relative to its section. `clip` gives
           the same horizontal clipping without establishing that container. */}
       <div
-        className="text-ultra scroll-smooth relative [overflow-x:clip]"
-        style={{ position: 'relative' }}
+        className="text-ultra relative z-[1] bg-acid [overflow-x:clip]"
+        style={{
+          position: 'relative',
+          marginBottom: 'var(--footer-reveal-h, 100svh)',
+        }}
       >
         {/* Hidden easter egg text */}
         <p style={{ color: themeColors.primary }}>
@@ -149,6 +187,7 @@ const AppContent = () => {
           filled={seq.filled}
           onCue={snapPastHero}
           nameRef={seq.nameRef}
+          heroRef={heroRef}
           secondaryColor={themeColors.secondary}
         />
 
@@ -169,12 +208,16 @@ const AppContent = () => {
         {/* Projects showcase */}
         <Projects />
 
-        {/* Footer section */}
-        <Footer cursor={''} setCursor={setCursorType} />
-
         {/* Beta / work-in-progress notice — dismissible, bottom-right */}
         <BetaBadge setCursor={setCursorType} />
       </div>
+
+      {/* Outside the content wrapper on purpose. The footer is fixed, and a
+          fixed element inside that z-indexed wrapper would be trapped in its
+          stacking context and paint OVER the page rather than behind it. Out
+          here it sits below the content, which is what lets the works section
+          uncover it. */}
+      <Footer cursor={''} setCursor={setCursorType} />
     </>
   );
 };
