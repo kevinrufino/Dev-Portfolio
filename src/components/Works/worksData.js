@@ -1,4 +1,5 @@
 import { ProjectsData } from '../../constants.js';
+import { PROJECT_STORIES } from '../Project/projectStories.js';
 
 /**
  * The projects index, as the works pane groups them.
@@ -92,6 +93,10 @@ const toEntry = project => {
     description: meta.summary,
     shape: meta.shape,
     linkHref: firstLink(project),
+    // Not every project in the index has been written up. The ones that have
+    // open their case study; the rest go straight to the live thing, and the
+    // row says which before it is clicked.
+    hasStory: Boolean(PROJECT_STORIES[project.title]),
   };
 };
 

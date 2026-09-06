@@ -3,6 +3,8 @@ import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
 import { toSlug } from '../../utils/helpers.js';
 import useGooFollower from '../../hooks/useGooFollower.js';
+import useCursorFx from '../../hooks/useCursorFx.js';
+import { addSource } from '../../utils/cursorFx.js';
 import GooPills from '../common/GooPills.js';
 import { WORKS, WORK_CATEGORIES } from './worksData.js';
 import { THEMES, WORKS_RANGE } from './themes.js';
@@ -19,6 +21,19 @@ const LOCK_MS = 500;
 // The pane's whole job is one project at a time, so 30fps is plenty and leaves
 // the frame budget to the landing physics and the palm.
 const FRAME_MS = 32;
+// Matches the nav's follower range exactly. The two groups are the same
+// interaction and should start reacting at the same distance.
+const TOGGLE_RANGE = 300;
+// Short pulls. The glyph is a large target that only wants acknowledging, and
+// the idle toggle is already a few pixels from wherever the pointer is.
+const GLYPH_GRAVITY_PX = 58;
+const TOGGLE_GRAVITY_PX = 58;
+
+/** Attach one element to both a callback ref and a ref object. */
+const joinRefs = (callbackRef, objectRef) => el => {
+  callbackRef(el);
+  objectRef.current = el;
+};
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
@@ -42,6 +57,8 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
   const [selected, setSelected] = useState(0);
   const [dotTransform, setDotTransform] = useState('translateY(0px)');
   const [catHot, setCatHot] = useState(-1);
+  const [rowHot, setRowHot] = useState(-1);
+  const [hotDotTransform, setHotDotTransform] = useState('translateY(0px)');
   const [catSliding, setCatSliding] = useState(false);
   const slideTimer = useRef(0);
 
@@ -61,7 +78,7 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
     setItemRef: setCatRef,
     rects: catRects,
     measure: measureCats,
-  } = useGooFollower(WORK_CATEGORIES.length, 260);
+  } = useGooFollower(WORK_CATEGORIES.length, TOGGLE_RANGE);
   const lockRef = useRef(false);
   const lockTimer = useRef(0);
   const overscroll = useRef(0);
@@ -75,6 +92,30 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
   const items = WORKS[category];
   const active = items[Math.min(selected, items.length - 1)];
   const palette = THEMES[theme];
+  // The chip is drawn in the pane's own colours, so it belongs to whichever
+  // palette is on screen rather than arriving from the page outside.
+  const chipTone = { bg: palette.ink, ink: palette.bg };
+  // Read from inside the row source, which registers once and must not be
+  // re-registered every time the palette changes.
+  const chipToneRef = useRef(chipTone);
+  chipToneRef.current = chipTone;
+
+  const glyphFxRef = useCursorFx({
+    label: 'thing',
+    tone: chipTone,
+    gravity: GLYPH_GRAVITY_PX,
+  });
+  // Only the option you are NOT on pulls: the one you are already using has
+  // no reason to ask for the pointer.
+  const workTabFx = useCursorFx({
+    gravity: TOGGLE_GRAVITY_PX,
+    enabled: category !== 'work',
+  });
+  const personalTabFx = useCursorFx({
+    gravity: TOGGLE_GRAVITY_PX,
+    enabled: category !== 'personal',
+  });
+  const tabFx = [workTabFx, personalTabFx];
 
   /** 0->1 across the pinned range; null when the pane isn't pinned. */
   const progress = useCallback(() => {
@@ -94,28 +135,46 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
   const syncList = useCallback(() => {
     const list = listRef.current;
     if (!list || !list.parentElement) return;
-    // children[0] is the travelling dot, so rows are offset by one.
-    const row = list.children[selectedRef.current + 1];
+    // Found by attribute rather than by index: the list also carries the two
+    // travelling dots, and counting past them broke the moment a second one
+    // was added.
+    const row = list.querySelectorAll('[data-row-wrap]')[selectedRef.current];
     if (!row) return;
     const windowH = list.parentElement.clientHeight;
     const offset = row.offsetTop + row.offsetHeight / 2;
     list.style.transform = `translateY(${Math.round(windowH / 2 - offset)}px)`;
   }, []);
 
+  /** Where a row's dot sits, in list coordinates. Null if the row is gone. */
+  const dotOffset = useCallback(index => {
+    const list = listRef.current;
+    if (!list) return null;
+    const row = list.querySelectorAll('[data-row]')[index];
+    if (!row) return null;
+    const label = row.firstElementChild || row;
+    return Math.round(
+      label.getBoundingClientRect().top -
+        list.getBoundingClientRect().top +
+        label.offsetHeight / 2 -
+        5,
+    );
+  }, []);
+
   /** Ride the accent dot to the selected row's title. */
   const moveDot = useCallback(() => {
-    const list = listRef.current;
-    if (!list) return;
-    const row = list.querySelectorAll('button')[selectedRef.current];
-    if (!row) return;
-    const label = row.firstElementChild || row;
-    const offset =
-      label.getBoundingClientRect().top -
-      list.getBoundingClientRect().top +
-      label.offsetHeight / 2 -
-      5;
-    setDotTransform(`translateY(${Math.round(offset)}px)`);
-  }, []);
+    const offset = dotOffset(selectedRef.current);
+    if (offset != null) setDotTransform(`translateY(${offset}px)`);
+  }, [dotOffset]);
+
+  // The preview dot follows the pointer down the list, a half-strength copy of
+  // the real one showing which row a click would land on. It is parked on the
+  // selected row when there is nothing to preview, so it grows out of the
+  // selection rather than appearing from nowhere.
+  useEffect(() => {
+    const index = rowHot >= 0 ? rowHot : selected;
+    const offset = dotOffset(index);
+    if (offset != null) setHotDotTransform(`translateY(${offset}px)`);
+  }, [rowHot, selected, category, dotOffset]);
 
   const onSettled = useCallback((key, after) => {
     setTheme(key);
@@ -275,6 +334,43 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
     // Set up once; the glyph is driven imperatively from here on.
     // eslint-disable-next-line
   }, []);
+
+  // Row annotations, hit-tested rather than hooked.
+  //
+  // One source for the whole list instead of a registration per row: the rows
+  // are re-created on every category swap, and eight subscriptions coming and
+  // going with them is a lot of churn for one chip. The label is clamped to
+  // the column's visible box, because the list slides inside a clipped
+  // container and a row's own rect keeps reporting a position it is scrolled
+  // out of.
+  useEffect(
+    () =>
+      addSource((x, y) => {
+        const list = listRef.current;
+        const column = list?.parentElement;
+        if (!list || !column) return null;
+        const box = column.getBoundingClientRect();
+        if (x < box.left || x > box.right || y < box.top || y > box.bottom) {
+          return null;
+        }
+        const rows = list.querySelectorAll('[data-row]');
+        for (let i = 0; i < rows.length; i++) {
+          const r = rows[i].getBoundingClientRect();
+          const top = Math.max(r.top, box.top);
+          const bottom = Math.min(r.bottom, box.bottom);
+          if (y < top || y > bottom || x < r.left || x > r.right) continue;
+          return {
+            label: WORKS[categoryRef.current][i]?.hasStory
+              ? '👁 view case study'
+              : '👁 view project',
+            tone: chipToneRef.current,
+            geom: { left: r.left, top, right: r.right, bottom },
+          };
+        }
+        return null;
+      }),
+    [],
+  );
 
   // ── scroll drives selection; overscroll hands over ────────────────────────
   useEffect(() => {
@@ -439,7 +535,7 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
                 return (
                   <button
                     key={cat.key}
-                    ref={setCatRef(i)}
+                    ref={joinRefs(setCatRef(i), tabFx[i])}
                     type='button'
                     aria-pressed={on}
                     onClick={() => handover(cat.key)}
@@ -462,7 +558,10 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
           <div className='grid min-h-0 flex-1 items-center gap-[clamp(24px,4vw,68px)] [grid-template-columns:minmax(0,.85fr)_minmax(0,1.15fr)] max-lg:[grid-template-columns:minmax(0,1fr)]'>
             <figure className='m-0 flex min-h-0 min-w-0 flex-col justify-center gap-[clamp(12px,2vh,22px)] max-lg:hidden'>
               <canvas
-                ref={glyphCanvasRef}
+                ref={el => {
+                  glyphCanvasRef.current = el;
+                  glyphFxRef.current = el;
+                }}
                 role='img'
                 aria-label={`Dithered glyph interpretation for ${active.display}`}
                 className='mx-auto block aspect-square w-full max-w-[min(100%,46vh)]'
@@ -494,51 +593,84 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
                   }}
                 />
 
+                {/* No `data-t-bg` here: the wipe writes the settled colour
+                    onto whatever carries that attribute, and on this dot the
+                    colour lives on the inner span. It re-renders from the
+                    palette anyway. */}
+                <span
+                  aria-hidden='true'
+                  className='pointer-events-none absolute left-0 top-0 h-[10px] w-[10px] transition-[transform,opacity] duration-[340ms] ease-[cubic-bezier(.34,1.56,.64,1)] [will-change:transform]'
+                  style={{
+                    transform: hotDotTransform,
+                    opacity: rowHot >= 0 && rowHot !== selected ? 0.5 : 0,
+                  }}
+                >
+                  {/* Re-keyed on every hop so the squash replays. */}
+                  <span
+                    key={rowHot}
+                    className='dot-hop block h-full w-full rounded-full'
+                    style={{ background: palette.accent }}
+                  />
+                </span>
+
                 {items.map((row, i) => {
                   const on = i === selected;
+                  const to = `/projects/${toSlug(row.title)}`;
+                  const inner = (
+                    <>
+                      <span className='block font-offbit101Bold text-[clamp(24px,2.6vw,40px)] leading-[1.02] tracking-[-.01em]'>
+                        {row.display}
+                      </span>
+                      <span
+                        data-t-color={on ? 'metaOn' : 'metaIdle'}
+                        className='type-body mt-[9px] block text-[13px] leading-[1.5]'
+                        style={{ color: on ? palette.metaOn : palette.metaIdle }}
+                      >
+                        {row.meta}
+                      </span>
+                    </>
+                  );
+                  const rowProps = {
+                    'data-row': true,
+                    'data-t-color': on ? 'accent' : 'rowIdle',
+                    onFocus: () => scrollToProject(i),
+                    onMouseEnter: () => setRowHot(i),
+                    onMouseLeave: () => setRowHot(current => (current === i ? -1 : current)),
+                    className:
+                      'block w-full py-[18px] text-left no-underline transition-colors duration-150',
+                    style: { color: on ? palette.accent : palette.rowIdle },
+                  };
+
                   return (
                     <div
                       key={row.title}
+                      data-row-wrap
                       data-t-border='border'
                       className='flex flex-col border-b'
                       style={{ borderColor: palette.border }}
                     >
-                      <button
-                        type='button'
-                        data-t-color={on ? 'accent' : 'rowIdle'}
-                        aria-pressed={on}
-                        onClick={() => scrollToProject(i)}
-                        onFocus={() => scrollToProject(i)}
-                        className='block w-full border-0 bg-none py-[18px] text-left transition-colors duration-150'
-                        style={{
-                          color: on ? palette.accent : palette.rowIdle,
-                        }}
-                      >
-                        <span className='flex items-baseline justify-between gap-[15px]'>
-                          <span className='font-offbit101Bold text-[clamp(24px,2.6vw,40px)] leading-[1.02] tracking-[-.01em]'>
-                            {row.display}
-                          </span>
-                          <span
-                            aria-hidden='true'
-                            className='type-body text-[19px] transition-opacity duration-150'
-                            style={{ opacity: on ? 1 : 0 }}
-                          >
-                            ↗
-                          </span>
-                        </span>
-                        <span
-                          data-t-color={on ? 'metaOn' : 'metaIdle'}
-                          className='type-body mt-[9px] block text-[13px] leading-[1.5]'
-                          style={{
-                            color: on ? palette.metaOn : palette.metaIdle,
-                          }}
+                      {/* The row IS the link now. The two calls to action that
+                          used to sit under the open description have gone, and
+                          with them the arrow that only ever marked which row
+                          was open — the cursor says where the row goes, which
+                          is the same information without the furniture. */}
+                      {row.hasStory ? (
+                        <Link to={to} {...rowProps}>
+                          {inner}
+                        </Link>
+                      ) : (
+                        <a
+                          href={row.linkHref}
+                          target='_blank'
+                          rel='noreferrer'
+                          {...rowProps}
                         >
-                          {row.meta}
-                        </span>
-                      </button>
+                          {inner}
+                        </a>
+                      )}
 
                       {on && (
-                        <div className='flex flex-col items-start gap-[14px] pb-[22px] pt-[18px]'>
+                        <div className='flex flex-col items-start gap-[14px] pb-[22px]'>
                           <p
                             data-t-color='desc'
                             className='type-body m-0 max-w-[44ch] text-[15px] leading-[1.7]'
@@ -546,34 +678,6 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
                           >
                             {row.description}
                           </p>
-                          <div className='flex flex-wrap items-center gap-x-6 gap-y-3'>
-                            <Link
-                              data-t-color='link'
-                              data-t-border='linkBorder'
-                              to={`/projects/${toSlug(row.title)}`}
-                              className='type-body border-b pb-[4px] text-[14px] font-medium'
-                              style={{
-                                color: palette.link,
-                                borderColor: palette.linkBorder,
-                              }}
-                            >
-                              Read the case study →
-                            </Link>
-                            <a
-                              data-t-color='link'
-                              data-t-border='linkBorder'
-                              href={row.linkHref}
-                              target='_blank'
-                              rel='noreferrer'
-                              className='type-body border-b pb-[4px] text-[14px] font-medium'
-                              style={{
-                                color: palette.link,
-                                borderColor: palette.linkBorder,
-                              }}
-                            >
-                              View live ↗
-                            </a>
-                          </div>
                         </div>
                       )}
                     </div>
