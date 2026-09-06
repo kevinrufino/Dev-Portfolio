@@ -31,11 +31,21 @@ const readToken = (name, fallback) =>
   getComputedStyle(document.documentElement).getPropertyValue(name).trim() ||
   fallback;
 
-const inkAt = (clientY, ctx) => {
-  const footer = ctx.footer?.getBoundingClientRect();
-  if (footer && clientY >= footer.top) return ctx.gold;
-  const works = ctx.works?.getBoundingClientRect();
-  if (works && clientY >= works.top && clientY < works.bottom) return null;
+// Which ground is actually under the pointer.
+//
+// Deliberately a hit-test rather than a rect comparison. The footer is fixed
+// behind the page and uncovered by scrolling, so its rect says it is at the
+// bottom of the viewport at ALL times — comparing against it painted footer
+// gold across the lower half of every section. Asking what is really under the
+// cursor is correct whether the footer is revealed, covered, or in flow.
+//
+// Both overlays are pointer-events: none, so this returns page content, never
+// the trail canvas or the cursor.
+const inkUnder = (x, y, ctx) => {
+  const el = document.elementFromPoint(x, y);
+  if (!el) return ctx.ultra;
+  if (ctx.footer?.contains(el)) return ctx.gold;
+  if (ctx.works?.contains(el)) return null;
   return ctx.ultra;
 };
 
@@ -159,15 +169,13 @@ const PixelTrail = () => {
       }
     };
 
-    const paintAt = (clientX, clientY, velocity = 0) => {
+    const paintAt = (clientX, clientY, velocity = 0, color) => {
       if (reducedMotionRef.current) return;
+      if (!color) return;
       const { width, height } = sizeRef.current;
       if (clientX < 0 || clientX > width || clientY < 0 || clientY > height) {
         return;
       }
-
-      const color = inkAt(clientY, inkRef.current);
-      if (!color) return;
 
       const column = Math.floor(clientX / pitch);
       // Document-space row: the cell belongs to the page, not the viewport, so
@@ -198,8 +206,12 @@ const PixelTrail = () => {
           )
         : 0;
 
+      // One hit-test per event, not per interpolated cell: the sampled path is
+      // short enough that its two ends are always on the same ground.
+      const color = inkUnder(event.clientX, event.clientY, inkRef.current);
+
       if (!previous) {
-        paintAt(event.clientX, event.clientY, velocity);
+        paintAt(event.clientX, event.clientY, velocity, color);
         lastPointerRef.current = {
           x: event.clientX,
           y: event.clientY,
@@ -221,6 +233,7 @@ const PixelTrail = () => {
           previous.x + (event.clientX - previous.x) * t,
           previous.y + (event.clientY - previous.y) * t,
           velocity,
+          color,
         );
       }
 
