@@ -160,7 +160,7 @@ const ProjectBlock = ({ block, num, id }) => (
   <section
     id={id}
     data-sec=''
-    className='scroll-mt-[60px] border-b border-[#3a3a36] px-[clamp(24px,6vw,88px)] py-[clamp(48px,8vh,104px)]'
+    className='border-b border-[#3a3a36] px-[clamp(24px,6vw,88px)] py-[clamp(48px,8vh,104px)] [scroll-margin-top:128px]'
   >
     <div className='grid grid-cols-1 items-start gap-[clamp(26px,4vw,70px)] lg:[grid-template-columns:minmax(0,5fr)_minmax(0,7fr)]'>
       <BlockHead
