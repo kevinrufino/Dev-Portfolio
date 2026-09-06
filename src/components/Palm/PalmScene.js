@@ -33,6 +33,26 @@ const PalmScene = () => {
       return el ? el.getBoundingClientRect() : undefined;
     };
 
+    // The footer is fixed behind the page and uncovered by scrolling to the
+    // end, so its own rect is constant and says nothing about where the
+    // reader is in the reveal. The palm's pose needs the position the footer
+    // *appears* to occupy: the last `height` pixels of the document.
+    const footerRect = () => {
+      const el = document.getElementById('contact');
+      if (!el) return undefined;
+      const height = el.offsetHeight;
+      const top =
+        document.documentElement.scrollHeight - height - window.scrollY;
+      return {
+        top,
+        bottom: top + height,
+        left: 0,
+        right: window.innerWidth,
+        width: window.innerWidth,
+        height,
+      };
+    };
+
     const palm = createPalmScene({
       displayCanvas: canvas,
       getConfig: () => ({
@@ -61,7 +81,7 @@ const PalmScene = () => {
               ? intro.left + intro.width * 0.45
               : 0,
           works: rectOf('projects'),
-          footer: rectOf('contact'),
+          footer: footerRect(),
         };
       },
     });
@@ -75,7 +95,7 @@ const PalmScene = () => {
       if (t - last < FRAME_MS) return;
       last = t;
       const intro = rectOf('intro');
-      const footer = rectOf('contact');
+      const footer = footerRect();
       if (
         intro &&
         footer &&
