@@ -30,13 +30,17 @@ export const THEMES = {
     togglePill: '#F1F43B',
     togglePillInk: '#3e3bf4',
     toggleIdleInk: '#ffffff',
-    // Opaque, not translucent — and these are exactly what the old
-    // rgba(241,244,59,.4)/.62 resolved to over this ground. The goo filter
-    // re-hardens alpha after blurring, so a semi-transparent source came out
-    // of it thinner than an opaque one and the toggle's hover read visibly
-    // smaller than the nav's, which uses flat fills. Same colour, same shape.
-    toggleHover: '#8685aa',
-    toggleFollower: '#adad81',
+    // Opaque, not translucent: the goo filter re-hardens alpha after
+    // blurring, so a semi-transparent source came out of it thinner than an
+    // opaque one and the toggle's hover read visibly smaller than the nav's,
+    // which uses flat fills.
+    //
+    // The first opaque pair were the literal composite of the old translucent
+    // acid over this ground, which turned out to be a dull grey-mauve. These
+    // are a light bloom of the ground's own hue instead — the same move the
+    // nav makes with its pale blue tint over white.
+    toggleHover: '#9d9bfb',
+    toggleFollower: '#c3c1ff',
   },
   personal: {
     bg: '#F1F43B',
@@ -56,8 +60,10 @@ export const THEMES = {
     togglePill: '#3e3bf4',
     togglePillInk: '#F1F43B',
     toggleIdleInk: '#3e3bf4',
-    toggleHover: '#b0b17e',
-    toggleFollower: '#8989a6',
+    // On acid the bloom has to go the other way: a deeper note of the same
+    // yellow, since nothing lighter reads against it.
+    toggleHover: '#d5d833',
+    toggleFollower: '#c3c62c',
   },
 };
 

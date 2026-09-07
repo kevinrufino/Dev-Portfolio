@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 import { toSlug } from '../../utils/helpers.js';
 import useGooFollower from '../../hooks/useGooFollower.js';
 import useCursorFx from '../../hooks/useCursorFx.js';
-import { addSource } from '../../utils/cursorFx.js';
 import GooPills from '../common/GooPills.js';
 import { WORKS, WORK_CATEGORIES } from './worksData.js';
 import { THEMES, WORKS_RANGE } from './themes.js';
@@ -95,13 +94,12 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
   // The chip is drawn in the pane's own colours, so it belongs to whichever
   // palette is on screen rather than arriving from the page outside.
   const chipTone = { bg: palette.ink, ink: palette.bg };
-  // Read from inside the row source, which registers once and must not be
-  // re-registered every time the palette changes.
-  const chipToneRef = useRef(chipTone);
-  chipToneRef.current = chipTone;
 
+  // The glyph stands in for the selected project, so it says where that
+  // project goes — the study and the row are the same subject seen twice.
   const glyphFxRef = useCursorFx({
-    label: 'thing',
+    label: active.hasStory ? 'view case study' : 'view project',
+    icon: 'eye',
     tone: chipTone,
     gravity: GLYPH_GRAVITY_PX,
   });
@@ -335,43 +333,6 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
     // eslint-disable-next-line
   }, []);
 
-  // Row annotations, hit-tested rather than hooked.
-  //
-  // One source for the whole list instead of a registration per row: the rows
-  // are re-created on every category swap, and eight subscriptions coming and
-  // going with them is a lot of churn for one chip. The label is clamped to
-  // the column's visible box, because the list slides inside a clipped
-  // container and a row's own rect keeps reporting a position it is scrolled
-  // out of.
-  useEffect(
-    () =>
-      addSource((x, y) => {
-        const list = listRef.current;
-        const column = list?.parentElement;
-        if (!list || !column) return null;
-        const box = column.getBoundingClientRect();
-        if (x < box.left || x > box.right || y < box.top || y > box.bottom) {
-          return null;
-        }
-        const rows = list.querySelectorAll('[data-row]');
-        for (let i = 0; i < rows.length; i++) {
-          const r = rows[i].getBoundingClientRect();
-          const top = Math.max(r.top, box.top);
-          const bottom = Math.min(r.bottom, box.bottom);
-          if (y < top || y > bottom || x < r.left || x > r.right) continue;
-          return {
-            label: WORKS[categoryRef.current][i]?.hasStory
-              ? '👁 view case study'
-              : '👁 view project',
-            tone: chipToneRef.current,
-            geom: { left: r.left, top, right: r.right, bottom },
-          };
-        }
-        return null;
-      }),
-    [],
-  );
-
   // ── scroll drives selection; overscroll hands over ────────────────────────
   useEffect(() => {
     let scrollFrame = 0;
@@ -555,8 +516,12 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
             </div>
           </div>
 
-          <div className='grid min-h-0 flex-1 items-center gap-[clamp(24px,4vw,68px)] [grid-template-columns:minmax(0,.85fr)_minmax(0,1.15fr)] max-lg:[grid-template-columns:minmax(0,1fr)]'>
-            <figure className='m-0 flex min-h-0 min-w-0 flex-col justify-center gap-[clamp(12px,2vh,22px)] max-lg:hidden'>
+          {/* Two columns with room; stacked on a phone, with the glyph on top
+              of the list rather than dropped. It was hidden below `lg`, which
+              took the one image in the section away from the readers with the
+              least on screen. */}
+          <div className='grid min-h-0 flex-1 items-center gap-[clamp(24px,4vw,68px)] [grid-template-columns:minmax(0,.85fr)_minmax(0,1.15fr)] max-lg:items-stretch max-lg:gap-[18px] max-lg:[grid-template-columns:minmax(0,1fr)] max-lg:[grid-template-rows:auto_minmax(0,1fr)]'>
+            <figure className='m-0 flex min-h-0 min-w-0 flex-col justify-center gap-[clamp(12px,2vh,22px)] max-lg:gap-[10px]'>
               <canvas
                 ref={el => {
                   glyphCanvasRef.current = el;
@@ -564,11 +529,11 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
                 }}
                 role='img'
                 aria-label={`Dithered glyph interpretation for ${active.display}`}
-                className='mx-auto block aspect-square w-full max-w-[min(100%,46vh)]'
+                className='mx-auto block aspect-square w-full max-w-[min(100%,46vh)] max-lg:max-w-[min(56vw,190px)]'
               />
               <figcaption
                 data-t-color='caption'
-                className='type-label mt-[24px] flex items-center justify-between gap-4'
+                className='type-label mt-[24px] flex items-center justify-between gap-4 max-lg:mt-0 max-lg:text-[10px]'
                 style={{ color: palette.caption }}
               >
                 <span>Generative form / glyph study</span>
@@ -576,7 +541,7 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
               </figcaption>
             </figure>
 
-            <div className='relative h-full min-w-0 overflow-hidden'>
+            <div className='relative h-full min-w-0 overflow-hidden max-lg:h-[clamp(240px,34vh,320px)]'>
               <div
                 ref={listRef}
                 role='group'
@@ -616,31 +581,6 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
                 {items.map((row, i) => {
                   const on = i === selected;
                   const to = `/projects/${toSlug(row.title)}`;
-                  const inner = (
-                    <>
-                      <span className='block font-offbit101Bold text-[clamp(24px,2.6vw,40px)] leading-[1.02] tracking-[-.01em]'>
-                        {row.display}
-                      </span>
-                      <span
-                        data-t-color={on ? 'metaOn' : 'metaIdle'}
-                        className='type-body mt-[9px] block text-[13px] leading-[1.5]'
-                        style={{ color: on ? palette.metaOn : palette.metaIdle }}
-                      >
-                        {row.meta}
-                      </span>
-                    </>
-                  );
-                  const rowProps = {
-                    'data-row': true,
-                    'data-t-color': on ? 'accent' : 'rowIdle',
-                    onFocus: () => scrollToProject(i),
-                    onMouseEnter: () => setRowHot(i),
-                    onMouseLeave: () => setRowHot(current => (current === i ? -1 : current)),
-                    className:
-                      'block w-full py-[18px] text-left no-underline transition-colors duration-150',
-                    style: { color: on ? palette.accent : palette.rowIdle },
-                  };
-
                   return (
                     <div
                       key={row.title}
@@ -649,35 +589,83 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
                       className='flex flex-col border-b'
                       style={{ borderColor: palette.border }}
                     >
-                      {/* The row IS the link now. The two calls to action that
-                          used to sit under the open description have gone, and
-                          with them the arrow that only ever marked which row
-                          was open — the cursor says where the row goes, which
-                          is the same information without the furniture. */}
-                      {row.hasStory ? (
-                        <Link to={to} {...rowProps}>
-                          {inner}
-                        </Link>
-                      ) : (
-                        <a
-                          href={row.linkHref}
-                          target='_blank'
-                          rel='noreferrer'
-                          {...rowProps}
+                      {/* Selecting, not navigating. Scroll stays the source of
+                          truth for what is open, so a click scrolls to this
+                          row's slice of the range rather than setting state. */}
+                      <button
+                        type='button'
+                        data-row
+                        data-t-color={on ? 'accent' : 'rowIdle'}
+                        aria-pressed={on}
+                        onClick={() => scrollToProject(i)}
+                        onFocus={() => scrollToProject(i)}
+                        onMouseEnter={() => setRowHot(i)}
+                        onMouseLeave={() =>
+                          setRowHot(current => (current === i ? -1 : current))
+                        }
+                        className='block w-full border-0 bg-transparent py-[18px] text-left transition-colors duration-150'
+                        style={{ color: on ? palette.accent : palette.rowIdle }}
+                      >
+                        <span className='block font-offbit101Bold text-[clamp(24px,2.6vw,40px)] leading-[1.02] tracking-[-.01em]'>
+                          {row.display}
+                        </span>
+                        <span
+                          data-t-color={on ? 'metaOn' : 'metaIdle'}
+                          className='type-body mt-[9px] block text-[13px] leading-[1.5]'
+                          style={{
+                            color: on ? palette.metaOn : palette.metaIdle,
+                          }}
                         >
-                          {inner}
-                        </a>
-                      )}
+                          {row.meta}
+                        </span>
+                      </button>
 
                       {on && (
-                        <div className='flex flex-col items-start gap-[14px] pb-[22px]'>
+                        <div className='flex flex-col items-start gap-[16px] pb-[22px]'>
                           <p
                             data-t-color='desc'
-                            className='type-body m-0 max-w-[44ch] text-[15px] leading-[1.7]'
+                            className='type-body m-0 max-w-[44ch] text-[15px] leading-[1.7] max-lg:text-[14px]'
                             style={{ color: palette.desc }}
                           >
                             {row.description}
                           </p>
+                          {/* One way in, whichever kind of thing it is. */}
+                          {row.hasStory ? (
+                            <Link
+                              data-t-color='link'
+                              to={to}
+                              className='line-cta type-body text-[14px] font-medium'
+                              style={{
+                                color: palette.link,
+                                '--line-cta-ink': palette.accent,
+                              }}
+                            >
+                              Check it out
+                              <span aria-hidden='true' className='line-cta__arrow'>
+                                →
+                              </span>
+                            </Link>
+                          ) : (
+                            <a
+                              data-t-color='link'
+                              href={row.linkHref}
+                              target='_blank'
+                              rel='noreferrer'
+                              className='line-cta type-body text-[14px] font-medium'
+                              style={{
+                                color: palette.link,
+                                '--line-cta-ink': palette.accent,
+                              }}
+                            >
+                              Check it out
+                              <span
+                                aria-hidden='true'
+                                className='line-cta__arrow--diagonal'
+                              >
+                                ↗
+                              </span>
+                            </a>
+                          )}
                         </div>
                       )}
                     </div>
