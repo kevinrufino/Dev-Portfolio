@@ -13,14 +13,22 @@
  * leaving, changing its mind — are eased.
  *
  * GRAVITY. Nothing is dragged. A target declares a distance at which it
- * starts to AIM the cursor: inside that field the drawn arrow turns to point
- * at the target, the way a compass needle does, and it keeps pointing at it
- * from wherever the reader's hand happens to be. The cursor never leaves the
- * position the hand put it in — only the direction it points changes — so
- * nothing is ever clicked that the reader did not aim at themselves. A target
- * reaches exactly as far as it says it does and no further, and by default
- * it lets go once the pointer is actually over it, which hands the reader
- * back an ordinary cursor for the thing they have arrived at.
+ * starts to AIM the cursor: anywhere inside that field the drawn arrow points
+ * AT the target — the whole way, like a compass needle, not a fraction of the
+ * way — and keeps pointing at it from wherever the reader's hand happens to
+ * be. The cursor never leaves the position the hand put it in, so nothing is
+ * ever clicked that the reader did not aim at themselves.
+ *
+ * The ease is in TIME, not in distance. Blending the angle by how deep into
+ * the field the pointer had come sounded softer and was in fact the bug: full
+ * aim then required a weight of 1, which only happened at zero distance —
+ * where the field lets go — so the needle never actually pointed at anything.
+ * It is binary now, in or out, and the turn itself is eased over a few frames.
+ *
+ * A target reaches exactly as far as it says it does and no further, it is
+ * ignored while something else is drawn over it, and by default it lets go
+ * once the pointer is over it, which hands back an ordinary cursor for the
+ * thing the reader has arrived at.
  */
 
 /** Chip offset from the pointer. */
@@ -28,6 +36,8 @@ const CHIP_DX = 20;
 const CHIP_DY = 18;
 /** Per-frame easing on the aim, so entering a field is a turn, not a snap. */
 const AIM_EASE = 0.22;
+/** How long a press has to be held before it counts. */
+const HOLD_MS = 620;
 
 const targets = new Set();
 const sources = new Set();
@@ -47,6 +57,13 @@ let chip = null;
 const aim = { angle: 0, weight: 0 };
 let aimTo = { angle: 0, weight: 0 };
 let shown = { label: '', tone: null, icon: null };
+// The action the thing under the pointer offers on a held press, and the press
+// itself. Kept out of `shown` because it is a function: its identity changes on
+// every render of the component that supplies it, and the listeners fire on a
+// change of subject, not on a re-render.
+let holdAction = null;
+let holdMs = HOLD_MS;
+let heldFrom = 0;
 
 /** Gap between a point and a target's shape; zero anywhere inside it. */
 const gapTo = (g, x, y) => {
@@ -66,13 +83,33 @@ const areaOf = g =>
     ? Math.PI * g.r * g.r
     : Math.max(0, g.right - g.left) * Math.max(0, g.bottom - g.top);
 
+/**
+ * Is anything drawn on top of this element where it sits?
+ *
+ * The intro is sticky, so it stays in the document — and in this registry —
+ * behind the works section that rides up over it. Its fields were still live
+ * under an opaque pane, aiming the cursor at things the reader could not see
+ * or reach. Asking what is actually on top at the element's own middle is the
+ * same test the trail and the cat use, and it is correct whether the thing in
+ * the way is a section, a dialog, or the page's own footer.
+ */
+const covered = (el, geom) => {
+  const x = Math.min(window.innerWidth - 1, Math.max(1, (geom.left + geom.right) / 2));
+  const y = Math.min(window.innerHeight - 1, Math.max(1, (geom.top + geom.bottom) / 2));
+  const top = document.elementFromPoint(x, y);
+  if (!top) return true;
+  return !(top === el || el.contains(top) || top.contains(el));
+};
+
 const geomOf = target => {
   if (!target.el) return target.geom || null;
   const el = target.el;
   if (!el.isConnected) return null;
   const r = el.getBoundingClientRect();
   if (r.width === 0 && r.height === 0) return null;
-  return { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
+  const geom = { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
+  if (r.bottom < 0 || r.top > window.innerHeight) return null;
+  return covered(el, geom) ? null : geom;
 };
 
 /** Shortest way round from one angle to another, in radians. */
@@ -95,6 +132,8 @@ const evaluate = () => {
   let label = '';
   let tone = null;
   let icon = null;
+  let action = null;
+  let actionMs = HOLD_MS;
   let smallest = Infinity;
   let nearest = Infinity;
   let want = { angle: aim.angle, weight: 0 };
@@ -110,6 +149,8 @@ const evaluate = () => {
         label = desc.label;
         tone = desc.tone || null;
         icon = desc.icon || null;
+        action = desc.hold || null;
+        actionMs = desc.holdMs || HOLD_MS;
       }
     }
 
@@ -124,12 +165,11 @@ const evaluate = () => {
       return;
     }
     const c = centreOf(geom);
-    const t = 1 - d / g.distance;
     want = {
       angle: Math.atan2(c.y - py, c.x - px),
-      // Smoothstep, so the needle picks the target up as the pointer enters
-      // the field rather than snapping to it at the boundary.
-      weight: t * t * (3 - 2 * t) * (g.strength == null ? 1 : g.strength),
+      // Full aim. `strength` is here for a target that wants to be pointed at
+      // only partly; it is not a distance ramp.
+      weight: g.strength == null ? 1 : g.strength,
     };
   };
 
@@ -140,11 +180,26 @@ const evaluate = () => {
   }
 
   aimTo = want;
+  // Moving off the thing abandons the press. A hold is a commitment to one
+  // target, not a stopwatch that keeps running wherever the hand goes.
+  if (action !== holdAction) releaseHold();
+  holdAction = action;
+  holdMs = actionMs;
   if (label !== shown.label || tone !== shown.tone || icon !== shown.icon) {
     shown = { label, tone, icon };
     for (const listener of listeners) listener(shown);
   }
 };
+
+const setHoldProgress = value => {
+  if (chip) chip.style.setProperty('--hold', String(value));
+};
+
+function releaseHold() {
+  if (!heldFrom) return;
+  heldFrom = 0;
+  setHoldProgress(0);
+}
 
 const loop = () => {
   raf = requestAnimationFrame(loop);
@@ -158,6 +213,16 @@ const loop = () => {
 
   aim.angle += shortest(aim.angle, aimTo.angle) * AIM_EASE;
   aim.weight += (aimTo.weight - aim.weight) * AIM_EASE;
+
+  if (heldFrom) {
+    const progress = Math.min(1, (performance.now() - heldFrom) / holdMs);
+    setHoldProgress(progress);
+    if (progress >= 1) {
+      const run = holdAction;
+      releaseHold();
+      run?.();
+    }
+  }
 };
 
 const markMoved = () => {
@@ -182,7 +247,16 @@ const onPointerLeave = () => {
   px = -9999;
   py = -9999;
   moved = true;
+  releaseHold();
 };
+
+const onPointerDown = event => {
+  if (event.button !== 0 || !holdAction) return;
+  heldFrom = performance.now();
+  setHoldProgress(0);
+};
+
+const onPointerUp = () => releaseHold();
 
 let started = false;
 
@@ -190,6 +264,9 @@ const start = () => {
   if (started || typeof window === 'undefined') return;
   started = true;
   window.addEventListener('pointermove', onPointerMove, { passive: true });
+  window.addEventListener('pointerdown', onPointerDown, { passive: true });
+  window.addEventListener('pointerup', onPointerUp, { passive: true });
+  window.addEventListener('pointercancel', onPointerUp, { passive: true });
   window.addEventListener('scroll', markMoved, { passive: true });
   window.addEventListener('resize', markMoved);
   document.addEventListener('pointerleave', onPointerLeave);
@@ -200,6 +277,9 @@ const stop = () => {
   if (!started) return;
   started = false;
   window.removeEventListener('pointermove', onPointerMove);
+  window.removeEventListener('pointerdown', onPointerDown);
+  window.removeEventListener('pointerup', onPointerUp);
+  window.removeEventListener('pointercancel', onPointerUp);
   window.removeEventListener('scroll', markMoved);
   window.removeEventListener('resize', markMoved);
   document.removeEventListener('pointerleave', onPointerLeave);
@@ -300,6 +380,7 @@ export function debugFields() {
 export function setChip(el) {
   chip = el;
   placeChip();
+  setHoldProgress(0);
 }
 
 /**
