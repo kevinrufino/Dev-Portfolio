@@ -135,6 +135,7 @@ const AppContent = () => {
           the viewport and so never moves relative to its section. `clip` gives
           the same horizontal clipping without establishing that container. */}
       <div
+        data-trail-clip
         className="text-ultra relative z-[1] bg-acid [overflow-x:clip]"
         style={{
           position: 'relative',
@@ -208,7 +209,7 @@ const AppContent = () => {
             order against the sections (which are positioned but unindexed)
             is DOM order — earlier, and the intro's own paper background
             covers it. The sections lift their text above it. */}
-        <PixelTrail />
+        <PixelTrail clipTo='[data-trail-clip]' />
 
         {/* Beta / work-in-progress notice — dismissible, bottom-right */}
         <BetaBadge setCursor={setCursorType} />

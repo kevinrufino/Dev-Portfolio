@@ -133,7 +133,23 @@ const draw = now => {
   const p = pitch();
   const scroll = window.scrollY;
 
-  for (const { ctx } of engine.surfaces) ctx.clearRect(0, 0, width, height);
+  // Each surface is clipped to the thing it belongs to. Both canvases are
+  // fixed and cover the viewport, so without this the page's copy kept
+  // painting over the footer long after the page itself had scrolled off it.
+  for (const surface of engine.surfaces) {
+    const { ctx } = surface;
+    ctx.restore();
+    ctx.clearRect(0, 0, width, height);
+    ctx.save();
+    const box = surface.clipTo
+      ? document.querySelector(surface.clipTo)?.getBoundingClientRect()
+      : null;
+    if (box) {
+      ctx.beginPath();
+      ctx.rect(box.left, box.top, box.width, box.height);
+      ctx.clip();
+    }
+  }
 
   for (const [key, cell] of engine.cells) {
     const age = now - cell.startedAt;
@@ -305,9 +321,12 @@ const GooeyFilter = ({ id }) => (
  * of them draw the same cells from the same engine.
  *
  * @param {string} [className] - extra classes on the wrapper; this is where
- *   the layer's z-index and clipping come from.
+ *   the layer's z-index comes from.
+ * @param {string} [clipTo] - selector for the element this surface belongs to.
+ *   Cells outside its box are not drawn, which is what stops a fixed canvas
+ *   from painting over a section that is no longer under it.
  */
-const PixelTrail = ({ className = '' }) => {
+const PixelTrail = ({ className = '', clipTo = null }) => {
   const canvasRef = useRef(null);
   const filterId = useMemo(
     () => `portfolio-pixel-trail-${Math.random().toString(36).slice(2)}`,
@@ -317,7 +336,13 @@ const PixelTrail = ({ className = '' }) => {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return undefined;
-    const surface = { canvas, ctx: canvas.getContext('2d', { alpha: true }) };
+    const surface = {
+      canvas,
+      ctx: canvas.getContext('2d', { alpha: true }),
+      clipTo,
+    };
+    // One save to balance the restore at the top of every draw.
+    surface.ctx.save();
     bind();
     engine.surfaces.add(surface);
     sizeSurface(surface);
@@ -325,7 +350,7 @@ const PixelTrail = ({ className = '' }) => {
       engine.surfaces.delete(surface);
       if (engine.surfaces.size === 0) unbind();
     };
-  }, []);
+  }, [clipTo]);
 
   return (
     <div className={`portfolio-pixel-trail ${className}`.trim()}>
