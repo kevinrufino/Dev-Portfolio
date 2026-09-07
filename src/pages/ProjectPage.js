@@ -4,6 +4,9 @@ import { goToSection } from '../utils/navigateToSection.js';
 import { ProjectsData } from '../constants.js';
 import { toSlug } from '../utils/helpers.js';
 import { PROJECT_STORIES } from '../components/Project/projectStories.js';
+import useGooFollower from '../hooks/useGooFollower.js';
+import useCursorFx from '../hooks/useCursorFx.js';
+import GooPills from '../components/common/GooPills.js';
 import ProjectBlock from '../components/Project/ProjectBlocks.js';
 import AssetSlot from '../components/Project/AssetSlot.js';
 
@@ -17,6 +20,9 @@ const REVEAL_DELAY_MS = 300;
 const READING_LINE = 0.3;
 // Height of the sticky chapter bar, so a jumped-to section clears it.
 const RAIL_H = 128;
+// The page's two nav items, given the same treatment as the homepage's — the
+// goo group and a field each, so the controls behave the same on both.
+const NAV_GRAVITY_PX = 78;
 
 const firstLink = project => {
   if (project.liveLink) return project.liveLink;
@@ -46,6 +52,19 @@ const ProjectPage = () => {
   const ditherRef = useRef(null);
   const railRef = useRef(null);
   const rootRef = useRef(null);
+  const [navHot, setNavHot] = useState(-1);
+
+  const {
+    groupRef: navGroupRef,
+    followerRef: navFollowerRef,
+    setItemRef: setNavRef,
+    rects: navRects,
+  } = useGooFollower(2, 300);
+  const backFx = useCursorFx({
+    name: 'project / selected work',
+    gravity: NAV_GRAVITY_PX,
+  });
+  const liveFx = useCursorFx({ name: 'project / live', gravity: NAV_GRAVITY_PX });
 
   const index = ProjectsData.findIndex(p => toSlug(p.title) === slug);
   const project = index !== -1 ? ProjectsData[index] : null;
@@ -230,14 +249,35 @@ const ProjectPage = () => {
         className='fixed left-0 top-0 z-[60] h-[2px] w-0 bg-acid [will-change:width]'
       />
 
+      {/* Same liquid group as the homepage nav: white pills and a follower
+          under mix-blend-difference, so both read against a cover image and a
+          charcoal page alike. Both items pull the cursor from the same
+          distance the homepage uses. */}
       <nav
+        ref={navGroupRef}
         aria-label='Project navigation'
         className='pointer-events-none fixed left-0 right-0 top-0 z-50 flex items-center justify-between gap-4 px-[clamp(16px,4vw,40px)] py-[14px] mix-blend-difference'
       >
+        <GooPills
+          rects={navRects}
+          activeIndex={-1}
+          hotIndex={navHot}
+          followerRef={navFollowerRef}
+          pillColor='#ffffff'
+          hoverColor='#d9e6ff'
+          followerColor='#ffd9f2'
+        />
         <button
           type='button'
+          ref={el => {
+            setNavRef(0)(el);
+            backFx.current = el;
+          }}
           onClick={() => goToSection(navigate, '/projects', 'work')}
-          className='pointer-events-auto border-0 bg-transparent px-[10px] py-2 font-offbit101Bold text-xl text-white'
+          onMouseEnter={() => setNavHot(0)}
+          onMouseLeave={() => setNavHot(-1)}
+          className='pointer-events-auto relative border-0 bg-transparent px-[10px] py-2 font-offbit101Bold text-xl transition-colors duration-200'
+          style={{ color: navHot === 0 ? '#1e1e1e' : '#ffffff' }}
         >
           ← selected work
         </button>
@@ -246,7 +286,14 @@ const ProjectPage = () => {
             href={live}
             target='_blank'
             rel='noreferrer'
-            className='pointer-events-auto px-[10px] py-2 font-offbit101Bold text-xl text-white'
+            ref={el => {
+              setNavRef(1)(el);
+              liveFx.current = el;
+            }}
+            onMouseEnter={() => setNavHot(1)}
+            onMouseLeave={() => setNavHot(-1)}
+            className='pointer-events-auto relative px-[10px] py-2 font-offbit101Bold text-xl transition-colors duration-200'
+            style={{ color: navHot === 1 ? '#1e1e1e' : '#ffffff' }}
           >
             live ↗
           </a>
@@ -385,23 +432,35 @@ const ProjectPage = () => {
             <button
               type='button'
               onClick={() => goToSection(navigate, '/projects', 'work')}
-              className='type-body border-0 border-b border-[#adaf3d] bg-transparent py-[6px] text-lg text-charcoal'
+              className='line-cta type-body text-lg text-charcoal'
+              style={{ '--line-cta-ink': 'var(--ultra)' }}
             >
+              <span aria-hidden='true' className='line-cta__arrow--back'>
+                ←
+              </span>
               All work
             </button>
             <a
               href='mailto:kevinrufino97@gmail.com'
-              className='type-body border-b border-[#adaf3d] py-[6px] text-lg text-charcoal'
+              className='line-cta type-body text-lg text-charcoal'
+              style={{ '--line-cta-ink': 'var(--ultra)' }}
             >
-              Email ↗
+              Email
+              <span aria-hidden='true' className='line-cta__arrow--diagonal'>
+                ↗
+              </span>
             </a>
             <a
               href='https://www.linkedin.com/in/kevinrufino/'
               target='_blank'
               rel='noreferrer'
-              className='type-body border-b border-[#adaf3d] py-[6px] text-lg text-charcoal'
+              className='line-cta type-body text-lg text-charcoal'
+              style={{ '--line-cta-ink': 'var(--ultra)' }}
             >
-              LinkedIn ↗
+              LinkedIn
+              <span aria-hidden='true' className='line-cta__arrow--diagonal'>
+                ↗
+              </span>
             </a>
           </nav>
         </div>
