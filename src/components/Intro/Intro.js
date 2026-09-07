@@ -9,11 +9,22 @@ const ROLES = [
   'Creative Engineer',
 ];
 
-// How far out each of the two pulls starts. The role line is a wide target
-// and only wants a nudge; the call to action is the one thing on this screen
-// the reader is meant to press, so it reaches further.
-const ROLE_GRAVITY_PX = 64;
-const CTA_GRAVITY_PX = 130;
+// The longest of them, reserved as width. The line types and deletes itself,
+// so its box was pulsing between the width of one caret and the width of a
+// sentence — and the gravity field on it pulsed with it, which made the field
+// feel like it was switching on and off at random.
+const LONGEST_ROLE = ROLES.reduce((a, b) => (a.length >= b.length ? a : b));
+
+// How far out each of the two fields starts, per side.
+//
+// Neither is even. The role line reaches twice as far above and to either
+// side as it does below, because below it is the paragraph — a reader on
+// their way down there is going somewhere else. And the call to action
+// reaches twice as far to its right, into the empty half of the column,
+// where there is nothing else to find and a hand arriving from the palm
+// side has the furthest to come.
+const ROLE_GRAVITY = { top: 128, right: 128, bottom: 64, left: 128 };
+const CTA_GRAVITY = { top: 130, right: 260, bottom: 130, left: 130 };
 
 /**
  * Section 01 — the introduction.
@@ -38,12 +49,14 @@ const CTA_GRAVITY_PX = 130;
 // eslint-disable-next-line react/prop-types
 export const Intro = ({ setCursor }) => {
   const typed = useTypewriter(ROLES);
+  // Full strength, like everything else. The 0.9 it carried was a holdover
+  // from when the aim was blended by distance, and all it does now is point
+  // the arrow ten percent wide of the thing it is pointing at.
   const roleRef = useCursorFx({
     name: 'intro / role line',
-    gravity: ROLE_GRAVITY_PX,
-    strength: 0.9,
+    gravity: ROLE_GRAVITY,
   });
-  const ctaRef = useCursorFx({ name: 'intro / cta', gravity: CTA_GRAVITY_PX });
+  const ctaRef = useCursorFx({ name: 'intro / cta', gravity: CTA_GRAVITY });
 
   return (
     <section
@@ -83,13 +96,20 @@ export const Intro = ({ setCursor }) => {
           </h1>
 
           <h2 className='mb-[clamp(26px,3.6vh,38px)] min-h-[1.1em] font-offbit101Bold text-[clamp(28px,3.4vw,46px)] leading-[1.05] text-ultra'>
-            {/* Inline-block so the gravity field is the width of the words
-                rather than the width of the column — a full-width target would
-                pull the cursor sideways from halfway across the page. */}
-            <span ref={roleRef} className='inline-block'>
-              <span>{typed}</span>
-              <span className='blink' aria-hidden='true'>
-                _
+            {/* Inline-block so the field is the width of the words rather than
+                the width of the column — a full-width target would aim the
+                cursor from halfway across the page — and a fixed width, so it
+                is the same words every time rather than however many of them
+                happen to be typed. */}
+            <span ref={roleRef} className='relative inline-block'>
+              <span aria-hidden='true' className='invisible'>
+                {LONGEST_ROLE}_
+              </span>
+              <span className='absolute inset-y-0 left-0 whitespace-nowrap'>
+                {typed}
+                <span className='blink' aria-hidden='true'>
+                  _
+                </span>
               </span>
             </span>
           </h2>
