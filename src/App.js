@@ -33,7 +33,6 @@ import { SkillsMarquee } from './components/Intro/SkillsMarquee.js';
 import Cursor from './components/Cursor.js';
 import CursorAnnotation from './components/CursorAnnotation.js';
 import CursorFxDebug from './components/CursorFxDebug.js';
-import BetaBadge from './components/BetaBadge.js';
 import { HeaderSequence } from './components/HeaderSequence.js';
 import PixelTrail from './components/PixelTrail.js';
 import { preloadImages } from './services/AssetService.js';
@@ -229,9 +228,6 @@ const AppContent = () => {
             itself, because there the trail has to go UNDER the copy rather
             than over it — see PixelTrail. */}
         <PixelTrail clipTo='[data-trail-clip]' zone='page' />
-
-        {/* Beta / work-in-progress notice — dismissible, bottom-right */}
-        <BetaBadge setCursor={setCursorType} />
       </div>
 
       {/* Outside the content wrapper on purpose. The footer is fixed, and a

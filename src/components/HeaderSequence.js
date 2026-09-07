@@ -107,12 +107,7 @@ export const HeaderSequence = ({
             type='button'
             aria-label='Scroll to content'
             onClick={onCue}
-            // Lifted clear of the beta badge on a phone. The badge is pinned
-            // bottom right and 260px wide, so on anything narrower than about
-            // 620px it covers a centred cue completely — and a phone is the
-            // one screen where a scroll hint is most worth having. It occupies
-            // the bottom 139px; this clears it with a gap.
-            className={`absolute bottom-8 left-1/2 -translate-x-1/2 transition-opacity duration-700 max-[620px]:bottom-[164px] ${
+            className={`absolute bottom-8 left-1/2 -translate-x-1/2 transition-opacity duration-700 ${
               filled ? 'opacity-100' : 'opacity-0 pointer-events-none'
             }`}
           >
