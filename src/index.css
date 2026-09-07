@@ -768,67 +768,81 @@ html {
   }
 }
 
-/* ── the glyph, held ────────────────────────────────────────────────────────
-   While a press is running on the generative form it shakes, and it shakes in
-   whole pixels on stepped keys rather than easing between them, because the
-   thing being shaken is a dither and a smooth wobble would be the only
-   sub-pixel motion in the section. The overlay is the same 8px checker the
-   button's hover uses, flicking between two phases so the shake carries a
-   texture rather than just moving. */
-@keyframes glyph-shake {
-  0% {
-    transform: translate(0, 0);
-  }
-  25% {
-    transform: translate(-3px, 2px);
-  }
-  50% {
-    transform: translate(2px, -3px);
-  }
-  75% {
-    transform: translate(3px, 2px);
-  }
-  100% {
-    transform: translate(-2px, -2px);
-  }
-}
-
-@keyframes glyph-grain {
-  0%,
-  49% {
-    background-position: 0 0;
-  }
-  50%,
-  100% {
-    background-position: 4px 4px;
-  }
-}
-
-.glyph-shake {
-  position: relative;
-  animation: glyph-shake 140ms steps(1, end) infinite;
-}
-
-.glyph-shake::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: conic-gradient(currentColor 0 25%, transparent 0) 0 0 / 8px 8px;
-  opacity: 0.34;
-  animation: glyph-grain 140ms steps(1, end) infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .glyph-shake,
-  .glyph-shake::after {
-    animation: none;
-  }
-}
-
 /* The footer's copy of the trail sits UNDER everything in flow, not just
    under the blocks that lift themselves. A negative index still paints above
    the footer's own charcoal ground, which is exactly the gap it wants. */
 .portfolio-pixel-trail--under {
   z-index: -1;
+}
+
+/* ── the held-press ring ────────────────────────────────────────────────────
+   Grows from where the press started. The outline is drawn crisp; the inside
+   inverts what is behind it through an 8px checker, so a dithered asset under
+   it re-renders cell by cell as the ring passes over — the asset is drawn on
+   the same lattice the mask is, and the two interfere. Two layers, because
+   masking the element would dither its own outline away. */
+.cursor-hold-ring {
+  border-radius: 50%;
+  transition: opacity 120ms linear;
+}
+
+/* The inside: what is behind, inverted through an 8px checker. */
+.cursor-hold-ring::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  backdrop-filter: invert(1);
+  -webkit-backdrop-filter: invert(1);
+  -webkit-mask-image: conic-gradient(#000 0 25%, transparent 0 100%);
+  mask-image: conic-gradient(#000 0 25%, transparent 0 100%);
+  -webkit-mask-size: 8px 8px;
+  mask-size: 8px 8px;
+}
+
+/* The outline, on its own layer so the difference blend that keeps it legible
+   over acid, ultra and paper alike does not drag the invert with it. */
+.cursor-hold-ring::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  mix-blend-mode: difference;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cursor-hold-ring {
+    display: none;
+  }
+}
+
+/* ── the sweep ──────────────────────────────────────────────────────────────
+   A mark that changes colour left to right on hover without moving. Two
+   stacked copies of the same glyph: the lower one in the resting colour, the
+   upper one in ultra, clipped to how far the sweep has come. Nothing is
+   masked or filtered, so the shape stays exactly as crisp as it was. */
+.sweep-cta__mark {
+  position: relative;
+  display: inline-block;
+}
+
+.sweep-cta__over {
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--ultra);
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path 460ms cubic-bezier(0.62, 0.05, 0.2, 1);
+}
+
+.sweep-cta:hover .sweep-cta__over,
+.sweep-cta:focus-visible .sweep-cta__over {
+  clip-path: inset(0 0 0 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sweep-cta__over {
+    transition: none;
+  }
 }

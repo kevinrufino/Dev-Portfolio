@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { setChip, subscribe } from '../utils/cursorFx.js';
+import { setChip, setRing, subscribe } from '../utils/cursorFx.js';
 
 /**
  * Chip icons.
@@ -43,18 +43,21 @@ const ICONS = { eye: EyeIcon };
  */
 const CursorAnnotation = () => {
   const elRef = useRef(null);
+  const ringRef = useRef(null);
   const [state, setState] = useState({ label: '', tone: null, seq: 0 });
 
   useEffect(() => {
     const fine = window.matchMedia?.('(pointer: fine)');
     if (fine && !fine.matches) return undefined;
     setChip(elRef.current);
+    setRing(ringRef.current);
     const off = subscribe(next =>
       setState(prev => ({ ...next, seq: prev.seq + 1 })),
     );
     return () => {
       off();
       setChip(null);
+      setRing(null);
     };
   }, []);
 
@@ -62,8 +65,44 @@ const CursorAnnotation = () => {
   const bg = state.tone?.bg || 'var(--ultra)';
   const ink = state.tone?.ink || 'var(--acid)';
   const Icon = ICONS[state.icon];
+  const body = (
+    <>
+      {Icon && (
+        <Icon
+          style={{
+            display: 'inline-block',
+            marginRight: 5,
+            verticalAlign: '-1px',
+          }}
+        />
+      )}
+      {state.label || '\u00a0'}
+    </>
+  );
 
   return (
+    <>
+      {/* The held-press ring.
+
+          It grows from the point the press started and inverts what is behind
+          it through an 8px dither, so a dithered asset under it re-renders as
+          the ring passes over — the asset is made of the same cells the mask
+          is, and the two interfere. Nothing here reads the target: it is one
+          element for every hold on the page. */}
+      <div
+        ref={ringRef}
+        aria-hidden='true'
+        className='cursor-hold-ring'
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          zIndex: 9997,
+          pointerEvents: 'none',
+          opacity: 0,
+        }}
+      />
+
     <div
       ref={elRef}
       aria-hidden='true'
@@ -118,23 +157,28 @@ const CursorAnnotation = () => {
             // Acid, whichever palette the chip is wearing: the fill is the
             // one thing on it that is not about the label.
             background: 'var(--acid)',
-            opacity: 0.55,
           }}
         />
-        <span style={{ position: 'relative' }}>
-          {Icon && (
-            <Icon
-              style={{
-                display: 'inline-block',
-                marginRight: 5,
-                verticalAlign: '-1px',
-              }}
-            />
-          )}
-          {state.label || ' '}
+        {/* The label twice: once as it is, once in the colour it takes over
+            the fill, clipped to exactly how far the fill has come. A loading
+            bar that runs under its own text is unreadable at the crossover
+            otherwise. */}
+        <span style={{ position: 'relative' }}>{body}</span>
+        <span
+          aria-hidden='true'
+          style={{
+            position: 'absolute',
+            left: 8,
+            top: 4,
+            color: 'var(--ultra)',
+            clipPath: 'inset(0 calc(100% - var(--hold, 0) * 100%) 0 0)',
+          }}
+        >
+          {body}
         </span>
       </span>
     </div>
+    </>
   );
 };
 

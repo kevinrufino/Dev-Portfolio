@@ -73,7 +73,12 @@ let shown = { label: '', tone: null, icon: null };
 let holdAction = null;
 let holdWatch = null;
 let holdMs = HOLD_MS;
+let holdRing = 0;
 let heldFrom = 0;
+// Where the press started, and the ring drawn from it.
+let heldAt = { x: 0, y: 0 };
+let ring = null;
+let ringMax = 0;
 
 /** Gap between a point and a target's shape, in px; zero anywhere inside it. */
 const gapTo = (g, x, y) => {
@@ -189,6 +194,7 @@ const evaluate = () => {
   let action = null;
   let actionWatch = null;
   let actionMs = HOLD_MS;
+  let actionRing = 0;
   let smallest = Infinity;
   let nearest = Infinity;
   let want = { angle: aim.angle, weight: 0 };
@@ -207,6 +213,7 @@ const evaluate = () => {
         action = desc.hold || null;
         actionWatch = desc.onHold || null;
         actionMs = desc.holdMs || HOLD_MS;
+        actionRing = desc.holdRing || 0;
       }
     }
 
@@ -250,6 +257,7 @@ const evaluate = () => {
   holdAction = action;
   holdWatch = actionWatch;
   holdMs = actionMs;
+  holdRing = actionRing;
   if (label !== shown.label || tone !== shown.tone || icon !== shown.icon) {
     shown = { label, tone, icon };
     for (const listener of listeners) listener(shown);
@@ -258,6 +266,13 @@ const evaluate = () => {
 
 const setHoldProgress = value => {
   if (chip) chip.style.setProperty('--hold', String(value));
+  if (!ring) return;
+  const size = Math.round(28 + (ringMax - 28) * value);
+  ring.style.transform =
+    `translate3d(${heldAt.x - size / 2}px, ${heldAt.y - size / 2}px, 0)`;
+  ring.style.width = `${size}px`;
+  ring.style.height = `${size}px`;
+  ring.style.opacity = value > 0 ? '1' : '0';
 };
 
 function releaseHold() {
@@ -320,7 +335,11 @@ const onPointerLeave = () => {
 const onPointerDown = event => {
   if (event.button !== 0 || !holdAction) return;
   heldFrom = performance.now();
-  setHoldProgress(0);
+  heldAt = { x: px, y: py };
+  // Big enough to reach the far corner of whatever is being held, so the
+  // ring finishes by covering it rather than stopping short.
+  ringMax = holdRing || 260;
+  setHoldProgress(0.0001);
   holdWatch?.(0.0001);
 };
 
@@ -449,6 +468,12 @@ export function debugFields() {
 export function setChip(el) {
   chip = el;
   placeChip();
+  setHoldProgress(0);
+}
+
+/** The ring drawn while a press is held, handed over by the same component. */
+export function setRing(el) {
+  ring = el;
   setHoldProgress(0);
 }
 

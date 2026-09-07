@@ -28,6 +28,9 @@ const TOGGLE_RANGE = 300;
 // the middle. Half the size of it is still somewhere you are heading toward.
 const GLYPH_GRAVITY_PX = 116;
 const GLYPH_RELEASE_CORE = 0.5;
+// How far the held-press ring grows. Past the glyph's own width, so the last
+// of it passes over the far corner rather than stopping inside the frame.
+const GLYPH_HOLD_RING_PX = 620;
 // The idle option is a long way from the list the pointer usually lives in.
 const TOGGLE_GRAVITY_PX = 116;
 // The row's own way in sits at the edge of a busy column; a short field is
@@ -117,9 +120,7 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
     tone: chipTone,
     gravity: GLYPH_GRAVITY_PX,
     releaseCore: GLYPH_RELEASE_CORE,
-    onHold: p => {
-      glyphFxRef.current?.classList.toggle('glyph-shake', p > 0);
-    },
+    holdRing: GLYPH_HOLD_RING_PX,
     hold: () => {
       if (active.hasStory) navigate(`/projects/${toSlug(active.title)}`);
       else window.open(active.linkHref, '_blank', 'noreferrer');
@@ -550,12 +551,9 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
               least on screen. */}
           <div className='grid min-h-0 flex-1 items-center gap-[clamp(24px,4vw,68px)] [grid-template-columns:minmax(0,.85fr)_minmax(0,1.15fr)] max-lg:items-stretch max-lg:gap-[18px] max-lg:[grid-template-columns:minmax(0,1fr)] max-lg:[grid-template-rows:auto_minmax(0,1fr)]'>
             <figure className='m-0 flex min-h-0 min-w-0 flex-col justify-center gap-[clamp(12px,2vh,22px)] max-lg:gap-[10px]'>
-              {/* The shake and its grain live on a wrapper: a canvas is a
-                  replaced element and cannot carry a pseudo-element. */}
               <div
                 ref={glyphFxRef}
                 className='relative mx-auto block w-full max-w-[min(100%,46vh)] max-lg:max-w-[min(56vw,190px)]'
-                style={{ color: palette.accent }}
               >
               <canvas
                 ref={glyphCanvasRef}
@@ -669,7 +667,7 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
                               aria-label={`Check out ${row.display}`}
                               className='line-cta type-body shrink-0 text-[14px] font-medium'
                               style={{
-                                color: palette.link,
+                                color: palette.accent,
                                 '--line-cta-ink': palette.accent,
                               }}
                             >
@@ -693,7 +691,7 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
                               aria-label={`Check out ${row.display}`}
                               className='line-cta type-body shrink-0 text-[14px] font-medium'
                               style={{
-                                color: palette.link,
+                                color: palette.accent,
                                 '--line-cta-ink': palette.accent,
                               }}
                             >

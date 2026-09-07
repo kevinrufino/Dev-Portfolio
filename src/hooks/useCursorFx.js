@@ -23,6 +23,7 @@ import { addTarget } from '../utils/cursorFx.js';
  * @param {() => void} [options.hold] - what a held press on this target does.
  *   The chip fills as the press runs and this fires when it completes.
  * @param {number} [options.holdMs] - how long that takes.
+ * @param {number} [options.holdRing] - how wide the held-press ring grows.
  * @param {{bg: string, ink: string}} [options.tone] - chip colours.
  * @param {number|{top?:number,right?:number,bottom?:number,left?:number}}
  *   [options.gravity] - px OUTSIDE the element's box at which the cursor
@@ -44,6 +45,7 @@ export default function useCursorFx({
   name,
   hold,
   holdMs,
+  holdRing,
   onHold,
   tone,
   gravity,
@@ -87,6 +89,7 @@ export default function useCursorFx({
       hold: hold ? () => holdRef.current?.() : null,
       onHold: onHold ? p => watchRef.current?.(p) : null,
       holdMs,
+      holdRing,
       tone: toneKey ? { bg: tone.bg, ink: tone.ink } : null,
       gravity:
         gravity == null
@@ -107,6 +110,7 @@ export default function useCursorFx({
     Boolean(hold),
     Boolean(onHold),
     holdMs,
+    holdRing,
     toneKey,
     gravityKey,
     strength,
