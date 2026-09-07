@@ -39,7 +39,6 @@ import PixelTrail from './components/PixelTrail.js';
 import { preloadImages } from './services/AssetService.js';
 import FillPhysicsCanvas from './components/FillPhysicsCanvas.js';
 import ProjectPage from './pages/ProjectPage.js';
-import NotFound from './pages/NotFound.js';
 import ProjectPreview from './pages/ProjectPreview.js';
 import ProjectsLab from './pages/ProjectsLab.js';
 import Studio from './pages/Studio.js';
@@ -293,7 +292,6 @@ const AnimatedRoutes = () => {
             </PageTransition>
           }
         />
-        <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
       </Routes>
     </AnimatePresence>
   );
