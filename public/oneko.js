@@ -43,8 +43,15 @@
   // When nothing is lit there is nothing to chase, and it goes back to the
   // cursor itself.
   const TRAIL_MAX_AGE_MS = 1400; // roughly how long a trail cell stays visible
-  const TRAIL_ARRIVE_PX = 24; // close enough to call a point reached
+  const TRAIL_ARRIVE_PX = 30; // close enough to call a point reached
   const MOUSE_ARRIVE_PX = 48; // the cat sits this far off the cursor
+  // Once a point is chosen the cat commits to it. Picking the nearest one
+  // afresh every frame made her pace: standing among the ink, the point just
+  // behind and the point just ahead take turns being nearest, and she stepped
+  // between them for as long as the trail lasted. A new point has to be
+  // meaningfully closer than the one she is walking to before it wins.
+  const SWITCH_MARGIN = 0.62;
+  let heldId = -1;
   const spriteSets = {
     idle: [[-3, -3]],
     alert: [[-7, -3]],
@@ -305,21 +312,40 @@
   // ties, so a stroke drawn back over itself is followed forwards.
   function trailTarget() {
     const trail = window.__pixelTrail;
-    if (!trail || trail.points.length === 0) return null;
+    if (!trail || trail.points.length === 0) {
+      heldId = -1;
+      return null;
+    }
     const now = performance.now();
     const scrollY = window.scrollY;
     let best = null;
     let bestDistance = Infinity;
+    let held = null;
+    let heldDistance = Infinity;
+
     for (const point of trail.points) {
       if (now - point.at > TRAIL_MAX_AGE_MS) continue;
       const y = point.docY - scrollY;
       const distance = Math.sqrt(
         (nekoPosX - point.x) ** 2 + (nekoPosY - y) ** 2,
       );
-      if (distance <= TRAIL_ARRIVE_PX || distance > bestDistance) continue;
+      if (point.id === heldId && distance > TRAIL_ARRIVE_PX) {
+        held = { x: point.x, y: y };
+        heldDistance = distance;
+      }
+      if (distance <= TRAIL_ARRIVE_PX || distance >= bestDistance) continue;
       bestDistance = distance;
-      best = { x: point.x, y: y };
+      best = { x: point.x, y: y, id: point.id };
     }
+
+    // Stay on the point she is already walking to unless something is clearly
+    // closer — reaching it, or watching it fade, is what releases her.
+    if (held && bestDistance > heldDistance * SWITCH_MARGIN) return held;
+    if (!best) {
+      heldId = -1;
+      return null;
+    }
+    heldId = best.id;
     return best;
   }
 
