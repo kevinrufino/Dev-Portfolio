@@ -315,7 +315,7 @@ const ProjectPage = () => {
       <header className='relative h-[100svh] min-h-[560px] overflow-hidden bg-[#101014]'>
         <div ref={coverScaleRef} className='absolute inset-0 [will-change:transform]'>
           <AssetSlot
-            src={project.scrapeGif}
+            src={story?.coverSrc || project.scrapeGif}
             caption={story?.cover || `${display} — cover`}
             ratio='auto'
             className='h-full'

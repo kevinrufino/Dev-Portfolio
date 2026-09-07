@@ -41,6 +41,7 @@ import FillPhysicsCanvas from './components/FillPhysicsCanvas.js';
 import ProjectPage from './pages/ProjectPage.js';
 import ProjectPreview from './pages/ProjectPreview.js';
 import ProjectsLab from './pages/ProjectsLab.js';
+import Studio from './pages/Studio.js';
 import PageTransition from './components/PageTransition.js';
 import Reveal from './components/Reveal.js';
 import { watchGrids } from './utils/grid.js';
@@ -262,6 +263,9 @@ const AnimatedRoutes = () => {
           path="/projects/:slug/preview"
           element={<ProjectPreview />}
         />
+        {/* Unlinked on purpose: the content editor, which writes nothing on
+            its own and hands over a bundle to be committed. */}
+        <Route path="/studio" element={<Studio />} />
         <Route
           path="/lab"
           element={

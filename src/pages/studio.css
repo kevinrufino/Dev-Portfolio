@@ -1,0 +1,274 @@
+/* The studio is a tool, so it looks like one: it borrows the palette and
+   nothing else. No pixel type, no cursor effects, no grid — those belong to
+   the thing being edited, and putting them here would make the editor harder
+   to read for no gain. */
+
+.studio {
+  --edge: #2b2b30;
+  --ink: #e9e9ec;
+  --dim: #9a9aa4;
+  min-height: 100vh;
+  background: #131318;
+  color: var(--ink);
+  font:
+    13px/1.5 ui-sans-serif,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+  cursor: auto;
+}
+
+.studio * {
+  cursor: auto;
+}
+
+.studio-head {
+  border-bottom: 1px solid var(--edge);
+  padding: 20px 24px;
+}
+
+.studio-head h1 {
+  margin: 0 0 6px;
+  font-size: 19px;
+  letter-spacing: 0.02em;
+}
+
+.studio-head p {
+  margin: 0 0 14px;
+  max-width: 78ch;
+  color: var(--dim);
+}
+
+.studio-head__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.studio code {
+  border-radius: 3px;
+  background: #232329;
+  padding: 1px 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+
+.studio button {
+  border: 1px solid var(--edge);
+  border-radius: 4px;
+  background: #1c1c22;
+  padding: 6px 11px;
+  color: var(--ink);
+  font: inherit;
+}
+
+.studio button:hover:not(:disabled) {
+  border-color: #4a4a55;
+  background: #24242c;
+}
+
+.studio button:disabled {
+  opacity: 0.3;
+}
+
+.studio-primary {
+  border-color: var(--acid) !important;
+  background: var(--acid) !important;
+  color: #16161a !important;
+  font-weight: 600;
+}
+
+.studio-status {
+  color: var(--dim);
+}
+
+.studio-body {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  align-items: start;
+}
+
+.studio-list {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-right: 1px solid var(--edge);
+  padding: 14px;
+  max-height: 100vh;
+  overflow: auto;
+}
+
+.studio-list button {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  border-color: transparent;
+  background: transparent;
+  text-align: left;
+}
+
+.studio-list button.is-on {
+  border-color: var(--edge);
+  background: #24242c;
+}
+
+.studio-list em {
+  color: var(--acid);
+  font-size: 11px;
+  font-style: normal;
+}
+
+.studio-note {
+  margin: 12px 4px 0;
+  color: var(--dim);
+  font-size: 11px;
+}
+
+.studio-main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px 24px 120px;
+}
+
+.studio-card {
+  border: 1px solid var(--edge);
+  border-radius: 6px;
+  padding: 16px;
+}
+
+.studio-card > h2,
+.studio-card > h3 {
+  margin: 0 0 14px;
+  font-size: 15px;
+}
+
+.studio-field {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 180px;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.studio-field__label {
+  display: flex;
+  gap: 6px;
+  color: var(--dim);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.studio-field__label em {
+  color: #63636e;
+  font-style: normal;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.studio input,
+.studio textarea,
+.studio select {
+  width: 100%;
+  border: 1px solid var(--edge);
+  border-radius: 4px;
+  background: #1a1a20;
+  padding: 7px 9px;
+  color: var(--ink);
+  font: inherit;
+  resize: vertical;
+}
+
+.studio input:focus,
+.studio textarea:focus,
+.studio select:focus {
+  border-color: var(--acid);
+  outline: none;
+}
+
+.studio-inline {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.studio-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.studio-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  border: 1px solid #232329;
+  border-radius: 5px;
+  padding: 12px;
+}
+
+.studio-row__body {
+  min-width: 0;
+}
+
+.studio-row__side {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.studio-row__side button {
+  padding: 3px 7px;
+}
+
+.studio-row__remove:hover {
+  border-color: #a33 !important;
+  color: #f77 !important;
+}
+
+.studio-add {
+  align-self: flex-start;
+}
+
+.studio-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.studio-hint {
+  margin: 0 0 10px;
+  color: #63636e;
+  font-size: 11px;
+}
+
+.studio-asset {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.studio-asset code {
+  overflow: hidden;
+  max-width: 220px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 860px) {
+  .studio-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .studio-list {
+    position: static;
+    max-height: none;
+    border-right: 0;
+    border-bottom: 1px solid var(--edge);
+  }
+}

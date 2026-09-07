@@ -1,5 +1,6 @@
 import { ProjectsData } from '../../constants.js';
 import { PROJECT_STORIES } from '../Project/projectStories.js';
+import STUDIO from '../../content/projects.json';
 
 /**
  * The projects index, as the works pane groups them.
@@ -83,25 +84,56 @@ const firstLink = project => {
   return group ? Object.values(group)[0] : '#';
 };
 
-const toEntry = project => {
-  const meta = OVERRIDES[project.title];
+// What `/studio` published, in the shape this module already speaks: `index`
+// says how the pane should list a project, `archive` carries the few facts
+// that would otherwise have to be hand-added to constants.js for a project
+// that did not exist before.
+const STUDIO_PROJECTS = STUDIO.projects || {};
+
+const studioEntries = Object.entries(STUDIO_PROJECTS)
+  .filter(([, data]) => data.index)
+  .map(([title, data]) => ({
+    title,
+    archive: data.archive || {},
+    index: data.index,
+    display: data.display,
+  }));
+
+const archiveFor = title => {
+  const found = ProjectsData.find(p => p.title === title);
+  if (found) return found;
+  const studio = studioEntries.find(e => e.title === title);
+  return studio ? { title, ...studio.archive } : null;
+};
+
+const entryFor = title => {
+  const project = archiveFor(title);
+  if (!project) return null;
+  const studio = studioEntries.find(e => e.title === title);
+  const meta = studio
+    ? { ...OVERRIDES[title], ...studio.index, display: studio.display }
+    : OVERRIDES[title];
+  if (!meta) return null;
   return {
-    title: project.title,
-    display: meta.display || project.title,
-    // "Nike .Swoosh / Lead Engineer / 2023"
+    title,
+    display: meta.display || title,
     meta: [project.client, project.role, project.year].filter(Boolean).join(' / '),
     description: meta.summary,
     shape: meta.shape,
     linkHref: firstLink(project),
-    // Not every project in the index has been written up. The ones that have
-    // open their case study; the rest go straight to the live thing, and the
-    // row says which before it is clicked.
-    hasStory: Boolean(PROJECT_STORIES[project.title]),
+    hasStory: Boolean(PROJECT_STORIES[title]),
   };
 };
 
-const inCategory = key =>
-  ProjectsData.filter(p => OVERRIDES[p.title]?.category === key).map(toEntry);
+const inCategory = key => {
+  const seeded = ProjectsData.map(p => p.title).filter(
+    t => (studioEntries.find(e => e.title === t)?.index || OVERRIDES[t])?.category === key,
+  );
+  const added = studioEntries
+    .map(e => e.title)
+    .filter(t => !seeded.includes(t) && STUDIO_PROJECTS[t].index.category === key);
+  return [...seeded, ...added].map(entryFor).filter(Boolean);
+};
 
 export const WORKS = {
   work: inCategory('work'),

@@ -1,3 +1,5 @@
+import STUDIO from '../../content/projects.json';
+
 /**
  * Long-form case-study content for the project pages.
  *
@@ -22,9 +24,12 @@
  *   reflection  same shape as text
  *
  * Copy is draft-quality scaffolding carried over from the design, and is meant
- * to be edited in place.
+ * to be edited in place — or replaced from `/studio`, which writes
+ * `src/content/projects.json`. Anything in that file wins over what is here,
+ * per project, so the seed below stays as the starting point and the generated
+ * content stays reviewable in a diff.
  */
-export const PROJECT_STORIES = {
+const SEED = {
   "Max's Lab": {
     display: "Max's Lab",
     tagline:
@@ -791,3 +796,22 @@ export const PROJECT_STORIES = {
     ],
   },
 };
+
+/**
+ * The seed, with the studio's output layered over it.
+ *
+ * Whole projects are replaced rather than deep-merged: a half-generated page
+ * with some fields from the seed and some from the studio would be impossible
+ * to reason about, and the studio always exports a complete project.
+ */
+const GENERATED = STUDIO.projects || {};
+
+export const PROJECT_STORIES = Object.fromEntries(
+  [...new Set([...Object.keys(SEED), ...Object.keys(GENERATED)])].map(title => {
+    const generated = GENERATED[title];
+    if (!generated) return [title, SEED[title]];
+    // `index` belongs to the works pane, not to the case study.
+    const { index, ...story } = generated;
+    return [title, story];
+  }),
+);
