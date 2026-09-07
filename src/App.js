@@ -43,6 +43,7 @@ import ProjectPreview from './pages/ProjectPreview.js';
 import ProjectsLab from './pages/ProjectsLab.js';
 import Studio from './pages/Studio.js';
 import PageTransition from './components/PageTransition.js';
+import PageCurtain from './components/PageCurtain.js';
 import Reveal from './components/Reveal.js';
 import { watchGrids } from './utils/grid.js';
 import { scrollToSection } from './utils/navigateToSection.js';
@@ -315,6 +316,11 @@ const AppRefactored = () => {
         {/* Draws every gravity field. Off unless `?gravity` is in the URL or
             shift+G has been pressed. */}
         <CursorFxDebug />
+        {/* The blind sweep between routes. Outside <Routes> because it has to
+            outlive the page it covers: it goes up over the outgoing route and
+            comes off the incoming one, and a canvas belonging to either would
+            be gone in between. */}
+        <PageCurtain />
         <AnimatedRoutes />
       </AppProviders>
     </BrowserRouter>
