@@ -32,6 +32,7 @@ import { Projects } from './components/Projects/Projects.js';
 import { SkillsMarquee } from './components/Intro/SkillsMarquee.js';
 import Cursor from './components/Cursor.js';
 import CursorAnnotation from './components/CursorAnnotation.js';
+import CursorFxDebug from './components/CursorFxDebug.js';
 import BetaBadge from './components/BetaBadge.js';
 import { HeaderSequence } from './components/HeaderSequence.js';
 import PixelTrail from './components/PixelTrail.js';
@@ -289,6 +290,9 @@ const AppRefactored = () => {
             and it must survive the page transition rather than unmounting
             mid-navigation. */}
         <CursorAnnotation />
+        {/* Draws every gravity field. Off unless `?gravity` is in the URL or
+            shift+G has been pressed. */}
+        <CursorFxDebug />
         <AnimatedRoutes />
       </AppProviders>
     </BrowserRouter>

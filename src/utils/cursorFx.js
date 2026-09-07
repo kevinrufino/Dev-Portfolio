@@ -32,6 +32,10 @@ const AIM_EASE = 0.22;
 const targets = new Set();
 const sources = new Set();
 const listeners = new Set();
+// Sources are asked what is at a point, which is no use to anything that
+// wants to draw every field at once. A source may register a second function
+// that lists them; the debug overlay is the only caller.
+const enumerators = new Map();
 
 let px = -9999;
 let py = -9999;
@@ -232,14 +236,18 @@ export function addTarget(target) {
  * `geom` (`{left,top,right,bottom}` or `{x,y,r}`), or null for nothing.
  *
  * @param {(x: number, y: number) => object|null} source
+ * @param {() => object[]} [enumerate] - every descriptor this source can
+ *   produce right now, for the debug overlay. Optional.
  * @returns {() => void} teardown.
  */
-export function addSource(source) {
+export function addSource(source, enumerate) {
   sources.add(source);
+  if (enumerate) enumerators.set(source, enumerate);
   settle();
   moved = true;
   return () => {
     sources.delete(source);
+    enumerators.delete(source);
     settle();
   };
 }
@@ -253,6 +261,39 @@ export function subscribe(listener) {
     listeners.delete(listener);
     settle();
   };
+}
+
+/**
+ * Every gravity field on the page right now, in client coordinates.
+ *
+ * For the overlay that draws them: a field is invisible by nature, and the
+ * only way to say "this one should reach further" is to be able to see where
+ * it currently stops.
+ *
+ * @returns {{name: string, geom: object, distance: number, strength: number}[]}
+ */
+export function debugFields() {
+  const out = [];
+  const push = (desc, geom) => {
+    if (!geom || !desc.gravity) return;
+    out.push({
+      name: desc.name || desc.label || 'field',
+      geom,
+      distance: desc.gravity.distance,
+      strength: desc.gravity.strength == null ? 1 : desc.gravity.strength,
+    });
+  };
+  for (const target of targets) push(target, geomOf(target));
+  for (const enumerate of enumerators.values()) {
+    let list = [];
+    try {
+      list = enumerate() || [];
+    } catch {
+      list = [];
+    }
+    for (const desc of list) push(desc, desc.geom);
+  }
+  return out;
 }
 
 /** The element the chip is drawn as, handed over by the annotation component. */

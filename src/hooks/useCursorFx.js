@@ -12,6 +12,8 @@ import { addTarget } from '../utils/cursorFx.js';
  * @param {object} options
  * @param {string} [options.label] - annotation text; shown in caps.
  * @param {string} [options.icon] - key of a chip icon, e.g. `'eye'`.
+ * @param {string} [options.name] - what to call this field in the debug
+ *   overlay. Falls back to the label.
  * @param {{bg: string, ink: string}} [options.tone] - chip colours.
  * @param {number} [options.gravity] - px OUTSIDE the element's box at which
  *   the cursor starts being pulled toward it. Omit for no pull.
@@ -23,6 +25,7 @@ import { addTarget } from '../utils/cursorFx.js';
 export default function useCursorFx({
   label,
   icon,
+  name,
   tone,
   gravity,
   strength = 1,
@@ -40,6 +43,7 @@ export default function useCursorFx({
       el,
       label,
       icon,
+      name,
       tone: toneKey ? { bg: tone.bg, ink: tone.ink } : null,
       gravity:
         gravity == null ? null : { distance: gravity, strength, releaseInside },
@@ -48,7 +52,7 @@ export default function useCursorFx({
     // `toneKey`, so a caller passing a fresh object literal each render does
     // not re-register the target on every unrelated re-render.
     // eslint-disable-next-line
-  }, [label, icon, toneKey, gravity, strength, releaseInside, enabled]);
+  }, [label, icon, name, toneKey, gravity, strength, releaseInside, enabled]);
 
   return ref;
 }

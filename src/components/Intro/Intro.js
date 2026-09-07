@@ -38,8 +38,12 @@ const CTA_GRAVITY_PX = 130;
 // eslint-disable-next-line react/prop-types
 export const Intro = ({ setCursor }) => {
   const typed = useTypewriter(ROLES);
-  const roleRef = useCursorFx({ gravity: ROLE_GRAVITY_PX, strength: 0.9 });
-  const ctaRef = useCursorFx({ gravity: CTA_GRAVITY_PX });
+  const roleRef = useCursorFx({
+    name: 'intro / role line',
+    gravity: ROLE_GRAVITY_PX,
+    strength: 0.9,
+  });
+  const ctaRef = useCursorFx({ name: 'intro / cta', gravity: CTA_GRAVITY_PX });
 
   return (
     <section

@@ -174,12 +174,25 @@ const PalmScene = () => {
       return best;
     };
 
+    // The overlay cannot ask "what is at this point" for every point, so the
+    // source lists its fields when asked.
+    const listFields = () =>
+      palm
+        .nutCircles()
+        .filter(nut => nut.attached)
+        .map(nut => ({
+          name: 'palm / coconut',
+          geom: { x: nut.x, y: nut.y, r: nut.r },
+          gravity: { distance: NUT_GRAVITY_PX },
+        }));
+
     const removeSource = addSource((x, y) => {
       if (x < 0 || y < 0) return null;
       const nut = nearestNut(x, y);
       if (nut) {
         return {
           label: nut.attached ? 'shake' : 'kick',
+          name: 'palm / coconut',
           geom: { x: nut.x, y: nut.y, r: nut.r },
           gravity: nut.attached ? { distance: NUT_GRAVITY_PX } : null,
         };
@@ -198,7 +211,7 @@ const PalmScene = () => {
         return { label: 'wavy', geom: water };
       }
       return null;
-    });
+    }, listFields);
 
     window.addEventListener('resize', onResize);
     window.addEventListener('pointermove', onMove, { passive: true });
