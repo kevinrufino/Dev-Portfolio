@@ -159,14 +159,20 @@ const HomeNav = ({ setCursor }) => {
     window.addEventListener('scroll', onScroll, { passive: true });
     onScroll();
 
-    // Spring-follower blob: eases toward the pointer, ramps up size/opacity
-    // as it nears the nav so it appears (and starts merging into pills via
-    // the goo filter) well before the cursor actually arrives.
-    const reduce = window.matchMedia(
-      '(prefers-reduced-motion: reduce)',
-    ).matches;
+    // Follower blob: tracks the pointer and ramps up size/opacity as it nears
+    // the nav, so it appears (and starts merging into pills via the goo
+    // filter) well before the cursor actually arrives.
+    //
+    // Tracks rather than chases. On a spring it overshot every direction
+    // change and swung past the pills and back, which read as the blob having
+    // its own ideas. And mouse only: a tap fires one pointermove, which used
+    // to prime the blob and leave it parked on the page as a stray dot.
+    const reduce =
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+      window.matchMedia('(pointer: fine)').matches === false;
     const p = pointerRef.current;
     const onMove = e => {
+      if (e.pointerType && e.pointerType !== 'mouse') return;
       const nav = navRef.current;
       if (!nav) return;
       const navBox = nav.getBoundingClientRect();
@@ -183,10 +189,8 @@ const HomeNav = ({ setCursor }) => {
       }
     };
     const loop = () => {
-      p.vx = (p.vx + (p.tx - p.px) * 0.16) * 0.74;
-      p.vy = (p.vy + (p.ty - p.py) * 0.16) * 0.74;
-      p.px += p.vx;
-      p.py += p.vy;
+      p.px += (p.tx - p.px) * 0.34;
+      p.py += (p.ty - p.py) * 0.34;
       p.near += (p.targetNear - p.near) * 0.13;
       const el = followerRef.current;
       if (el && p.primed) {

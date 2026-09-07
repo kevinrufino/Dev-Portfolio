@@ -15,11 +15,20 @@ import { useCallback, useEffect, useRef, useState } from 'react';
  *
  * Same constants as the nav's implementation, so the two groups feel identical.
  *
+ * The blob TRACKS the pointer; it does not chase it. It used to run on a
+ * spring with velocity, which overshot every direction change and left it
+ * swinging past the pills and back like something on the end of a string —
+ * motion the pointer had not asked for. A flat exponential ease has the same
+ * softness on arrival with none of the wobble.
+ *
+ * Mouse only, and only where there is a fine pointer at all. A tap fires a
+ * single pointermove, which primed the blob and left it sitting on the page
+ * as a stray dot with nothing to follow.
+ *
  * @param {number} count - number of items to measure.
  * @param {number} range - px from the group at which the blob starts to swell.
  */
-const SPRING = 0.16;
-const DAMPING = 0.74;
+const FOLLOW_EASE = 0.34;
 const NEAR_EASE = 0.13;
 // The goo layer is inset by this much on every side so the blur has room to
 // work without being clipped; every measured coordinate is offset to match.
@@ -68,13 +77,17 @@ export default function useGooFollower(count, range = 300) {
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
       return undefined;
     }
+    if (window.matchMedia?.('(pointer: fine)').matches === false) {
+      return undefined;
+    }
 
     const p = {
-      px: 0, py: 0, tx: 0, ty: 0, vx: 0, vy: 0,
+      px: 0, py: 0, tx: 0, ty: 0,
       near: 0, targetNear: 0, primed: false,
     };
 
     const onMove = event => {
+      if (event.pointerType && event.pointerType !== 'mouse') return;
       const group = groupRef.current;
       if (!group) return;
       const box = group.getBoundingClientRect();
@@ -95,10 +108,8 @@ export default function useGooFollower(count, range = 300) {
 
     let raf = 0;
     const loop = () => {
-      p.vx = (p.vx + (p.tx - p.px) * SPRING) * DAMPING;
-      p.vy = (p.vy + (p.ty - p.py) * SPRING) * DAMPING;
-      p.px += p.vx;
-      p.py += p.vy;
+      p.px += (p.tx - p.px) * FOLLOW_EASE;
+      p.py += (p.ty - p.py) * FOLLOW_EASE;
       p.near += (p.targetNear - p.near) * NEAR_EASE;
       const el = followerRef.current;
       if (el && p.primed) {
