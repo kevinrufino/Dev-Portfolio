@@ -7,37 +7,27 @@
  * hit test.
  *
  * ANNOTATION. Whatever the pointer is inside names itself, and a chip
- * travelling with the cursor says what it is. The chip is deliberately
- * stepped rather than eased: it re-seats on the page's 6px lattice every
- * STEP_MS, so it walks after the cursor in visible increments instead of
- * gliding. Everything else about it — appearing, leaving, changing its mind —
- * is a smooth transition, so the jerkiness reads as a choice rather than as
- * dropped frames.
+ * travelling with the cursor says what it is. The chip is written straight
+ * from the pointer event, at the pointer's exact position, so it moves with
+ * the cursor rather than after it. Only the states around it — appearing,
+ * leaving, changing its mind — are eased.
  *
- * GRAVITY. A target can also declare a distance at which it starts pulling
- * the cursor toward itself. The pull is `d * ease(t)`, where `d` is the gap to
- * the target and `t` is how far into its range the pointer has come. The ease
- * is a smoothstep, which is the whole trick: it leaves the boundary with zero
- * slope, so crossing into a field is imperceptible rather than a pop, and it
- * arrives at 1 with zero slope, so the fraction pulled reaches everything and
- * the residual gap collapses — the cursor lands ON the target instead of
- * drifting near it. Nothing is pulled from across the page: a target only
- * reaches as far as it says it does.
- *
- * Only the DRAWN cursor moves. No pointer events are synthesised and no hit
- * testing is redirected, so a pulled cursor never clicks something the reader
- * did not put their hand on.
+ * GRAVITY. Nothing is dragged. A target declares a distance at which it
+ * starts to AIM the cursor: inside that field the drawn arrow turns to point
+ * at the target, the way a compass needle does, and it keeps pointing at it
+ * from wherever the reader's hand happens to be. The cursor never leaves the
+ * position the hand put it in — only the direction it points changes — so
+ * nothing is ever clicked that the reader did not aim at themselves. A target
+ * reaches exactly as far as it says it does and no further, and by default
+ * it lets go once the pointer is actually over it, which hands the reader
+ * back an ordinary cursor for the thing they have arrived at.
  */
 
-/** The page's shared lattice; the chip seats on it like everything else. */
-const GRID = 6;
-/** How often the chip takes a step. Long enough to see each one land. */
-const STEP_MS = 70;
-/** Per-frame easing on the pull, so entering a field is a lean, not a jump. */
-const PULL_EASE = 0.2;
-/** Chip offset from the cursor, before the lattice snap. */
-const CHIP_DX = 22;
-const CHIP_DY = 20;
+/** Chip offset from the pointer. */
+const CHIP_DX = 20;
+const CHIP_DY = 18;
+/** Per-frame easing on the aim, so entering a field is a turn, not a snap. */
+const AIM_EASE = 0.22;
 
 const targets = new Set();
 const sources = new Set();
@@ -47,12 +37,12 @@ let px = -9999;
 let py = -9999;
 let moved = false;
 let raf = 0;
-let stepAt = 0;
 let chip = null;
 
-const pull = { x: 0, y: 0 };
-let pullTo = { x: 0, y: 0 };
-let shown = { label: '', tone: null };
+/** Where the arrow is pointing, and how much of that is the field's doing. */
+const aim = { angle: 0, weight: 0 };
+let aimTo = { angle: 0, weight: 0 };
+let shown = { label: '', tone: null, icon: null };
 
 /** Gap between a point and a target's shape; zero anywhere inside it. */
 const gapTo = (g, x, y) => {
@@ -81,20 +71,29 @@ const geomOf = target => {
   return { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
 };
 
+/** Shortest way round from one angle to another, in radians. */
+const shortest = (from, to) => {
+  let d = (to - from) % (Math.PI * 2);
+  if (d > Math.PI) d -= Math.PI * 2;
+  if (d < -Math.PI) d += Math.PI * 2;
+  return d;
+};
+
 /**
  * One pass over every registered target.
  *
  * The innermost thing under the pointer wins the label — a project row inside
  * a list inside a section should say "project", not "section" — which is what
- * comparing areas is for. Gravity goes to the nearest field instead, since
+ * comparing areas is for. The aim goes to the nearest field instead, since
  * that is the one the reader is actually approaching.
  */
 const evaluate = () => {
   let label = '';
   let tone = null;
+  let icon = null;
   let smallest = Infinity;
   let nearest = Infinity;
-  let want = { x: 0, y: 0 };
+  let want = { angle: aim.angle, weight: 0 };
 
   const consider = (desc, geom) => {
     if (!geom) return;
@@ -106,25 +105,28 @@ const evaluate = () => {
         smallest = area;
         label = desc.label;
         tone = desc.tone || null;
+        icon = desc.icon || null;
       }
     }
 
     const g = desc.gravity;
     if (!g || d >= g.distance || d >= nearest) return;
     nearest = d;
-    // Inside the target the pull lets go, so the reader gets their own hand
-    // back the moment they arrive — being dragged around ON something is the
-    // part of a magnetic cursor that stops being helpful.
+    // Standing on the thing, the needle lets go. Being aimed at something the
+    // pointer is already inside says nothing, and it takes the ordinary
+    // cursor away from the one place the reader needs it.
     if (d === 0 && g.releaseInside !== false) {
-      want = { x: 0, y: 0 };
+      want = { angle: aim.angle, weight: 0 };
       return;
     }
     const c = centreOf(geom);
-    const len = Math.hypot(c.x - px, c.y - py) || 1;
     const t = 1 - d / g.distance;
-    const ease = t * t * (3 - 2 * t);
-    const mag = d * ease * (g.strength == null ? 1 : g.strength);
-    want = { x: ((c.x - px) / len) * mag, y: ((c.y - py) / len) * mag };
+    want = {
+      angle: Math.atan2(c.y - py, c.x - px),
+      // Smoothstep, so the needle picks the target up as the pointer enters
+      // the field rather than snapping to it at the boundary.
+      weight: t * t * (3 - 2 * t) * (g.strength == null ? 1 : g.strength),
+    };
   };
 
   for (const target of targets) consider(target, geomOf(target));
@@ -133,42 +135,43 @@ const evaluate = () => {
     if (desc) consider(desc, desc.geom);
   }
 
-  pullTo = want;
-  if (label !== shown.label || tone !== shown.tone) {
-    shown = { label, tone };
+  aimTo = want;
+  if (label !== shown.label || tone !== shown.tone || icon !== shown.icon) {
+    shown = { label, tone, icon };
     for (const listener of listeners) listener(shown);
   }
 };
 
-const loop = now => {
+const loop = () => {
   raf = requestAnimationFrame(loop);
 
   // Targets only need re-measuring when something could have moved under the
-  // pointer. Standing still costs one spring step and nothing else.
+  // pointer. Standing still costs one easing step and nothing else.
   if (moved) {
     moved = false;
     evaluate();
   }
 
-  pull.x += (pullTo.x - pull.x) * PULL_EASE;
-  pull.y += (pullTo.y - pull.y) * PULL_EASE;
-
-  if (chip && now - stepAt >= STEP_MS) {
-    stepAt = now;
-    const x = Math.round((px + pull.x + CHIP_DX) / GRID) * GRID;
-    const y = Math.round((py + pull.y + CHIP_DY) / GRID) * GRID;
-    chip.style.transform = `translate3d(${x}px, ${y}px, 0)`;
-  }
+  aim.angle += shortest(aim.angle, aimTo.angle) * AIM_EASE;
+  aim.weight += (aimTo.weight - aim.weight) * AIM_EASE;
 };
 
 const markMoved = () => {
   moved = true;
 };
 
+const placeChip = () => {
+  if (!chip) return;
+  chip.style.transform = `translate3d(${px + CHIP_DX}px, ${py + CHIP_DY}px, 0)`;
+};
+
 const onPointerMove = event => {
   px = event.clientX;
   py = event.clientY;
   moved = true;
+  // Written here rather than on the frame loop: the chip has to land on the
+  // same frame as the pointer, or it reads as lagging however small the gap.
+  placeChip();
 };
 
 const onPointerLeave = () => {
@@ -209,7 +212,7 @@ const settle = () => {
  *
  * @param {object} target - `{ el, label?, tone?, gravity? }`. `gravity` is
  *   `{ distance, strength?, releaseInside? }`; `distance` is measured from the
- *   element's own box, so "40px around the button" is `distance: 40`.
+ *   element's own box, so "aim from 40px around the button" is `distance: 40`.
  * @returns {() => void} teardown.
  */
 export function addTarget(target) {
@@ -255,9 +258,15 @@ export function subscribe(listener) {
 /** The element the chip is drawn as, handed over by the annotation component. */
 export function setChip(el) {
   chip = el;
+  placeChip();
 }
 
-/** Live pull offset, read by the drawn cursor every frame. */
-export function pullOffset() {
-  return pull;
+/**
+ * Where the drawn cursor should be pointing, and how strongly.
+ *
+ * `weight` is 0 with nothing in range and 1 deep inside a field; the caller
+ * blends between its own resting direction and `angle` by that much.
+ */
+export function aimState() {
+  return aim;
 }

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { pullOffset } from '../utils/cursorFx.js';
+import { aimState } from '../utils/cursorFx.js';
 
 /**
  * The page cursor.
@@ -12,23 +12,37 @@ import { pullOffset } from '../utils/cursorFx.js';
  * four.
  *
  * Position is written straight to the element's transform from the pointer
- * event, so moving the mouse never costs a React render. A frame loop runs
- * alongside it only while a gravity field is pulling: `cursorFx` publishes an
- * offset when the pointer nears something that wants to be hovered, and this
- * is where that offset becomes visible. Only the drawing moves — the real
- * pointer, and everything hit-tested against it, stays where the hand put it.
+ * event, so moving the mouse never costs a React render.
+ *
+ * The arrow also AIMS. When the pointer comes within range of something that
+ * wants to be found, `cursorFx` publishes the direction of it and the arrow
+ * turns to point that way, like a needle — from wherever the hand has left
+ * it, and pivoting on its own tip so the tip never leaves the pointer. The
+ * position is never touched: the only thing a gravity field changes is which
+ * way the cursor is looking.
  *
  * Bails out entirely for coarse pointers (there is no cursor to replace on
  * touch) and for reduced motion, both of which leave the native cursor in
  * place — `cursor: none` is only applied under the same `(pointer: fine)`
  * query in index.css.
  */
+
+// Which way the drawn arrow points when nothing is pulling on it: up and to
+// the left, the direction its own tip faces.
+const REST_ANGLE = (-135 * Math.PI) / 180;
+// The tip, in the 34px box. The SVG's point sits at (4.04, 4.04) of a 24-unit
+// viewBox, and rotation has to pivot there or the arrow swings off the
+// pointer as it turns.
+const TIP = (4.04 / 24) * 34;
+
 const Cursor = () => {
   const elRef = useRef(null);
+  const artRef = useRef(null);
 
   useEffect(() => {
     const el = elRef.current;
-    if (!el) return undefined;
+    const art = artRef.current;
+    if (!el || !art) return undefined;
 
     const fine = window.matchMedia('(pointer: fine)');
     const still = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -41,22 +55,33 @@ const Cursor = () => {
     let y = -100;
     let down = false;
     let shown = false;
+    let drawn = -999;
 
-    // The arrow's tip is its top-left, so the -4px offset seats the drawn tip
-    // on the actual pointer position rather than a few pixels down-right.
-    const write = () => {
-      const pull = pullOffset();
-      el.style.transform =
-        `translate3d(${x - 4 + pull.x}px, ${y - 4 + pull.y}px, 0)` +
-        (down ? ' rotate(-12deg) scale(.96)' : '');
+    const place = () => {
+      el.style.transform = `translate3d(${x - 4}px, ${y - 4}px, 0)`;
     };
 
-    // The pull eases in and out on its own clock, so the arrow has to be
-    // redrawn even while the mouse is perfectly still.
+    // The turn is the only part that needs a frame loop: the aim eases toward
+    // its target on its own clock, so the arrow has to be redrawn even while
+    // the mouse is perfectly still.
+    const turn = () => {
+      const { angle, weight } = aimState();
+      // Shortest way round, or the arrow takes the long way about whenever a
+      // target sits just across the -180/180 seam.
+      let delta = (angle - REST_ANGLE) % (Math.PI * 2);
+      if (delta > Math.PI) delta -= Math.PI * 2;
+      if (delta < -Math.PI) delta += Math.PI * 2;
+      const deg = (delta * weight * 180) / Math.PI;
+      if (Math.abs(deg - drawn) < 0.15) return;
+      drawn = deg;
+      art.style.transform =
+        `rotate(${deg.toFixed(2)}deg)` + (down ? ' scale(.94)' : '');
+    };
+
     let raf = 0;
     const tick = () => {
       raf = requestAnimationFrame(tick);
-      if (shown) write();
+      if (shown) turn();
     };
     raf = requestAnimationFrame(tick);
 
@@ -67,15 +92,12 @@ const Cursor = () => {
         shown = true;
         el.style.opacity = '1';
       }
-      write();
+      place();
     };
-    const onDown = () => {
-      down = true;
-      write();
-    };
-    const onUp = () => {
-      down = false;
-      write();
+    const press = value => {
+      down = value;
+      drawn = -999;
+      turn();
     };
     // Hide when the pointer leaves the document, so the arrow isn't stranded
     // at the last edge position while the user is in another window.
@@ -83,6 +105,9 @@ const Cursor = () => {
       shown = false;
       el.style.opacity = '0';
     };
+
+    const onDown = () => press(true);
+    const onUp = () => press(false);
 
     window.addEventListener('pointermove', onMove, { passive: true });
     window.addEventListener('pointerdown', onDown, { passive: true });
@@ -116,6 +141,7 @@ const Cursor = () => {
       }}
     >
       <svg
+        ref={artRef}
         width='34'
         height='34'
         viewBox='0 0 24 24'
@@ -124,6 +150,11 @@ const Cursor = () => {
         strokeWidth='2.35'
         strokeLinecap='round'
         strokeLinejoin='round'
+        style={{
+          display: 'block',
+          transformOrigin: `${TIP}px ${TIP}px`,
+          willChange: 'transform',
+        }}
       >
         <path d='M4.037 4.688a.495.495 0 0 1 .651-.651l16 6.5a.5.5 0 0 1-.063.947l-6.124 1.58a2 2 0 0 0-1.438 1.435l-1.579 6.126a.5.5 0 0 1-.947.063z' />
       </svg>
