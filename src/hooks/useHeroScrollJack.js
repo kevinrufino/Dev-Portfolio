@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { HERO_SHRINK_PX } from '../utils/heroRunway.js';
+import { landingHasPlayed } from './useLandingSequence.js';
 
 /**
  * Scroll-jack for the landing hero.
@@ -69,6 +70,25 @@ export default function useHeroScrollJack(ready, heroRef, drained) {
 
   useEffect(() => {
     if (!ready) return undefined;
+
+    // A return visit. The landing is over, so the hero is a viewport and a
+    // half of empty acid sitting between the reader and the page — take it
+    // out before they can scroll, and never arm the jack.
+    //
+    // Leaving it armed was worse than untidy: arriving from a project page
+    // with a section to scroll to, the smooth scroll crossed the runway on its
+    // way down, the jack read that as the reader leaving the hero, and the
+    // snap grabbed the page and dropped them at the intro instead of the
+    // section they had asked for.
+    if (landingHasPlayed()) {
+      const hero = heroRef?.current;
+      if (hero) {
+        hero.style.height = '0px';
+        hero.style.minHeight = '0px';
+        hero.style.overflow = 'hidden';
+      }
+      return undefined;
+    }
 
     // The hero's full height: a viewport plus the shrink runway. This is
     // both where the intro begins and how much the document loses when the

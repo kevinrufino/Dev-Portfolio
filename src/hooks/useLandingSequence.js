@@ -22,6 +22,14 @@ import { ENABLE_SHADER_BACKGROUND } from '../featureFlags.js';
 // Module scope, so it resets on a real reload and only on a real reload.
 let hasPlayed = false;
 
+/**
+ * Has the landing sequence already run this session?
+ *
+ * Anything that only makes sense during an arrival — the hero's own height,
+ * the scroll jack that guards it — asks this rather than duplicating the flag.
+ */
+export const landingHasPlayed = () => hasPlayed;
+
 const MIN_LOADING_MS = 2200; // ≥2s so the water fill always reads
 const READINESS_CAP_MS = 8000; // hard stop if a signal never fires (e.g. no WebGL)
 const EASE = 0.18; // per-frame approach toward the target fill
