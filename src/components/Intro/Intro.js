@@ -43,7 +43,7 @@ export const Intro = ({ setCursor }) => {
 
   return (
     <section
-      className='relative sticky top-0 flex min-h-screen w-full items-center bg-paper py-[clamp(96px,14vh,180px)]'
+      className='relative sticky top-0 flex min-h-screen w-full items-start bg-paper pb-[clamp(48px,8vh,180px)] pt-[clamp(104px,13vh,180px)] lg:items-center lg:py-[clamp(96px,14vh,180px)]'
       id='intro'
       onMouseEnter={() => {
         setCursor('');
@@ -52,8 +52,11 @@ export const Intro = ({ setCursor }) => {
       <div className='grid-rule grid-rule--paper' aria-hidden='true' />
 
       <div className='relative z-[1] mx-auto w-full max-w-[1440px] px-[clamp(24px,7.4vw,110px)]'>
-        {/* Capped at 58% so the palm has a clear band to its right. */}
-        <div data-palm-clip className='max-w-[min(620px,58%)]'>
+        {/* Capped at 58% so the palm has a clear band to its right — but only
+            where there is width to spare. On a phone the copy takes the full
+            column and hugs the top, and the palm takes the bottom of the
+            screen instead of a gutter. */}
+        <div data-palm-clip className='max-w-none lg:max-w-[min(620px,58%)]'>
           <p className='type-label mb-[clamp(28px,4vh,44px)] text-paper-muted'>
             01 — Introduction
           </p>
@@ -87,7 +90,7 @@ export const Intro = ({ setCursor }) => {
             </span>
           </h2>
 
-          <p className='type-body mb-[clamp(30px,4vh,40px)] max-w-[46ch] text-[clamp(16px,1.25vw,18px)] text-paper-muted'>
+          <p className='type-body mb-[clamp(26px,4vh,40px)] max-w-[46ch] text-[clamp(15px,1.25vw,18px)] leading-[1.65] text-paper-muted'>
             I enjoy fusing my love for art and tech to build fun interactive
             experiences. I currently am working at Nike as a Front-end Creative
             Developer. Check out my work below 👇🏾
@@ -99,6 +102,13 @@ export const Intro = ({ setCursor }) => {
             onClick={() => scrollToSection('work')}
             className='pixel-cta type-body text-[15px] font-medium'
           >
+            {/* Four dither layers; see .pixel-cta__dither. */}
+            <span className='pixel-cta__dither' aria-hidden='true'>
+              <i />
+              <i />
+              <i />
+              <i />
+            </span>
             <span>See selected work</span>
             <span aria-hidden='true'>↓</span>
           </button>

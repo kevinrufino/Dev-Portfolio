@@ -105,10 +105,14 @@ body {
   }
 }
 
+/* The trail sits UNDER the page's text, not over it, so it has to live in the
+   stacking context of each ground it appears on rather than as one overlay
+   above everything. `z-index: 0` puts it above a section's own background and
+   below anything the section lifts. */
 .portfolio-pixel-trail {
   position: fixed;
   inset: 0;
-  z-index: 9997;
+  z-index: 0;
   overflow: hidden;
   pointer-events: none;
   touch-action: none;
@@ -474,29 +478,7 @@ html {
    compose. The label rides above both. */
 .pixel-cta {
   --px: 4px;
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  border: 0;
-  background: transparent;
-  padding: 13px 20px;
-  color: var(--ultra);
-  transition:
-    color 130ms steps(2, end),
-    transform 150ms steps(3, end);
-}
-
-.pixel-cta > * {
-  position: relative;
-  z-index: 1;
-}
-
-.pixel-cta::before,
-.pixel-cta::after {
-  content: '';
-  position: absolute;
-  clip-path: polygon(
+  --notch: polygon(
     0% calc(var(--px) * 2), var(--px) calc(var(--px) * 2),
     var(--px) var(--px), calc(var(--px) * 2) var(--px),
     calc(var(--px) * 2) 0%,
@@ -513,7 +495,35 @@ html {
     var(--px) calc(100% - var(--px)),
     var(--px) calc(100% - var(--px) * 2), 0% calc(100% - var(--px) * 2)
   );
-  transition: background 130ms steps(2, end);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  background: transparent;
+  padding: 13px 20px;
+  color: var(--ultra);
+  transition: color 1ms linear;
+}
+
+/* The label rides above both the frame and the dither. `::after` is the last
+   thing in the box's tree order, so a dither layer at the same z-index as the
+   fill is painted UNDER it and never seen — the stack has to be explicit. */
+.pixel-cta > * {
+  position: relative;
+  z-index: 2;
+}
+
+.pixel-cta::before,
+.pixel-cta::after,
+.pixel-cta__dither {
+  clip-path: var(--notch);
+}
+
+.pixel-cta::before,
+.pixel-cta::after {
+  content: '';
+  position: absolute;
 }
 
 .pixel-cta::before {
@@ -526,35 +536,107 @@ html {
   background: var(--paper);
 }
 
-/* Not a wipe or a slide: the two colours trade places in two visible steps
-   and the whole frame drops onto its own shadow, so the hover is a state
-   change rather than a transition. */
+/* The hover is a DITHER, not a fill.
+   Four quadrant patterns on an 8px tile, each a 4x4 square, switched on one
+   after another in Bayer order. Coverage goes 25 -> 50 -> 75 -> 100 in four
+   visible steps, so the ultra arrives the way everything else on this page
+   arrives: as pixels, not as a wash. Each layer flips instantly and is timed
+   by its delay, which is what keeps the steps discrete. */
+.pixel-cta__dither {
+  position: absolute;
+  inset: var(--px);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.pixel-cta__dither i {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 1ms linear;
+}
+
+.pixel-cta__dither i:nth-child(1) {
+  background: conic-gradient(transparent 0 75%, var(--ultra) 0) 0 0 / 8px 8px;
+}
+
+.pixel-cta__dither i:nth-child(2) {
+  background: conic-gradient(
+      transparent 0 25%,
+      var(--ultra) 0 50%,
+      transparent 0
+    )
+    0 0 / 8px 8px;
+}
+
+.pixel-cta__dither i:nth-child(3) {
+  background: conic-gradient(var(--ultra) 0 25%, transparent 0) 0 0 / 8px 8px;
+}
+
+.pixel-cta__dither i:nth-child(4) {
+  background: conic-gradient(
+      transparent 0 50%,
+      var(--ultra) 0 75%,
+      transparent 0
+    )
+    0 0 / 8px 8px;
+}
+
+/* Leaving takes the same four steps in reverse. */
+.pixel-cta__dither i:nth-child(1) {
+  transition-delay: 195ms;
+}
+.pixel-cta__dither i:nth-child(2) {
+  transition-delay: 130ms;
+}
+.pixel-cta__dither i:nth-child(3) {
+  transition-delay: 65ms;
+}
+.pixel-cta__dither i:nth-child(4) {
+  transition-delay: 0ms;
+}
+
+.pixel-cta:hover .pixel-cta__dither i,
+.pixel-cta:focus-visible .pixel-cta__dither i {
+  opacity: 1;
+}
+
+.pixel-cta:hover .pixel-cta__dither i:nth-child(1),
+.pixel-cta:focus-visible .pixel-cta__dither i:nth-child(1) {
+  transition-delay: 0ms;
+}
+.pixel-cta:hover .pixel-cta__dither i:nth-child(2),
+.pixel-cta:focus-visible .pixel-cta__dither i:nth-child(2) {
+  transition-delay: 65ms;
+}
+.pixel-cta:hover .pixel-cta__dither i:nth-child(3),
+.pixel-cta:focus-visible .pixel-cta__dither i:nth-child(3) {
+  transition-delay: 130ms;
+}
+.pixel-cta:hover .pixel-cta__dither i:nth-child(4),
+.pixel-cta:focus-visible .pixel-cta__dither i:nth-child(4) {
+  transition-delay: 195ms;
+}
+
+/* The label turns once the ground under it has, not before — three of the
+   four layers are down by 130ms, which is when acid starts to read. */
 .pixel-cta:hover,
 .pixel-cta:focus-visible {
   color: var(--acid);
-  transform: translate(3px, 3px);
   outline: none;
-}
-
-.pixel-cta:hover::before,
-.pixel-cta:focus-visible::before {
-  background: var(--acid);
-}
-
-.pixel-cta:hover::after,
-.pixel-cta:focus-visible::after {
-  background: var(--ultra);
+  transition-delay: 200ms;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .pixel-cta,
   .pixel-cta::before,
-  .pixel-cta::after {
+  .pixel-cta::after,
+  .pixel-cta__dither i {
     transition: none;
   }
-  .pixel-cta:hover,
-  .pixel-cta:focus-visible {
-    transform: none;
+  .pixel-cta:hover .pixel-cta__dither i,
+  .pixel-cta:focus-visible .pixel-cta__dither i {
+    transition-delay: 0ms;
   }
 }
 
@@ -583,5 +665,88 @@ html {
 @media (prefers-reduced-motion: reduce) {
   .dot-hop {
     animation: none;
+  }
+}
+
+/* ── the underline that draws itself ────────────────────────────────────────
+   Every text call to action on the page that is just a word and a rule shares
+   this: the rule sits there at rest, and on hover a second one in a different
+   colour is drawn across it from the left. The arrow leaves at the same time,
+   in the direction it points. */
+.line-cta {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 5px;
+  border: 0;
+  background: transparent;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.line-cta::before,
+.line-cta::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.line-cta::before {
+  height: 1px;
+  background: currentColor;
+  opacity: 0.42;
+}
+
+.line-cta::after {
+  height: 2px;
+  background: var(--line-cta-ink, var(--acid));
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform 400ms cubic-bezier(0.62, 0.05, 0.2, 1);
+}
+
+.line-cta:hover::after,
+.line-cta:focus-visible::after {
+  transform: scaleX(1);
+}
+
+.line-cta__arrow {
+  display: inline-block;
+  transition: transform 320ms cubic-bezier(0.62, 0.05, 0.2, 1);
+}
+
+.line-cta:hover .line-cta__arrow,
+.line-cta:focus-visible .line-cta__arrow {
+  transform: translateX(6px);
+}
+
+.line-cta__arrow--diagonal {
+  transition: transform 320ms cubic-bezier(0.62, 0.05, 0.2, 1);
+}
+
+.line-cta:hover .line-cta__arrow--diagonal,
+.line-cta:focus-visible .line-cta__arrow--diagonal {
+  transform: translate(4px, -4px);
+}
+
+.line-cta__arrow--up {
+  transition: transform 320ms cubic-bezier(0.62, 0.05, 0.2, 1);
+}
+
+.line-cta:hover .line-cta__arrow--up,
+.line-cta:focus-visible .line-cta__arrow--up {
+  transform: translateY(-5px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .line-cta::after,
+  .line-cta__arrow,
+  .line-cta__arrow--diagonal,
+  .line-cta__arrow--up {
+    transition: none;
   }
 }
