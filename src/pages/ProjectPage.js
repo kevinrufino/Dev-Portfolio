@@ -28,6 +28,9 @@ const NAV_GRAVITY_PX = 78;
 // and over a short distance, or the blob turns up halfway across the header
 // with nothing under it.
 const NAV_FOLLOWER_RANGE = 110;
+// The next project is the biggest thing on the page's last screen, so it is
+// findable from a long way off.
+const NEXT_GRAVITY_PX = 150;
 
 const firstLink = project => {
   if (project.liveLink) return project.liveLink;
@@ -70,6 +73,10 @@ const ProjectPage = () => {
     gravity: NAV_GRAVITY_PX,
   });
   const liveFx = useCursorFx({ name: 'project / live', gravity: NAV_GRAVITY_PX });
+  const nextFx = useCursorFx({
+    name: 'project / next',
+    gravity: NEXT_GRAVITY_PX,
+  });
 
   const index = ProjectsData.findIndex(p => toSlug(p.title) === slug);
   const project = index !== -1 ? ProjectsData[index] : null;
@@ -421,11 +428,22 @@ const ProjectPage = () => {
       <footer className='relative overflow-hidden bg-acid text-charcoal'>
         <div className='relative z-[1] px-[clamp(24px,6vw,88px)] pb-[clamp(28px,4vh,44px)] pt-[clamp(56px,10vh,120px)]'>
           <p className='type-label m-0 mb-6 text-[#4c4d16]'>Next project</p>
+          {/* The arrow takes the ultra sweep rather than the whole line: the
+              name is the label, the arrow is the direction, and only the
+              direction needs to answer. Two stacked copies, the upper one
+              clipped to how far the sweep has come, so nothing moves. */}
           <Link
+            ref={nextFx}
             to={`/projects/${toSlug(next.title)}`}
-            className='m-0 mb-5 inline-block font-offbit101Bold text-[clamp(38px,7vw,110px)] leading-[.9] tracking-[-.02em] text-charcoal'
+            className='sweep-cta m-0 mb-5 inline-block font-offbit101Bold text-[clamp(38px,7vw,110px)] leading-[.9] tracking-[-.02em] text-charcoal'
           >
-            {nextStory?.display || next.title} →
+            {nextStory?.display || next.title}{' '}
+            <span className='sweep-cta__mark'>
+              <span aria-hidden='true'>→</span>
+              <span aria-hidden='true' className='sweep-cta__over'>
+                →
+              </span>
+            </span>
           </Link>
           <p className='type-body m-0 max-w-[44ch] text-[17px] leading-[1.65] text-[#3a3b10]'>
             {nextStory?.tagline || next.description}
@@ -478,9 +496,13 @@ const ProjectPage = () => {
           <button
             type='button'
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className='p-[5px] text-[#4c4d16]'
+            className='line-cta text-[#4c4d16]'
+            style={{ '--line-cta-ink': 'var(--ultra)' }}
           >
-            Back to top ↑
+            Back to top
+            <span aria-hidden='true' className='line-cta__arrow--up'>
+              ↑
+            </span>
           </button>
         </div>
       </footer>
