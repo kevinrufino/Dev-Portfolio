@@ -1,3 +1,4 @@
+import NotFound from './NotFound.js';
 import React, { useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
@@ -12,7 +13,9 @@ const ProjectPreview = () => {
     window.scrollTo(0, 0);
   }, [slug]);
 
-  if (!project || !project.liveLink) {
+  if (!project) return <NotFound />;
+
+  if (!project.liveLink) {
     return (
       <div className="w-full h-screen bg-acid text-ultra flex flex-col items-center justify-center gap-4">
         <h1 className="font-offbit101Bold text-4xl">Preview not available</h1>

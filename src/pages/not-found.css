@@ -1,0 +1,68 @@
+.lost-game { min-height: 100svh; background: var(--acid); color: var(--ultra); padding: 26px clamp(20px, 4vw, 72px) 20px; }
+.lost-nav { display: flex; justify-content: space-between; align-items: center; gap: 20px; font-size: 19px; padding-bottom: 20px; border-bottom: 2px solid currentColor; }
+.lost-nav a:last-child { font-family: 'DM Sans', sans-serif; font-size: 14px; text-decoration: underline; text-underline-offset: 4px; }
+.lost-heading { display: flex; justify-content: space-between; align-items: flex-end; gap: 30px; padding: 30px 0; }
+.lost-error { font-size: 16px; margin: 0 0 14px; }
+.lost-heading h1 { font-family: 'OffBit-101-Bold', monospace; font-size: clamp(68px, 8.4vw, 132px); line-height: .78; letter-spacing: -.04em; margin: 0; }
+.lost-heading h1 br { display: none; }
+.lost-heading h1 span { margin-left: .15em; }
+.lost-intro { max-width: 285px; }
+.lost-intro p { font-size: 25px; line-height: 1.05; margin: 0 0 10px; }
+.lost-intro > span, .lost-shop-title p, .lost-journey p, .lost-raid p, .lost-scene-bottom, .lost-footer { font-family: 'DM Sans', sans-serif; font-size: 13px; line-height: 1.5; }
+.lost-layout { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(340px, 1fr); border: 2px solid var(--ultra); }
+.lost-play { display: flex; flex-direction: column; min-width: 0; }
+.lost-scene-top { display: flex; justify-content: space-between; padding: 16px 20px; font-size: 16px; }
+.lost-house { display: block; width: 100%; text-align: left; color: inherit; flex: 1; }
+.lost-house svg { width: 100%; max-height: 390px; }
+.lost-svg-note { font-size: 13px; font-family: 'OffBit-Regular', monospace; }
+.lost-room-label { font-size: 10px; font-family: 'DM Sans', sans-serif; }
+.lost-scavenge { margin: 0 20px; padding: 15px 18px; display: flex; justify-content: space-between; gap: 10px; align-items: center; background: var(--ultra); color: var(--acid); font-size: 24px; }
+.lost-scavenge span { font-size: 14px; }
+.lost-house:hover .lost-scavenge { background: var(--charcoal); }
+.lost-house:active svg { transform: translateY(2px); }
+.lost-scene-bottom { padding: 12px 20px 18px; min-height: 83px; }
+.lost-scene-bottom p { margin: 0 0 4px; font-weight: 500; }
+.lost-scene-bottom > span { font-size: 11px; }
+.lost-raid { padding: 20px; background: var(--ultra); color: var(--paper); display: flex; justify-content: space-between; align-items: center; gap: 18px; min-height: 105px; }
+.lost-raid strong { font-size: 19px; font-weight: normal; }
+.lost-raid p { margin: 5px 0 0; font-size: 12px; }
+.lost-raid button { flex-shrink: 0; padding: 10px; border: 1px solid var(--acid); color: var(--acid); }
+.lost-raid button:disabled { opacity: .5; }
+.lost-workshop { background: var(--paper); border-left: 2px solid var(--ultra); padding: 24px; }
+.lost-wallet { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--ultra); padding-bottom: 18px; }
+.lost-wallet strong { display: block; font-family: 'OffBit-101-Bold', monospace; font-size: 58px; line-height: 1; overflow-wrap: anywhere; }
+.lost-wallet p { font-size: 27px; text-align: right; margin: 0; }
+.lost-wallet p span { display: block; font-size: 13px; }
+.lost-shop-title { padding: 20px 0 8px; }
+.lost-shop-title h2 { font-size: 23px; margin: 0; }
+.lost-shop-title p { margin: 5px 0; color: var(--paper-ink-2); }
+.lost-trap { display: flex; width: 100%; text-align: left; align-items: center; gap: 12px; padding: 17px 0; border-bottom: 1px solid var(--paper-rule); color: var(--ultra); }
+.lost-trap:enabled:hover { background: var(--acid); }
+.lost-trap:disabled { color: var(--paper-ink-2); }
+.lost-trap-icon { font-size: 31px; width: 32px; flex-shrink: 0; }
+.lost-trap-copy { flex: 1; }
+.lost-trap-copy strong { display: block; font-size: 19px; font-weight: normal; }
+.lost-trap-copy small { font-size: 12px; }
+.lost-trap-copy > span { display: block; font: 11px/1.4 'DM Sans', sans-serif; margin: 3px 0; }
+.lost-trap-copy em { font-size: 12px; font-style: normal; }
+.lost-price { text-align: right; font-size: 22px; }
+.lost-price small { display: block; font: 10px 'DM Sans', sans-serif; }
+.lost-journey { padding-top: 24px; }
+.lost-journey > div { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+.lost-journey h2 { font-size: 20px; margin: 0; }
+.lost-journey progress { appearance: none; width: 100%; height: 8px; margin-top: 12px; border: 0; background: var(--paper-rule); }
+.lost-journey progress::-webkit-progress-bar { background: var(--paper-rule); }
+.lost-journey progress::-webkit-progress-value { background: var(--ultra); }
+.lost-journey progress::-moz-progress-bar { background: var(--ultra); }
+.lost-journey p { font-size: 12px; margin: 8px 0 0; color: var(--paper-ink-2); }
+.lost-replay { background: var(--ultra); color: var(--acid); padding: 12px; margin-top: 12px; width: 100%; }
+.lost-footer { display: flex; justify-content: space-between; gap: 16px; padding-top: 16px; font-size: 11px; }
+.lost-footer button { text-decoration: underline; text-underline-offset: 3px; }
+.lost-game button:focus-visible, .lost-game a:focus-visible { outline: 3px solid var(--ultra); outline-offset: 4px; }
+.lost-raid button:focus-visible { outline-color: var(--acid); }
+@keyframes lost-hop { 50% { transform: translateY(-10px); } }
+.lost-hop { animation: lost-hop .18s ease-out; }
+@media (max-width: 1050px) { .lost-heading h1 br { display: block; } .lost-heading h1 span { margin-left: 0; } .lost-workshop { padding: 20px; } }
+@media (max-width: 740px) { .lost-heading { align-items: center; } .lost-intro { max-width: 200px; } .lost-intro p { font-size: 22px; } .lost-layout { grid-template-columns: 1fr; } .lost-workshop { border-left: 0; border-top: 2px solid var(--ultra); } .lost-footer { flex-direction: column; align-items: flex-start; } }
+@media (max-width: 420px) { .lost-heading { gap: 16px; align-items: flex-start; } .lost-heading h1 { font-size: 61px; } .lost-intro { max-width: 140px; padding-top: 30px; } .lost-intro p { font-size: 19px; } .lost-intro > span { font-size: 11px; } .lost-scavenge { font-size: 20px; } .lost-scene-top { font-size: 13px; } .lost-raid { flex-direction: column; align-items: flex-start; } }
+@media (prefers-reduced-motion: reduce) { .lost-hop { animation: none; } .lost-house:active svg { transform: none; } }

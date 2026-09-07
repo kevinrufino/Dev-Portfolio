@@ -93,13 +93,26 @@ export const HeaderSequence = ({
       >
         {/* Stuck to the viewport for the length of the runway, so the cue
             stays where the reader is rather than sliding up out of view
-            while the names shrink. */}
-        <div className='sticky top-0 h-[100svh]'>
+            while the names shrink.
+
+            Above the physics canvas, which is fixed at z-index 1 in this same
+            stacking context. Without that the cue was painted UNDER the pile
+            it sits on top of — buried by the names exactly as they finished
+            landing, which is the moment it appears. The layer is transparent
+            and only the button in it paints, so nothing else is lifted with
+            it; the cue's own acid disc is what makes it read against the
+            ultra names underneath. */}
+        <div className='sticky top-0 z-[2] h-[100svh]'>
           <button
             type='button'
             aria-label='Scroll to content'
             onClick={onCue}
-            className={`absolute bottom-8 left-1/2 -translate-x-1/2 transition-opacity duration-700 ${
+            // Lifted clear of the beta badge on a phone. The badge is pinned
+            // bottom right and 260px wide, so on anything narrower than about
+            // 620px it covers a centred cue completely — and a phone is the
+            // one screen where a scroll hint is most worth having. It occupies
+            // the bottom 139px; this clears it with a gap.
+            className={`absolute bottom-8 left-1/2 -translate-x-1/2 transition-opacity duration-700 max-[620px]:bottom-[164px] ${
               filled ? 'opacity-100' : 'opacity-0 pointer-events-none'
             }`}
           >

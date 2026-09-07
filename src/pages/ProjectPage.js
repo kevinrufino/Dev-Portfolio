@@ -1,3 +1,4 @@
+import NotFound from './NotFound.js';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { goToSection } from '../utils/navigateToSection.js';
@@ -247,18 +248,7 @@ const ProjectPage = () => {
     return () => cancelAnimationFrame(raf);
   }, [project]);
 
-  if (!project) {
-    return (
-      <main className='flex min-h-screen flex-col items-center justify-center gap-6 bg-charcoal px-6 text-charcoal-ink'>
-        <h1 className='m-0 font-offbit101Bold text-[clamp(36px,6vw,72px)]'>
-          No such project.
-        </h1>
-        <Link to='/' className='type-body text-acid underline'>
-          ← selected work
-        </Link>
-      </main>
-    );
-  }
+  if (!project) return <NotFound />;
 
   const display = story?.display || project.title;
   const liveLink = firstLink(project);
