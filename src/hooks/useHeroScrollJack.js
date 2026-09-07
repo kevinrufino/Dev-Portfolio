@@ -49,6 +49,13 @@ const easeInOutCubic = t =>
   t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
 export default function useHeroScrollJack(ready, heroRef, drained) {
+  // Whether the landing had already run BEFORE this mount.
+  //
+  // Read once, on the first render, and never again. The flag itself is set
+  // the moment the loader hands off — long before `ready` — so asking for it
+  // inside the effect answered "yes" on a first visit too, and the hero was
+  // taken out from under the names the instant they finished falling in.
+  const replayed = useRef(landingHasPlayed());
   // Lets the scroll cue trigger the same snap the wheel/swipe uses.
   const snapRef = useRef(null);
   // Read inside the effect's listeners without re-registering them all when
@@ -80,7 +87,7 @@ export default function useHeroScrollJack(ready, heroRef, drained) {
     // way down, the jack read that as the reader leaving the hero, and the
     // snap grabbed the page and dropped them at the intro instead of the
     // section they had asked for.
-    if (landingHasPlayed()) {
+    if (replayed.current) {
       const hero = heroRef?.current;
       if (hero) {
         hero.style.height = '0px';
