@@ -767,3 +767,68 @@ html {
     transition: none;
   }
 }
+
+/* ── the glyph, held ────────────────────────────────────────────────────────
+   While a press is running on the generative form it shakes, and it shakes in
+   whole pixels on stepped keys rather than easing between them, because the
+   thing being shaken is a dither and a smooth wobble would be the only
+   sub-pixel motion in the section. The overlay is the same 8px checker the
+   button's hover uses, flicking between two phases so the shake carries a
+   texture rather than just moving. */
+@keyframes glyph-shake {
+  0% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(-3px, 2px);
+  }
+  50% {
+    transform: translate(2px, -3px);
+  }
+  75% {
+    transform: translate(3px, 2px);
+  }
+  100% {
+    transform: translate(-2px, -2px);
+  }
+}
+
+@keyframes glyph-grain {
+  0%,
+  49% {
+    background-position: 0 0;
+  }
+  50%,
+  100% {
+    background-position: 4px 4px;
+  }
+}
+
+.glyph-shake {
+  position: relative;
+  animation: glyph-shake 140ms steps(1, end) infinite;
+}
+
+.glyph-shake::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: conic-gradient(currentColor 0 25%, transparent 0) 0 0 / 8px 8px;
+  opacity: 0.34;
+  animation: glyph-grain 140ms steps(1, end) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glyph-shake,
+  .glyph-shake::after {
+    animation: none;
+  }
+}
+
+/* The footer's copy of the trail sits UNDER everything in flow, not just
+   under the blocks that lift themselves. A negative index still paints above
+   the footer's own charcoal ground, which is exactly the gap it wants. */
+.portfolio-pixel-trail--under {
+  z-index: -1;
+}

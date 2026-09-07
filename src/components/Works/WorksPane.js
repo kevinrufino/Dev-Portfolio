@@ -23,16 +23,26 @@ const FRAME_MS = 32;
 // Matches the nav's follower range exactly. The two groups are the same
 // interaction and should start reacting at the same distance.
 const TOGGLE_RANGE = 300;
-// Short pulls. The glyph is a large target that only wants acknowledging, and
-// the idle toggle is already a few pixels from wherever the pointer is.
-const GLYPH_GRAVITY_PX = 58;
-const TOGGLE_GRAVITY_PX = 58;
+// The glyph is the section's one image and its way in, so it is findable from
+// a long way off — and it keeps pointing past its own border, all the way to
+// the middle. Half the size of it is still somewhere you are heading toward.
+const GLYPH_GRAVITY_PX = 116;
+const GLYPH_RELEASE_CORE = 0.5;
+// The idle option is a long way from the list the pointer usually lives in.
+const TOGGLE_GRAVITY_PX = 116;
+// The row's own way in sits at the edge of a busy column; a short field is
+// enough to catch a hand already travelling along the row.
+const ROW_CTA_GRAVITY_PX = 58;
 
-/** Attach one element to both a callback ref and a ref object. */
-const joinRefs = (callbackRef, objectRef) => el => {
-  callbackRef(el);
-  objectRef.current = el;
-};
+/** Attach one element to several refs, callback or object. */
+const joinRefs =
+  (...refs) =>
+  el => {
+    for (const ref of refs) {
+      if (typeof ref === 'function') ref(el);
+      else if (ref) ref.current = el;
+    }
+  };
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
@@ -106,6 +116,10 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
     name: 'works / glyph',
     tone: chipTone,
     gravity: GLYPH_GRAVITY_PX,
+    releaseCore: GLYPH_RELEASE_CORE,
+    onHold: p => {
+      glyphFxRef.current?.classList.toggle('glyph-shake', p > 0);
+    },
     hold: () => {
       if (active.hasStory) navigate(`/projects/${toSlug(active.title)}`);
       else window.open(active.linkHref, '_blank', 'noreferrer');
@@ -124,6 +138,10 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
     enabled: category !== 'personal',
   });
   const tabFx = [workTabFx, personalTabFx];
+  const rowCtaFx = useCursorFx({
+    name: 'works / check it out',
+    gravity: ROW_CTA_GRAVITY_PX,
+  });
 
   /** 0->1 across the pinned range; null when the pane isn't pinned. */
   const progress = useCallback(() => {
@@ -532,15 +550,20 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
               least on screen. */}
           <div className='grid min-h-0 flex-1 items-center gap-[clamp(24px,4vw,68px)] [grid-template-columns:minmax(0,.85fr)_minmax(0,1.15fr)] max-lg:items-stretch max-lg:gap-[18px] max-lg:[grid-template-columns:minmax(0,1fr)] max-lg:[grid-template-rows:auto_minmax(0,1fr)]'>
             <figure className='m-0 flex min-h-0 min-w-0 flex-col justify-center gap-[clamp(12px,2vh,22px)] max-lg:gap-[10px]'>
+              {/* The shake and its grain live on a wrapper: a canvas is a
+                  replaced element and cannot carry a pseudo-element. */}
+              <div
+                ref={glyphFxRef}
+                className='relative mx-auto block w-full max-w-[min(100%,46vh)] max-lg:max-w-[min(56vw,190px)]'
+                style={{ color: palette.accent }}
+              >
               <canvas
-                ref={el => {
-                  glyphCanvasRef.current = el;
-                  glyphFxRef.current = el;
-                }}
+                ref={glyphCanvasRef}
                 role='img'
                 aria-label={`Dithered glyph interpretation for ${active.display}`}
-                className='mx-auto block aspect-square w-full max-w-[min(100%,46vh)] max-lg:max-w-[min(56vw,190px)]'
+                className='block aspect-square w-full'
               />
+              </div>
               <figcaption
                 data-t-color='caption'
                 className='type-label mt-[24px] flex items-center justify-between gap-4 max-lg:mt-0 max-lg:text-[10px]'
@@ -640,6 +663,7 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
                         {on &&
                           (row.hasStory ? (
                             <Link
+                              ref={rowCtaFx}
                               data-t-color='link'
                               to={to}
                               aria-label={`Check out ${row.display}`}
@@ -661,6 +685,7 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
                             </Link>
                           ) : (
                             <a
+                              ref={rowCtaFx}
                               data-t-color='link'
                               href={row.linkHref}
                               target='_blank'

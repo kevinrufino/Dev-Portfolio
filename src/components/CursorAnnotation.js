@@ -115,8 +115,10 @@ const CursorAnnotation = () => {
             top: 0,
             bottom: 0,
             width: 'calc(var(--hold, 0) * 100%)',
-            background: ink,
-            opacity: 0.26,
+            // Acid, whichever palette the chip is wearing: the fill is the
+            // one thing on it that is not about the label.
+            background: 'var(--acid)',
+            opacity: 0.55,
           }}
         />
         <span style={{ position: 'relative' }}>
