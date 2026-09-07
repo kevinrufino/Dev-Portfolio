@@ -81,7 +81,9 @@ const CursorAnnotation = () => {
         key={state.seq}
         className='type-body'
         style={{
+          position: 'relative',
           display: 'inline-block',
+          overflow: 'hidden',
           padding: '4px 8px 3px',
           background: bg,
           color: ink,
@@ -95,22 +97,40 @@ const CursorAnnotation = () => {
           // anywhere else, and a drop shadow here would be the only one.
           boxShadow: on ? '2px 2px 0 0 rgba(0,0,0,.26)' : 'none',
           opacity: on ? 1 : 0,
-          transform: on ? 'translateY(0) scale(1)' : 'translateY(-4px) scale(.88)',
+          transform: on
+            ? 'translateY(0) scale(1)'
+            : 'translateY(-4px) scale(.88)',
           transformOrigin: '0 0',
           transition:
             'opacity 150ms cubic-bezier(.22,.8,.2,1), transform 190ms cubic-bezier(.22,1.1,.28,1)',
         }}
       >
-        {Icon && (
-          <Icon
-            style={{
-              display: 'inline-block',
-              marginRight: 5,
-              verticalAlign: '-1px',
-            }}
-          />
-        )}
-        {state.label || ' '}
+        {/* Held-press progress. The registry writes `--hold` straight onto the
+            wrapper as the press runs, so filling costs no React work. */}
+        <span
+          aria-hidden='true'
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: 'calc(var(--hold, 0) * 100%)',
+            background: ink,
+            opacity: 0.26,
+          }}
+        />
+        <span style={{ position: 'relative' }}>
+          {Icon && (
+            <Icon
+              style={{
+                display: 'inline-block',
+                marginRight: 5,
+                verticalAlign: '-1px',
+              }}
+            />
+          )}
+          {state.label || ' '}
+        </span>
       </span>
     </div>
   );

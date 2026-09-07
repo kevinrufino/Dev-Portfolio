@@ -14,6 +14,9 @@ import { addTarget } from '../utils/cursorFx.js';
  * @param {string} [options.icon] - key of a chip icon, e.g. `'eye'`.
  * @param {string} [options.name] - what to call this field in the debug
  *   overlay. Falls back to the label.
+ * @param {() => void} [options.hold] - what a held press on this target does.
+ *   The chip fills as the press runs and this fires when it completes.
+ * @param {number} [options.holdMs] - how long that takes.
  * @param {{bg: string, ink: string}} [options.tone] - chip colours.
  * @param {number} [options.gravity] - px OUTSIDE the element's box at which
  *   the cursor starts being pulled toward it. Omit for no pull.
@@ -26,6 +29,8 @@ export default function useCursorFx({
   label,
   icon,
   name,
+  hold,
+  holdMs,
   tone,
   gravity,
   strength = 1,
@@ -34,6 +39,10 @@ export default function useCursorFx({
 } = {}) {
   const ref = useRef(null);
   const toneKey = tone ? `${tone.bg}|${tone.ink}` : '';
+  // Read through a ref: a caller passing an inline arrow would otherwise
+  // re-register the target on every render of its component.
+  const holdRef = useRef(hold);
+  holdRef.current = hold;
 
   useEffect(() => {
     const el = ref.current;
@@ -44,6 +53,8 @@ export default function useCursorFx({
       label,
       icon,
       name,
+      hold: hold ? () => holdRef.current?.() : null,
+      holdMs,
       tone: toneKey ? { bg: tone.bg, ink: tone.ink } : null,
       gravity:
         gravity == null ? null : { distance: gravity, strength, releaseInside },
@@ -52,7 +63,20 @@ export default function useCursorFx({
     // `toneKey`, so a caller passing a fresh object literal each render does
     // not re-register the target on every unrelated re-render.
     // eslint-disable-next-line
-  }, [label, icon, name, toneKey, gravity, strength, releaseInside, enabled]);
+    // `hold` is compared by presence, not identity — see `holdRef`.
+    // eslint-disable-next-line
+  }, [
+    label,
+    icon,
+    name,
+    Boolean(hold),
+    holdMs,
+    toneKey,
+    gravity,
+    strength,
+    releaseInside,
+    enabled,
+  ]);
 
   return ref;
 }

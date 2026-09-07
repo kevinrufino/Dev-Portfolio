@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { toSlug } from '../../utils/helpers.js';
 import useGooFollower from '../../hooks/useGooFollower.js';
 import useCursorFx from '../../hooks/useCursorFx.js';
@@ -51,6 +51,7 @@ const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
  * OVERSCROLL_PX of accumulated travel.
  */
 const WorksPane = ({ id = 'projects', className = '' }) => {
+  const navigate = useNavigate();
   const [category, setCategory] = useState('work');
   const [theme, setTheme] = useState('work');
   const [selected, setSelected] = useState(0);
@@ -96,13 +97,19 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
   const chipTone = { bg: palette.ink, ink: palette.bg };
 
   // The glyph stands in for the selected project, so it says where that
-  // project goes — the study and the row are the same subject seen twice.
+  // project goes — and it is the way there. Holding the press fills the chip;
+  // let go early and nothing happens, which is what makes a canvas safe to
+  // make clickable at all.
   const glyphFxRef = useCursorFx({
     label: active.hasStory ? 'view case study' : 'view project',
     icon: 'eye',
     name: 'works / glyph',
     tone: chipTone,
     gravity: GLYPH_GRAVITY_PX,
+    hold: () => {
+      if (active.hasStory) navigate(`/projects/${toSlug(active.title)}`);
+      else window.open(active.linkHref, '_blank', 'noreferrer');
+    },
   });
   // Only the option you are NOT on pulls: the one you are already using has
   // no reason to ask for the pointer.
