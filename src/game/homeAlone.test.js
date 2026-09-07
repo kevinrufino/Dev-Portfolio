@@ -1,4 +1,14 @@
-import { freshGame, grant, buy, cost, rate, advance, loadGame, target, complete } from './homeAlone';
+import {
+  freshGame,
+  grant,
+  buy,
+  cost,
+  rate,
+  advance,
+  loadGame,
+  target,
+  complete,
+} from './homeAlone';
 
 test('buying a trap spends supplies without reducing family progress', () => {
   const g = buy(grant(freshGame(0, 0), 12), 0);
@@ -23,8 +33,22 @@ test('replays increase production and journey target', () => {
 test('saves restore offline earnings and reject corrupt data', () => {
   const g = buy(grant(freshGame(0, 1000), 12), 0);
   expect(loadGame({ getItem: () => JSON.stringify(g) }, 6000).supplies).toBe(5);
-  for (const bad of ['{', 'null', JSON.stringify({ ...g, traps: [-1, 0, 0, 0] }), JSON.stringify({ ...g, supplies: '100' })]) {
+  for (const bad of [
+    '{',
+    'null',
+    JSON.stringify({ ...g, traps: [-1, 0, 0, 0] }),
+    JSON.stringify({ ...g, supplies: '100' }),
+  ]) {
     expect(loadGame({ getItem: () => bad }, 6000)).toEqual(freshGame(0, 6000));
   }
-  expect(loadGame({ getItem: () => { throw Error('blocked'); } }, 6000)).toEqual(freshGame(0, 6000));
+  expect(
+    loadGame(
+      {
+        getItem: () => {
+          throw Error('blocked');
+        },
+      },
+      6000,
+    ),
+  ).toEqual(freshGame(0, 6000));
 });
