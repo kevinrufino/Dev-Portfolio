@@ -1,5 +1,8 @@
 import { ProjectsData } from '../../constants.js';
-import { PROJECT_STORIES } from '../Project/projectStories.js';
+import {
+  PROJECT_STORIES,
+  RETIRED_TITLES,
+} from '../Project/projectStories.js';
 import STUDIO from '../../content/projects.json';
 
 /**
@@ -91,7 +94,7 @@ const firstLink = project => {
 const STUDIO_PROJECTS = STUDIO.projects || {};
 
 const studioEntries = Object.entries(STUDIO_PROJECTS)
-  .filter(([, data]) => data.index)
+  .filter(([title, data]) => data.index && !RETIRED_TITLES.has(title))
   .map(([title, data]) => ({
     title,
     archive: data.archive || {},
@@ -107,6 +110,7 @@ const archiveFor = title => {
 };
 
 const entryFor = title => {
+  if (RETIRED_TITLES.has(title)) return null;
   const project = archiveFor(title);
   if (!project) return null;
   const studio = studioEntries.find(e => e.title === title);
@@ -120,6 +124,9 @@ const entryFor = title => {
     meta: [project.client, project.role, project.year].filter(Boolean).join(' / '),
     description: meta.summary,
     shape: meta.shape,
+    // A loop the studio published for this project. When it is present the
+    // glyph samples it instead of generating a shape — see workGlyph.
+    glyphSrc: meta.glyphSrc || '',
     linkHref: firstLink(project),
     hasStory: Boolean(PROJECT_STORIES[title]),
   };
@@ -127,7 +134,10 @@ const entryFor = title => {
 
 const inCategory = key => {
   const seeded = ProjectsData.map(p => p.title).filter(
-    t => (studioEntries.find(e => e.title === t)?.index || OVERRIDES[t])?.category === key,
+    t =>
+      !RETIRED_TITLES.has(t) &&
+      (studioEntries.find(e => e.title === t)?.index || OVERRIDES[t])?.category ===
+        key,
   );
   const added = studioEntries
     .map(e => e.title)

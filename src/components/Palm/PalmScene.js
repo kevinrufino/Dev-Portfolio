@@ -20,10 +20,6 @@ const NUT_GRAVITY_PX = 92;
 // pointer stands in: the gap is zero exactly when the scene's own hit test
 // said yes, and its area is small enough to beat any section behind it.
 const AT_POINTER = 7;
-// The held-press ring over the palm. It grows across the crown, and the dither
-// mask on it re-renders the fronds cell by cell as it passes — the palm is
-// drawn on the same 6px lattice the mask is.
-const PALM_HOLD_RING_PX = 560;
 
 /**
  * Mounts the palm scene over the page.
@@ -203,7 +199,6 @@ const PalmScene = () => {
           // up: the ring grows across the crown, and the tree goes when it
           // lands.
           hold: nut.attached ? () => palm.shake() : null,
-          holdRing: PALM_HOLD_RING_PX,
         };
       }
       if (palm.hitTest(x, y).tree) {
@@ -211,7 +206,6 @@ const PalmScene = () => {
           label: 'shake',
           geom: { x, y, r: AT_POINTER },
           hold: () => palm.shake(),
-          holdRing: PALM_HOLD_RING_PX,
         };
       }
       const water = palm.waterBand();

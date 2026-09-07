@@ -73,12 +73,11 @@ let shown = { label: '', tone: null, icon: null };
 let holdAction = null;
 let holdWatch = null;
 let holdMs = HOLD_MS;
-let holdRing = 0;
 let heldFrom = 0;
-// Where the press started, and the ring drawn from it.
+// Where the press started. A held press sends ripples out from this point
+// through whatever liquid is on the page, so the origin has to outlive the
+// pointer moving off it.
 let heldAt = { x: 0, y: 0 };
-let ring = null;
-let ringMax = 0;
 
 /** Gap between a point and a target's shape, in px; zero anywhere inside it. */
 const gapTo = (g, x, y) => {
@@ -194,7 +193,6 @@ const evaluate = () => {
   let action = null;
   let actionWatch = null;
   let actionMs = HOLD_MS;
-  let actionRing = 0;
   let smallest = Infinity;
   let nearest = Infinity;
   let want = { angle: aim.angle, weight: 0 };
@@ -213,7 +211,6 @@ const evaluate = () => {
         action = desc.hold || null;
         actionWatch = desc.onHold || null;
         actionMs = desc.holdMs || HOLD_MS;
-        actionRing = desc.holdRing || 0;
       }
     }
 
@@ -257,7 +254,6 @@ const evaluate = () => {
   holdAction = action;
   holdWatch = actionWatch;
   holdMs = actionMs;
-  holdRing = actionRing;
   if (label !== shown.label || tone !== shown.tone || icon !== shown.icon) {
     shown = { label, tone, icon };
     for (const listener of listeners) listener(shown);
@@ -266,13 +262,6 @@ const evaluate = () => {
 
 const setHoldProgress = value => {
   if (chip) chip.style.setProperty('--hold', String(value));
-  if (!ring) return;
-  const size = Math.round(28 + (ringMax - 28) * value);
-  ring.style.transform =
-    `translate3d(${heldAt.x - size / 2}px, ${heldAt.y - size / 2}px, 0)`;
-  ring.style.width = `${size}px`;
-  ring.style.height = `${size}px`;
-  ring.style.opacity = value > 0 ? '1' : '0';
 };
 
 function releaseHold() {
@@ -336,9 +325,6 @@ const onPointerDown = event => {
   if (event.button !== 0 || !holdAction) return;
   heldFrom = performance.now();
   heldAt = { x: px, y: py };
-  // Big enough to reach the far corner of whatever is being held, so the
-  // ring finishes by covering it rather than stopping short.
-  ringMax = holdRing || 260;
   setHoldProgress(0.0001);
   holdWatch?.(0.0001);
 };
@@ -471,10 +457,28 @@ export function setChip(el) {
   setHoldProgress(0);
 }
 
-/** The ring drawn while a press is held, handed over by the same component. */
-export function setRing(el) {
-  ring = el;
-  setHoldProgress(0);
+/**
+ * The press being held right now, or `null`.
+ *
+ * Published rather than drawn. A held press used to grow a ring on an overlay,
+ * which meant the feedback was a shape laid over the page instead of something
+ * the page did — and over a canvas it read as a sticker. Now the registry only
+ * says where the press started and how long it has been held, and whatever
+ * liquid is on screen answers it: the works pane sends ripples out from that
+ * point for as long as the button is down.
+ *
+ * Coordinates are client-space, fixed at the moment of the press.
+ *
+ * @returns {{x:number,y:number,startedAt:number,progress:number}|null}
+ */
+export function heldPress() {
+  if (!heldFrom) return null;
+  return {
+    x: heldAt.x,
+    y: heldAt.y,
+    startedAt: heldFrom,
+    progress: Math.min(1, (performance.now() - heldFrom) / holdMs),
+  };
 }
 
 /**

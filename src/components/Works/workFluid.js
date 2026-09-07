@@ -12,15 +12,50 @@
  * the page's dithered language. Nothing here displaces the artwork: the dye is
  * drawn to its own canvas behind the content at low opacity.
  *
+ * A held press is the one other thing that stirs it. Holding anything in the
+ * pane sends rings out from the point the press started, one after another,
+ * for as long as the button is down — the wake the pointer already leaves,
+ * standing still and repeating. They are injected as DYE rather than as
+ * velocity: the projection below exists precisely to stop the field radiating
+ * rings, so a radial push would be cancelled by the same pass that makes the
+ * wake read as liquid. The dye rides the field it lands in instead, which is
+ * why the rings fold and shear as they spread instead of staying circles.
+
+ *
  * Self-clears after 2.6s of no pointer input, so an idle tab settles to zero
  * work rather than simulating an empty field forever.
  */
+import { heldPress } from '../../utils/cursorFx.js';
+
 const WIDTH = 192;
 const PITCH = 3;
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
 const PRESSURE_PASSES = 10;
 const IDLE_MS = 2600;
 const FIELDS = 9;
+// A ring every sixth of a second. Close enough that the fronts overlap while
+// the first is still crossing the pane, so a held press reads as one
+// continuous disturbance rather than as a series of separate rings.
+const RIPPLE_EVERY_MS = 165;
+// Grid cells per frame. The grid is 192 across, so a ring crosses most of the
+// pane in something under two seconds — about the length of a held press.
+const RIPPLE_SPEED = 0.92;
+// Half-width of the front. Under two cells it falls through the Bayer
+// threshold in patches; much over three and it stops reading as a ring.
+const RIPPLE_BAND = 2.6;
+// Where a ring gives up, as a fraction of the grid's width.
+const RIPPLE_REACH = 0.55;
+// Ceiling on how much dye a ring can lay down, and how fast it lays it.
+//
+// Short of 1 on purpose. The renderer draws a light pixel only where the dye
+// has a gradient, so what is seen is never the dye itself but the EDGES of it;
+// the pointer's own wake goes all the way to 1, and it has to stay legible
+// crossing ground the rings have already been over.
+const RIPPLE_DYE_MAX = 0.86;
+const RIPPLE_DEPOSIT = 0.5;
+// A hard cap on rings in flight. At the cadence above a hold never reaches it;
+// it exists so that a press held for a minute cannot turn into unbounded work.
+const RIPPLE_LIMIT = 16;
 
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 
@@ -36,6 +71,9 @@ export function createWorkFluid(section, canvas) {
   let h = 24;
   let vx, vy, nextX, nextY, dye, nextDye, pressure, nextPressure, divergence;
   let previous = null;
+  // Rings in flight, in grid coordinates: where each started and when.
+  let ripples = [];
+  let lastRipple = 0;
   let lastInput = 0;
   let lastTick = 0;
   let enabled = true;
@@ -59,6 +97,8 @@ export function createWorkFluid(section, canvas) {
       field.fill(0);
     }
     previous = null;
+    ripples = [];
+    lastRipple = 0;
     lastInput = 0;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   }
@@ -135,6 +175,99 @@ export function createWorkFluid(section, canvas) {
     previous = { x, y, time: now };
   }
 
+  /**
+   * The rings a held press is sending out.
+   *
+   * Called before the solve, so a ring's dye is advected by the same step that
+   * moves everything else — a front that has just been laid down is already
+   * being carried by whatever the field was doing.
+   */
+  function pumpRipples(now, dt) {
+    const press = enabled ? heldPress() : null;
+    if (press) {
+      const rect = section.getBoundingClientRect();
+      if (press.y >= rect.top && press.y <= rect.bottom) {
+        if (now - lastRipple > RIPPLE_EVERY_MS) {
+          lastRipple = now;
+          ripples.push({
+            x: (press.x / window.innerWidth) * w,
+            y: ((press.y - Math.max(0, rect.top)) / window.innerWidth) * w,
+            radius: 0,
+          });
+        }
+        lastInput = now;
+      }
+    } else {
+      // Releasing stops new rings; the ones already out keep travelling.
+      lastRipple = 0;
+    }
+    if (ripples.length > RIPPLE_LIMIT) {
+      ripples.splice(0, ripples.length - RIPPLE_LIMIT);
+    }
+    if (!ripples.length) return;
+
+    const reach = w * RIPPLE_REACH;
+    for (const ring of ripples) {
+      ring.radius += RIPPLE_SPEED * dt;
+      // The front thins as it spreads: the same dye over a longer circumference.
+      //
+      // `spent` is clamped before the power, and the guard is written as
+      // `!(x > 0)` rather than `x <= 0`. Both are about the same frame — the
+      // one where a ring's radius passes its reach, before the cull at the
+      // bottom of this function has seen it. Unclamped, `1 - spent` goes
+      // negative there and a fractional power of a negative is NaN; NaN fails
+      // `<= 0`, so the guard let it through, it landed in the dye, and NaN does
+      // not decay. From then on every comparison in the renderer read false and
+      // fell through to "paint it dark", which is how a single frame's arithmetic
+      // turned into a flat slab of dark blue that no amount of waiting cleared
+      // and no new input could disturb.
+      const spent = Math.min(1, ring.radius / reach);
+      const amplitude = Math.pow(1 - spent, 1.6) * 0.95;
+      if (!(amplitude > 0)) continue;
+
+      // Only the band itself is walked, never the disc inside it. Solving the
+      // row's two spans costs one square root each and turns a ring from
+      // quadratic work into linear — which is what makes a dozen of them in
+      // flight at once affordable.
+      const outer = ring.radius + RIPPLE_BAND;
+      const inner = Math.max(0, ring.radius - RIPPLE_BAND);
+      const y0 = Math.max(1, Math.ceil(ring.y - outer));
+      const y1 = Math.min(h - 1, Math.floor(ring.y + outer));
+      for (let yy = y0; yy <= y1; yy++) {
+        const dy = yy - ring.y;
+        const half = Math.sqrt(Math.max(0, outer * outer - dy * dy));
+        const hole = inner > Math.abs(dy)
+          ? Math.sqrt(inner * inner - dy * dy)
+          : 0;
+        // Left span, then right. A row that clears the hole entirely is one
+        // span and the second pass is skipped. Written out rather than built
+        // as a pair of arrays: this runs a hundred-odd times per ring per
+        // frame, and the garbage is the expensive part.
+        for (let side = 0; side < 2; side++) {
+          if (side === 1 && hole === 0) break;
+          const from = side === 0 ? ring.x - half : ring.x + hole;
+          const to =
+            side === 0 ? (hole > 0 ? ring.x - hole : ring.x + half) : ring.x + half;
+          const a = Math.max(1, Math.ceil(from));
+          const b = Math.min(w - 1, Math.floor(to));
+          for (let xx = a; xx <= b; xx++) {
+            const dx = xx - ring.x;
+            const offset = Math.abs(Math.hypot(dx, dy) - ring.radius);
+            if (offset > RIPPLE_BAND) continue;
+            // Raised cosine across the band, so the front has no hard edge to
+            // alias against the dither lattice.
+            const falloff =
+              0.5 + 0.5 * Math.cos((offset / RIPPLE_BAND) * Math.PI);
+            const i = yy * w + xx;
+            const laid = dye[i] + falloff * amplitude * RIPPLE_DEPOSIT * dt;
+            dye[i] = Math.min(Math.max(dye[i], RIPPLE_DYE_MAX), laid);
+          }
+        }
+      }
+    }
+    ripples = ripples.filter(ring => ring.radius < reach);
+  }
+
   function step(dt) {
     // Advect velocity along itself, with a mild decay so a flick dies out.
     for (let y = 1; y < h - 1; y++) {
@@ -196,6 +329,7 @@ export function createWorkFluid(section, canvas) {
 
     const dt = clamp((time - lastTick) / 16.667, 0.5, 2.5);
     lastTick = time;
+    pumpRipples(time, dt);
     if (!lastInput) return;
     if (time - lastInput > IDLE_MS) {
       clear();

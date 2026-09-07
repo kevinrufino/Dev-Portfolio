@@ -1,4 +1,5 @@
 import React from 'react';
+import PixelTrail from '../PixelTrail.js';
 import useTypewriter from '../../hooks/useTypewriter.js';
 import useCursorFx from '../../hooks/useCursorFx.js';
 import { scrollToSection } from '../../utils/navigateToSection.js';
@@ -67,6 +68,18 @@ export const Intro = ({ setCursor }) => {
       }}
     >
       <div className='grid-rule grid-rule--paper' aria-hidden='true' />
+
+      {/* The intro's own copy of the trail, on the same terms as the footer's.
+          The section is sticky, which makes it a stacking context, so a
+          negative index here lands between the paper ground and the copy —
+          the trail is on the paper rather than over the words. A single
+          page-wide surface cannot be in that gap and above the marquee at the
+          same time, which is why there is more than one of these. */}
+      <PixelTrail
+        className='portfolio-pixel-trail--under'
+        clipTo='#intro'
+        zone='intro'
+      />
 
       <div className='relative z-[1] mx-auto w-full max-w-[1440px] px-[clamp(24px,7.4vw,110px)]'>
         {/* Capped at 58% so the palm has a clear band to its right — but only

@@ -102,14 +102,30 @@ const AppContent = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const target = location.state?.scrollTo;
+  // A project travelling with the target means "put me back on that one in the
+  // index". Only the works pane can do that, and only once it has mounted and
+  // measured itself — so this asks, and keeps asking briefly, before falling
+  // back to the top of the section.
+  const wanted = location.state?.project;
   useEffect(() => {
     if (!target) return undefined;
-    const id = setTimeout(() => {
-      scrollToSection(target);
+    let id = 0;
+    let tries = 0;
+    const done = () =>
       navigate(location.pathname, { replace: true, state: null });
-    }, 120);
+    const attempt = () => {
+      if (wanted && scrollToSection(target, wanted)) return done();
+      if (wanted && tries < 8) {
+        tries += 1;
+        id = setTimeout(attempt, 80);
+        return undefined;
+      }
+      scrollToSection(target);
+      return done();
+    };
+    id = setTimeout(attempt, 120);
     return () => clearTimeout(id);
-  }, [target, navigate, location.pathname]);
+  }, [target, wanted, navigate, location.pathname]);
 
   // Get theme colors
   const themeColors = getThemeColors();
@@ -205,12 +221,13 @@ const AppContent = () => {
         {/* Projects showcase */}
         <Projects />
 
-        {/* The trail, for the two grounds inside this wrapper.
+        {/* The trail over everything in this wrapper that is not the intro.
             Last in the wrapper on purpose: it is a z-index:0 layer, so paint
             order against the sections (which are positioned but unindexed)
-            is DOM order — earlier, and the intro's own paper background
-            covers it. The sections lift their text above it. */}
-        <PixelTrail clipTo='[data-trail-clip]' />
+            is DOM order. The intro keeps a surface of its own, mounted inside
+            itself, because there the trail has to go UNDER the copy rather
+            than over it — see PixelTrail. */}
+        <PixelTrail clipTo='[data-trail-clip]' zone='page' />
 
         {/* Beta / work-in-progress notice — dismissible, bottom-right */}
         <BetaBadge setCursor={setCursorType} />

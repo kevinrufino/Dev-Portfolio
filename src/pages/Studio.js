@@ -72,6 +72,25 @@ const blankBlock = type => {
   return head;
 };
 
+/** Titles the repo itself ships. These can be retired but never deleted. */
+const SEED_TITLES = new Set([
+  ...ProjectsData.map(p => p.title),
+  ...Object.keys(PROJECT_STORIES),
+]);
+
+/** A project that does not exist yet. */
+const blankProject = title => ({
+  title,
+  display: title,
+  tagline: '',
+  cover: `Cover — ${title}`,
+  coverSrc: '',
+  meta: [{ k: '', v: '' }],
+  blocks: [blankBlock('text')],
+  index: { category: 'work', shape: 'sphere', glyphSrc: '', summary: '' },
+  archive: { client: '', role: '', year: '', liveLink: '' },
+});
+
 /** Everything the site currently renders, as the editor's starting point. */
 const seedProject = title => {
   const archive = ProjectsData.find(p => p.title === title) || {};
@@ -88,6 +107,7 @@ const seedProject = title => {
     index: {
       category: WORKS.personal.some(r => r.title === title) ? 'personal' : 'work',
       shape: row?.shape || 'sphere',
+      glyphSrc: row?.glyphSrc || '',
       summary: row?.description || '',
     },
     archive: {
@@ -160,21 +180,31 @@ const Rows = ({ items, onChange, render, onAdd, addLabel }) => (
 // ── the page ────────────────────────────────────────────────────────────────
 
 const Studio = () => {
+  const [drafts, setDrafts] = useState(() => loadDraft() || {});
+  // The seed plus anything the draft has added. A project invented here is a
+  // first-class row from the moment it is named, so the rest of the editor
+  // does not have to know whether it came from the repo or from this session.
   const titles = useMemo(
-    () =>
-      [...new Set([...ProjectsData.map(p => p.title), ...Object.keys(PROJECT_STORIES)])].sort(),
-    [],
+    () => [...new Set([...SEED_TITLES, ...Object.keys(drafts)])].sort(),
+    [drafts],
   );
 
-  const [drafts, setDrafts] = useState(() => loadDraft() || {});
-  const [current, setCurrent] = useState(titles[0]);
+  const [current, setCurrent] = useState(() => [...SEED_TITLES].sort()[0]);
   const [assetKeys, setAssetKeys] = useState([]);
   const [status, setStatus] = useState('');
   const fileInput = useRef(null);
   const pendingSlot = useRef(null);
 
-  const project = drafts[current] || seedProject(current);
+  const project =
+    drafts[current] ||
+    (SEED_TITLES.has(current) ? seedProject(current) : blankProject(current));
+  const retired = Boolean(drafts[current]?.removed);
   const slug = toSlug(current);
+
+  // Deleting the project you were looking at has to leave you somewhere.
+  useEffect(() => {
+    if (!titles.includes(current)) setCurrent(titles[0]);
+  }, [titles, current]);
 
   useEffect(() => {
     document.title = 'Studio — Kevin Rufino';
@@ -205,6 +235,62 @@ const Studio = () => {
   );
 
   const setBlocks = blocks => update(p => ({ ...p, blocks }));
+
+  // ── the list itself ───────────────────────────────────────────────────────
+
+  const addProject = () => {
+    const name = (window.prompt('Title of the new project') || '').trim();
+    if (!name) return;
+    if (titles.includes(name)) {
+      setCurrent(name);
+      setStatus(`${name} is already in the list.`);
+      return;
+    }
+    setDrafts(previous => {
+      const next = { ...previous, [name]: blankProject(name) };
+      saveDraft(next);
+      return next;
+    });
+    setCurrent(name);
+    setStatus(`Added ${name}. It reaches the site on the next export and apply.`);
+  };
+
+  // Two different things share one button. A project invented here can simply
+  // be dropped, because nothing outside this browser has heard of it. One that
+  // ships in the repo cannot: the editor has no way to edit the code it comes
+  // from, so it publishes a tombstone instead and the index and the router
+  // both honour it. Either way it is reversible until the export.
+  const removeProject = title => {
+    const seeded = SEED_TITLES.has(title);
+    const ask = seeded
+      ? `Retire “${title}”? It stops being listed and its page stops resolving. The source stays in the repo.`
+      : `Delete “${title}”? It only exists in this draft.`;
+    if (!window.confirm(ask)) return;
+    setDrafts(previous => {
+      const next = { ...previous };
+      if (seeded) {
+        next[title] = { ...(previous[title] || seedProject(title)), removed: true };
+      } else {
+        delete next[title];
+      }
+      saveDraft(next);
+      return next;
+    });
+    setStatus(seeded ? `${title} retired.` : `${title} deleted.`);
+  };
+
+  const restoreProject = title => {
+    setDrafts(previous => {
+      const next = { ...previous };
+      if (next[title]) {
+        const { removed: _gone, ...rest } = next[title];
+        next[title] = rest;
+      }
+      saveDraft(next);
+      return next;
+    });
+    setStatus(`${title} is back in the list.`);
+  };
   const setBlock = (i, mutate) =>
     update(p => {
       p.blocks[i] = mutate(p.blocks[i]);
@@ -215,6 +301,7 @@ const Studio = () => {
 
   const pickFile = slot => {
     pendingSlot.current = slot;
+    if (fileInput.current) fileInput.current.accept = slot.accept || '';
     fileInput.current?.click();
   };
 
@@ -243,7 +330,14 @@ const Studio = () => {
     setStatus('Building the bundle…');
     const projects = {};
     for (const [title, data] of Object.entries(drafts)) {
-      const { title: _drop, ...rest } = data;
+      const { title: _drop, removed, ...rest } = data;
+      // A retired project publishes nothing but the fact that it is retired;
+      // carrying its old body along would put content in the repo that the
+      // site has been told not to render.
+      if (removed) {
+        projects[title] = { removed: true };
+        continue;
+      }
       projects[title] = {
         ...rest,
         meta: rest.meta.filter(m => m.k || m.v),
@@ -529,17 +623,26 @@ const Studio = () => {
 
       <div className='studio-body'>
         <nav className='studio-list'>
-          {titles.map(title => (
-            <button
-              type='button'
-              key={title}
-              className={title === current ? 'is-on' : ''}
-              onClick={() => setCurrent(title)}
-            >
-              <span>{drafts[title]?.display || title}</span>
-              {drafts[title] && <em>edited</em>}
-            </button>
-          ))}
+          {titles.map(title => {
+            const gone = Boolean(drafts[title]?.removed);
+            return (
+              <button
+                type='button'
+                key={title}
+                className={`${title === current ? 'is-on' : ''} ${
+                  gone ? 'is-gone' : ''
+                }`.trim()}
+                onClick={() => setCurrent(title)}
+              >
+                <span>{drafts[title]?.display || title}</span>
+                {gone && <em>retired</em>}
+                {!gone && drafts[title] && <em>edited</em>}
+              </button>
+            );
+          })}
+          <button type='button' className='studio-add' onClick={addProject}>
+            + New project
+          </button>
           <p className='studio-note'>
             {assetKeys.length} asset{assetKeys.length === 1 ? '' : 's'} held
             locally
@@ -548,7 +651,28 @@ const Studio = () => {
 
         <main className='studio-main'>
           <section className='studio-card'>
-            <h2>{current}</h2>
+            <div className='studio-card__head'>
+              <h2>{current}</h2>
+              {retired ? (
+                <button type='button' onClick={() => restoreProject(current)}>
+                  Restore
+                </button>
+              ) : (
+                <button
+                  type='button'
+                  className='studio-danger'
+                  onClick={() => removeProject(current)}
+                >
+                  {SEED_TITLES.has(current) ? 'Retire' : 'Delete'}
+                </button>
+              )}
+            </div>
+            {retired && (
+              <p className='studio-retired'>
+                Retired. It will be dropped from the works pane and its page
+                will stop resolving once this bundle is applied.
+              </p>
+            )}
             <div className='studio-inline'>
               <Field label='Display name'>
                 <input
@@ -607,7 +731,7 @@ const Studio = () => {
                   <option value='personal'>Personal</option>
                 </select>
               </Field>
-              <Field label='Glyph'>
+              <Field label='Glyph shape' hint='used when there is no loop'>
                 <select
                   value={project.index.shape}
                   onChange={e =>
@@ -620,6 +744,39 @@ const Studio = () => {
                 </select>
               </Field>
             </div>
+            {/* The glyph is rendered as an 88x88 field of dithered type, and
+                a loop dropped here is sampled into that field rather than
+                played on top of it. Two-tone reads best: the field is
+                thresholded, so a clip with real midtones comes out mushy. */}
+            <Field label='Glyph loop' hint='two-tone video, rasterised into the glyph'>
+              <div className='studio-asset'>
+                <code>{project.index.glyphSrc || 'none — generating the shape'}</code>
+                <button
+                  type='button'
+                  onClick={() =>
+                    pickFile({
+                      name: 'glyph',
+                      accept: 'video/mp4,video/webm,video/quicktime',
+                      apply: src =>
+                        update(p => ({ ...p, index: { ...p.index, glyphSrc: src } })),
+                    })
+                  }
+                >
+                  upload
+                </button>
+                {project.index.glyphSrc && (
+                  <button
+                    type='button'
+                    onClick={() => {
+                      dropAsset(project.index.glyphSrc);
+                      update(p => ({ ...p, index: { ...p.index, glyphSrc: '' } }));
+                    }}
+                  >
+                    clear
+                  </button>
+                )}
+              </div>
+            </Field>
             <Field label='One-line summary' hint='shown in the works pane'>
               <textarea
                 rows='2'

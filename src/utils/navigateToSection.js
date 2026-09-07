@@ -18,6 +18,8 @@ export const SECTIONS = {
   contact: 'contact',
 };
 
+import { selectWork } from './worksSelection.js';
+
 const prefersReducedMotion = () =>
   window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
@@ -67,22 +69,30 @@ export function revealStart() {
  * collapsed to nothing.
  *
  * @param {string} key - a key of SECTIONS, or a raw element id.
+ * @param {string} [project] - a project title. Going to the works section
+ *   while naming a project means "put me back on that one" rather than "take
+ *   me to the top of the list", which is what a reader coming back from a case
+ *   study is asking for. Ignored if no pane is mounted to honour it.
+ * @returns {boolean} whether the named project was actually restored.
  */
-export function scrollToSection(key) {
+export function scrollToSection(key, project) {
   const behavior = prefersReducedMotion() ? 'instant' : 'smooth';
   const id = SECTIONS[key] || key;
+
+  if (id === 'projects' && project && selectWork(project)) return true;
 
   if (id === 'contact') {
     window.scrollTo({
       top: document.documentElement.scrollHeight - window.innerHeight,
       behavior,
     });
-    return;
+    return false;
   }
 
   const el = document.getElementById(id);
-  if (!el) return;
+  if (!el) return false;
   window.scrollTo({ top: Math.max(0, documentTop(el)), behavior });
+  return false;
 }
 
 /**
@@ -94,11 +104,12 @@ export function scrollToSection(key) {
  * @param {import('react-router-dom').NavigateFunction} navigate
  * @param {string} pathname - the current pathname.
  * @param {string} key - a key of SECTIONS.
+ * @param {string} [project] - a project title to land on; see scrollToSection.
  */
-export function goToSection(navigate, pathname, key) {
+export function goToSection(navigate, pathname, key, project) {
   if (pathname === '/') {
-    scrollToSection(key);
+    scrollToSection(key, project);
     return;
   }
-  navigate('/', { state: { scrollTo: key } });
+  navigate('/', { state: { scrollTo: key, project } });
 }

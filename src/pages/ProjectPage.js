@@ -3,7 +3,10 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { goToSection } from '../utils/navigateToSection.js';
 import { ProjectsData } from '../constants.js';
 import { toSlug } from '../utils/helpers.js';
-import { PROJECT_STORIES } from '../components/Project/projectStories.js';
+import {
+  PROJECT_STORIES,
+  RETIRED_TITLES,
+} from '../components/Project/projectStories.js';
 import useGooFollower from '../hooks/useGooFollower.js';
 import useCursorFx from '../hooks/useCursorFx.js';
 import GooPills from '../components/common/GooPills.js';
@@ -73,14 +76,22 @@ const ProjectPage = () => {
     gravity: NAV_GRAVITY_PX,
   });
   const liveFx = useCursorFx({ name: 'project / live', gravity: NAV_GRAVITY_PX });
+  // On the arrow rather than on the whole line. The name beside it is a
+  // display heading the width of the page, and a field the size of that box
+  // aimed the cursor at the middle of a word from halfway across the footer —
+  // the arrow is the thing being pointed at, so the arrow is the target.
   const nextFx = useCursorFx({
-    name: 'project / next',
+    name: 'project / next arrow',
     gravity: NEXT_GRAVITY_PX,
   });
 
-  const index = ProjectsData.findIndex(p => toSlug(p.title) === slug);
-  const project = index !== -1 ? ProjectsData[index] : null;
-  const next = ProjectsData[(index + 1) % ProjectsData.length];
+  // The archive minus anything the studio has retired. A retired project has
+  // to stop resolving as well as stop being listed — otherwise the only way
+  // to reach it is the only way anyone ever would: a link that already exists.
+  const live = ProjectsData.filter(p => !RETIRED_TITLES.has(p.title));
+  const index = live.findIndex(p => toSlug(p.title) === slug);
+  const project = index !== -1 ? live[index] : null;
+  const next = live[(index + 1) % live.length];
   const story = project ? PROJECT_STORIES[project.title] : null;
   const nextStory = next ? PROJECT_STORIES[next.title] : null;
 
@@ -250,8 +261,8 @@ const ProjectPage = () => {
   }
 
   const display = story?.display || project.title;
-  const live = firstLink(project);
-  const total = ProjectsData.length;
+  const liveLink = firstLink(project);
+  const total = live.length;
 
   return (
     <div ref={rootRef} className='relative bg-charcoal [overflow-x:clip]'>
@@ -285,7 +296,9 @@ const ProjectPage = () => {
             setNavRef(0)(el);
             backFx(el);
           }}
-          onClick={() => goToSection(navigate, '/projects', 'work')}
+          onClick={() =>
+            goToSection(navigate, '/projects', 'work', project.title)
+          }
           onMouseEnter={() => setNavHot(0)}
           onMouseLeave={() => setNavHot(-1)}
           className='pointer-events-auto relative border-0 bg-transparent px-[10px] py-2 font-offbit101Bold text-xl transition-colors duration-200'
@@ -293,9 +306,9 @@ const ProjectPage = () => {
         >
           ← selected work
         </button>
-        {live && (
+        {liveLink && (
           <a
-            href={live}
+            href={liveLink}
             target='_blank'
             rel='noreferrer'
             ref={el => {
@@ -433,12 +446,11 @@ const ProjectPage = () => {
               direction needs to answer. Two stacked copies, the upper one
               clipped to how far the sweep has come, so nothing moves. */}
           <Link
-            ref={nextFx}
             to={`/projects/${toSlug(next.title)}`}
             className='sweep-cta m-0 mb-5 inline-block font-offbit101Bold text-[clamp(38px,7vw,110px)] leading-[.9] tracking-[-.02em] text-charcoal'
           >
             {nextStory?.display || next.title}{' '}
-            <span className='sweep-cta__mark'>
+            <span ref={nextFx} className='sweep-cta__mark'>
               <span aria-hidden='true'>→</span>
               <span aria-hidden='true' className='sweep-cta__over'>
                 →
@@ -454,7 +466,9 @@ const ProjectPage = () => {
           >
             <button
               type='button'
-              onClick={() => goToSection(navigate, '/projects', 'work')}
+              onClick={() =>
+            goToSection(navigate, '/projects', 'work', project.title)
+          }
               className='line-cta type-body text-lg text-charcoal'
               style={{ '--line-cta-ink': 'var(--ultra)' }}
             >

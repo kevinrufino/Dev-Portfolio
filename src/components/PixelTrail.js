@@ -68,10 +68,11 @@ const readToken = (name, fallback) =>
 // the trail canvas or the cursor.
 const inkUnder = (x, y, ctx) => {
   const el = document.elementFromPoint(x, y);
-  if (!el) return ctx.ultra;
-  if (ctx.footer?.contains(el)) return ctx.gold;
+  if (!el) return { color: ctx.ultra, zone: 'page' };
+  if (ctx.footer?.contains(el)) return { color: ctx.gold, zone: 'footer' };
   if (ctx.works?.contains(el)) return null;
-  return ctx.ultra;
+  if (ctx.intro?.contains(el)) return { color: ctx.ultra, zone: 'intro' };
+  return { color: ctx.ultra, zone: 'page' };
 };
 
 /**
@@ -121,6 +122,7 @@ const resize = () => {
     ultra: readToken('--ultra', INK_FALLBACK.ultra),
     gold: readToken('--palm-gold', INK_FALLBACK.gold),
     works: document.getElementById('projects'),
+    intro: document.getElementById('intro'),
     footer: document.getElementById('contact'),
   };
   engine.surfaces.forEach(sizeSurface);
@@ -171,7 +173,14 @@ const draw = now => {
     // Rows are document-space, so subtract the scroll to place the cell.
     const x = cell.column * p;
     const y = cell.row * p - scroll;
-    for (const { ctx } of engine.surfaces) {
+    for (const surface of engine.surfaces) {
+      // A cell belongs to the ground it was painted on, and only that
+      // ground's surface draws it. Clipping alone was not enough: the intro
+      // is sticky, so it stays pinned behind the sections that follow it, and
+      // a surface clipped to its box would have swallowed the trail over
+      // everything sitting on top of it.
+      if (surface.zone !== cell.zone) continue;
+      const { ctx } = surface;
       ctx.globalAlpha = opacity;
       ctx.fillStyle = cell.color;
       ctx.fillRect(x, y, TRAIL.pixelSize, TRAIL.pixelSize);
@@ -186,8 +195,8 @@ const scheduleDraw = () => {
   if (engine.raf === 0) engine.raf = requestAnimationFrame(draw);
 };
 
-const paintAt = (clientX, clientY, velocity, color) => {
-  if (engine.reduced || !color) return;
+const paintAt = (clientX, clientY, velocity, ground) => {
+  if (engine.reduced || !ground) return;
   const { width, height } = engine.size;
   if (clientX < 0 || clientX > width || clientY < 0 || clientY > height) return;
   const p = pitch();
@@ -199,7 +208,8 @@ const paintAt = (clientX, clientY, velocity, color) => {
     column,
     row,
     velocity,
-    color,
+    color: ground.color,
+    zone: ground.zone,
     startedAt: performance.now(),
   });
   scheduleDraw();
@@ -221,7 +231,7 @@ const handlePointer = event => {
 
   // One hit-test per event, not per interpolated cell: the sampled path is
   // short enough that its two ends are always on the same ground.
-  const color = inkUnder(event.clientX, event.clientY, engine.ink);
+  const ground = inkUnder(event.clientX, event.clientY, engine.ink);
   publishTrailPoint(event.clientX, event.clientY);
 
   if (previous) {
@@ -237,11 +247,11 @@ const handlePointer = event => {
         previous.x + (event.clientX - previous.x) * t,
         previous.y + (event.clientY - previous.y) * t,
         velocity,
-        color,
+        ground,
       );
     }
   } else {
-    paintAt(event.clientX, event.clientY, velocity, color);
+    paintAt(event.clientX, event.clientY, velocity, ground);
   }
 
   engine.lastPointer = { x: event.clientX, y: event.clientY, time: now };
@@ -325,8 +335,12 @@ const GooeyFilter = ({ id }) => (
  * @param {string} [clipTo] - selector for the element this surface belongs to.
  *   Cells outside its box are not drawn, which is what stops a fixed canvas
  *   from painting over a section that is no longer under it.
+ * @param {'page'|'intro'|'footer'} [zone] - which ground's cells this surface
+ *   is responsible for. Decided by hit-test when the cell is painted, so a
+ *   section that is covered — or pinned behind the one covering it — keeps
+ *   only the cells that were actually laid down on it.
  */
-const PixelTrail = ({ className = '', clipTo = null }) => {
+const PixelTrail = ({ className = '', clipTo = null, zone = 'page' }) => {
   const canvasRef = useRef(null);
   const filterId = useMemo(
     () => `portfolio-pixel-trail-${Math.random().toString(36).slice(2)}`,
@@ -340,6 +354,7 @@ const PixelTrail = ({ className = '', clipTo = null }) => {
       canvas,
       ctx: canvas.getContext('2d', { alpha: true }),
       clipTo,
+      zone,
     };
     // One save to balance the restore at the top of every draw.
     surface.ctx.save();
@@ -350,7 +365,7 @@ const PixelTrail = ({ className = '', clipTo = null }) => {
       engine.surfaces.delete(surface);
       if (engine.surfaces.size === 0) unbind();
     };
-  }, [clipTo]);
+  }, [clipTo, zone]);
 
   return (
     <div className={`portfolio-pixel-trail ${className}`.trim()}>

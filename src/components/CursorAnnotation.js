@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { setChip, setRing, subscribe } from '../utils/cursorFx.js';
+import { setChip, subscribe } from '../utils/cursorFx.js';
 
 /**
  * Chip icons.
@@ -43,21 +43,18 @@ const ICONS = { eye: EyeIcon };
  */
 const CursorAnnotation = () => {
   const elRef = useRef(null);
-  const ringRef = useRef(null);
   const [state, setState] = useState({ label: '', tone: null, seq: 0 });
 
   useEffect(() => {
     const fine = window.matchMedia?.('(pointer: fine)');
     if (fine && !fine.matches) return undefined;
     setChip(elRef.current);
-    setRing(ringRef.current);
     const off = subscribe(next =>
       setState(prev => ({ ...next, seq: prev.seq + 1 })),
     );
     return () => {
       off();
       setChip(null);
-      setRing(null);
     };
   }, []);
 
@@ -81,28 +78,6 @@ const CursorAnnotation = () => {
   );
 
   return (
-    <>
-      {/* The held-press ring.
-
-          It grows from the point the press started and inverts what is behind
-          it through an 8px dither, so a dithered asset under it re-renders as
-          the ring passes over — the asset is made of the same cells the mask
-          is, and the two interfere. Nothing here reads the target: it is one
-          element for every hold on the page. */}
-      <div
-        ref={ringRef}
-        aria-hidden='true'
-        className='cursor-hold-ring'
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          zIndex: 9997,
-          pointerEvents: 'none',
-          opacity: 0,
-        }}
-      />
-
     <div
       ref={elRef}
       aria-hidden='true'
@@ -178,7 +153,6 @@ const CursorAnnotation = () => {
         </span>
       </span>
     </div>
-    </>
   );
 };
 

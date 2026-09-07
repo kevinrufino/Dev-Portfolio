@@ -775,48 +775,6 @@ html {
   z-index: -1;
 }
 
-/* ── the held-press ring ────────────────────────────────────────────────────
-   Grows from where the press started. The outline is drawn crisp; the inside
-   inverts what is behind it through an 8px checker, so a dithered asset under
-   it re-renders cell by cell as the ring passes over — the asset is drawn on
-   the same lattice the mask is, and the two interfere. Two layers, because
-   masking the element would dither its own outline away. */
-.cursor-hold-ring {
-  border-radius: 50%;
-  transition: opacity 120ms linear;
-}
-
-/* The inside: what is behind, inverted through an 8px checker. */
-.cursor-hold-ring::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  backdrop-filter: invert(1);
-  -webkit-backdrop-filter: invert(1);
-  -webkit-mask-image: conic-gradient(#000 0 25%, transparent 0 100%);
-  mask-image: conic-gradient(#000 0 25%, transparent 0 100%);
-  -webkit-mask-size: 8px 8px;
-  mask-size: 8px 8px;
-}
-
-/* The outline, on its own layer so the difference blend that keeps it legible
-   over acid, ultra and paper alike does not drag the invert with it. */
-.cursor-hold-ring::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border: 2px solid #ffffff;
-  border-radius: 50%;
-  mix-blend-mode: difference;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .cursor-hold-ring {
-    display: none;
-  }
-}
-
 /* ── the sweep ──────────────────────────────────────────────────────────────
    A mark that changes colour left to right on hover without moving. Two
    stacked copies of the same glyph: the lower one in the resting colour, the

@@ -803,15 +803,37 @@ const SEED = {
  * Whole projects are replaced rather than deep-merged: a half-generated page
  * with some fields from the seed and some from the studio would be impossible
  * to reason about, and the studio always exports a complete project.
+ *
+ * A project the studio marked `removed` is dropped here rather than left with
+ * an empty body — the route for it should 404 like any other unknown slug,
+ * not render a case study with nothing in it.
  */
 const GENERATED = STUDIO.projects || {};
 
+/**
+ * Projects the studio has retired.
+ *
+ * Exported from here because the tombstone has to be honoured in more than one
+ * place — the works index stops listing them, and the router stops resolving
+ * them — and the two must never disagree about which projects exist. The
+ * archive in `constants.js` is not editable from the studio, so retiring is
+ * the only way it can take something off the site.
+ */
+export const RETIRED_TITLES = new Set(
+  Object.entries(GENERATED)
+    .filter(([, data]) => data.removed)
+    .map(([title]) => title),
+);
+
 export const PROJECT_STORIES = Object.fromEntries(
-  [...new Set([...Object.keys(SEED), ...Object.keys(GENERATED)])].map(title => {
-    const generated = GENERATED[title];
-    if (!generated) return [title, SEED[title]];
-    // `index` belongs to the works pane, not to the case study.
-    const { index, ...story } = generated;
-    return [title, story];
-  }),
+  [...new Set([...Object.keys(SEED), ...Object.keys(GENERATED)])]
+    .map(title => {
+      const generated = GENERATED[title];
+      if (!generated) return [title, SEED[title]];
+      if (generated.removed) return null;
+      // `index` belongs to the works pane, not to the case study.
+      const { index, ...story } = generated;
+      return [title, story];
+    })
+    .filter(Boolean),
 );

@@ -272,3 +272,46 @@
     border-bottom: 1px solid var(--edge);
   }
 }
+
+/* ── adding and retiring ──────────────────────────────────────────────────
+   The rail's own add button, and the two states a project can be in besides
+   "edited". Retiring is reversible right up until the export, so it reads as
+   a state rather than as a deletion: the row stays, dimmed and struck. */
+.studio-list button.is-gone span {
+  text-decoration: line-through;
+  opacity: 0.55;
+}
+
+.studio-list .studio-add {
+  margin-top: 10px;
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.studio-card__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.studio-card__head > h2 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.studio-danger:hover:not(:disabled) {
+  border-color: #d0555f;
+  color: #ff9aa2;
+}
+
+.studio-retired {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid #4a2a2e;
+  background: #24171a;
+  color: #ffb3b8;
+  font-size: 12px;
+  line-height: 1.5;
+}

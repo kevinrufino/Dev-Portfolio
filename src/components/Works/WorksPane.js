@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { toSlug } from '../../utils/helpers.js';
 import useGooFollower from '../../hooks/useGooFollower.js';
 import useCursorFx from '../../hooks/useCursorFx.js';
+import { setWorkSelector } from '../../utils/worksSelection.js';
 import GooPills from '../common/GooPills.js';
 import { WORKS, WORK_CATEGORIES } from './worksData.js';
 import { THEMES, WORKS_RANGE } from './themes.js';
@@ -28,9 +29,10 @@ const TOGGLE_RANGE = 300;
 // the middle. Half the size of it is still somewhere you are heading toward.
 const GLYPH_GRAVITY_PX = 116;
 const GLYPH_RELEASE_CORE = 0.5;
-// How far the held-press ring grows. Past the glyph's own width, so the last
-// of it passes over the far corner rather than stopping inside the frame.
-const GLYPH_HOLD_RING_PX = 620;
+// Twice the ordinary hold. This one leaves the page, which is the most
+// expensive thing any press on the site does — and the ripples it sends out
+// while it runs are worth staying for.
+const GLYPH_HOLD_MS = 1240;
 // The idle option is a long way from the list the pointer usually lives in.
 const TOGGLE_GRAVITY_PX = 116;
 // The row's own way in sits at the edge of a busy column; a short field is
@@ -120,7 +122,7 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
     tone: chipTone,
     gravity: GLYPH_GRAVITY_PX,
     releaseCore: GLYPH_RELEASE_CORE,
-    holdRing: GLYPH_HOLD_RING_PX,
+    holdMs: GLYPH_HOLD_MS,
     hold: () => {
       if (active.hasStory) navigate(`/projects/${toSlug(active.title)}`);
       else window.open(active.linkHref, '_blank', 'noreferrer');
@@ -288,6 +290,49 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
     [syncList, moveDot],
   );
 
+  /**
+   * Land the index on a named project, whichever list it is in.
+   *
+   * Published for the navigation helpers: a reader coming back from a case
+   * study is returning to a place, not to a section, and the only thing that
+   * knows where that place is on the page is this pane. Instant rather than
+   * smooth, because this runs on arrival — easing a scroll the reader did not
+   * start reads as the page moving on its own.
+   */
+  const selectWorkByTitle = useCallback(
+    title => {
+      for (const key of ['work', 'personal']) {
+        const list = WORKS[key];
+        const i = list.findIndex(row => row.title === title);
+        if (i === -1) continue;
+        if (key !== categoryRef.current) {
+          categoryRef.current = key;
+          setCategory(key);
+          setTheme(key);
+        }
+        selectedRef.current = i;
+        setSelected(i);
+        window.scrollTo({
+          top: sectionTop() + ((i + 0.5) / list.length) * WORKS_RANGE,
+          behavior: 'instant',
+        });
+        requestAnimationFrame(() => {
+          glyph.current?.setItem(list[i]);
+          syncList();
+          moveDot();
+        });
+        return true;
+      }
+      return false;
+    },
+    [sectionTop, syncList, moveDot],
+  );
+
+  useEffect(() => {
+    setWorkSelector(selectWorkByTitle);
+    return () => setWorkSelector(null);
+  }, [selectWorkByTitle]);
+
   /** Clicking a row scrolls to its slice — scroll stays the source of truth. */
   const scrollToProject = index => {
     const list = WORKS[categoryRef.current];
@@ -357,6 +402,8 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
       fluidRef.current = null;
       fluid?.destroy();
       fluid?.clear();
+      glyph.current?.destroy();
+      glyph.current = null;
     };
     // Set up once; the glyph is driven imperatively from here on.
     // eslint-disable-next-line
