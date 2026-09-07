@@ -26,7 +26,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
  * as a stray dot with nothing to follow.
  *
  * @param {number} count - number of items to measure.
- * @param {number} range - px from the group at which the blob starts to swell.
+ * @param {number} range - px at which the blob starts to swell.
+ * @param {boolean} [fromItems=false] - measure that distance to the nearest
+ *   ITEM rather than to the group's box. A group whose items are pushed to
+ *   opposite ends of the screen has a box that covers everything between
+ *   them, so the blob showed up in the middle of a gap it had no business in.
  */
 const FOLLOW_EASE = 0.34;
 const NEAR_EASE = 0.13;
@@ -34,7 +38,7 @@ const NEAR_EASE = 0.13;
 // work without being clipped; every measured coordinate is offset to match.
 export const GOO_PAD = 90;
 
-export default function useGooFollower(count, range = 300) {
+export default function useGooFollower(count, range = 300, fromItems = false) {
   const groupRef = useRef(null);
   const followerRef = useRef(null);
   const itemRefs = useRef([]);
@@ -93,10 +97,20 @@ export default function useGooFollower(count, range = 300) {
       const box = group.getBoundingClientRect();
       p.tx = event.clientX - box.left;
       p.ty = event.clientY - box.top;
-      // Distance to the group's box, zero when inside it.
-      const dx = Math.max(box.left - event.clientX, 0, event.clientX - box.right);
-      const dy = Math.max(box.top - event.clientY, 0, event.clientY - box.bottom);
-      const d = Math.hypot(dx, dy);
+      // Distance to the group's box — or to the nearest item in it — zero
+      // when inside.
+      const gapTo = r => {
+        const dx = Math.max(r.left - event.clientX, 0, event.clientX - r.right);
+        const dy = Math.max(r.top - event.clientY, 0, event.clientY - r.bottom);
+        return Math.hypot(dx, dy);
+      };
+      let d = gapTo(box);
+      if (fromItems) {
+        d = Infinity;
+        for (const el of itemRefs.current.slice(0, count)) {
+          if (el) d = Math.min(d, gapTo(el.getBoundingClientRect()));
+        }
+      }
       p.targetNear = d >= range ? 0 : 1 - d / range;
       // Teleport on the first sample so the blob doesn't fly in from (0,0).
       if (!p.primed) {
@@ -127,7 +141,7 @@ export default function useGooFollower(count, range = 300) {
       window.removeEventListener('pointermove', onMove);
       cancelAnimationFrame(raf);
     };
-  }, [range]);
+  }, [range, fromItems, count]);
 
   return { groupRef, followerRef, setItemRef, rects, measure };
 }

@@ -23,6 +23,11 @@ const RAIL_H = 128;
 // The page's two nav items, given the same treatment as the homepage's — the
 // goo group and a field each, so the controls behave the same on both.
 const NAV_GRAVITY_PX = 78;
+// The two items sit at opposite ends of the screen, so proximity is measured
+// to the nearest ITEM, not to the group box that spans the gap between them —
+// and over a short distance, or the blob turns up halfway across the header
+// with nothing under it.
+const NAV_FOLLOWER_RANGE = 110;
 
 const firstLink = project => {
   if (project.liveLink) return project.liveLink;
@@ -59,7 +64,7 @@ const ProjectPage = () => {
     followerRef: navFollowerRef,
     setItemRef: setNavRef,
     rects: navRects,
-  } = useGooFollower(2, 300);
+  } = useGooFollower(2, NAV_FOLLOWER_RANGE, true);
   const backFx = useCursorFx({
     name: 'project / selected work',
     gravity: NAV_GRAVITY_PX,
@@ -271,7 +276,7 @@ const ProjectPage = () => {
           type='button'
           ref={el => {
             setNavRef(0)(el);
-            backFx.current = el;
+            backFx(el);
           }}
           onClick={() => goToSection(navigate, '/projects', 'work')}
           onMouseEnter={() => setNavHot(0)}
@@ -288,7 +293,7 @@ const ProjectPage = () => {
             rel='noreferrer'
             ref={el => {
               setNavRef(1)(el);
-              liveFx.current = el;
+              liveFx(el);
             }}
             onMouseEnter={() => setNavHot(1)}
             onMouseLeave={() => setNavHot(-1)}

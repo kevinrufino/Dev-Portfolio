@@ -83,7 +83,7 @@ export const Footer = ({ setCursor }) => {
       {/* The footer's own copy of the trail. It is fixed with a z-index, so
           it is a stacking context nothing outside can paint into — the trail
           has to be in here to end up between the charcoal and the type. */}
-      <PixelTrail />
+      <PixelTrail className='portfolio-pixel-trail--under' />
 
       <div className='relative z-10 mx-auto w-full max-w-[1440px] px-[clamp(24px,7.4vw,110px)]'>
         <Reveal>
