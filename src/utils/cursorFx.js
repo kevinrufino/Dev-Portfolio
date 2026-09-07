@@ -25,10 +25,19 @@
  * where the field lets go — so the needle never actually pointed at anything.
  * It is binary now, in or out, and the turn itself is eased over a few frames.
  *
- * A target reaches exactly as far as it says it does and no further, it is
- * ignored while something else is drawn over it, and by default it lets go
- * once the pointer is over it, which hands back an ordinary cursor for the
- * thing the reader has arrived at.
+ * A target reaches exactly as far as it says it does and no further, and it
+ * is ignored while something else is drawn over it. The reach can differ per
+ * side — `{top, right, bottom, left}` — for a control that should be findable
+ * from one direction more than another; the field is then an ellipse-cornered
+ * box rather than a rounded one, because each axis is normalised by its own
+ * side before the two are combined.
+ *
+ * Letting go is a choice too. By default a target releases the moment the
+ * pointer is over it, which hands back an ordinary cursor for the thing the
+ * reader has arrived at. A large target can instead keep pointing until the
+ * pointer reaches its core (`releaseCore`, as a fraction of the way in from
+ * the border), which is what a big canvas wants: the edge of it is still a
+ * place you are heading toward, not a place you have arrived.
  */
 
 /** Chip offset from the pointer. */
@@ -62,15 +71,60 @@ let shown = { label: '', tone: null, icon: null };
 // every render of the component that supplies it, and the listeners fire on a
 // change of subject, not on a re-render.
 let holdAction = null;
+let holdWatch = null;
 let holdMs = HOLD_MS;
 let heldFrom = 0;
 
-/** Gap between a point and a target's shape; zero anywhere inside it. */
+/** Gap between a point and a target's shape, in px; zero anywhere inside it. */
 const gapTo = (g, x, y) => {
   if (g.r != null) return Math.max(0, Math.hypot(x - g.x, y - g.y) - g.r);
   const dx = Math.max(g.left - x, 0, x - g.right);
   const dy = Math.max(g.top - y, 0, y - g.bottom);
   return Math.hypot(dx, dy);
+};
+
+/** A reach, as four sides. A plain number is the same reach on all of them. */
+export const sidesOf = distance =>
+  typeof distance === 'number'
+    ? { top: distance, right: distance, bottom: distance, left: distance }
+    : {
+        top: distance.top ?? 0,
+        right: distance.right ?? 0,
+        bottom: distance.bottom ?? 0,
+        left: distance.left ?? 0,
+      };
+
+/**
+ * How far into the field the pointer has come, as a fraction: 0 at the
+ * boundary, 1 at the target's own edge, more than 1 inside it.
+ *
+ * Each axis is divided by the reach on the side it is approaching from, so a
+ * target that reaches twice as far to its right is exactly twice as easy to
+ * find from the right and no easier from anywhere else.
+ */
+const reachInto = (g, sides, x, y) => {
+  const dx =
+    Math.max(0, (g.r != null ? g.x - g.r : g.left) - x) / (sides.left || 1e-6) +
+    Math.max(0, x - (g.r != null ? g.x + g.r : g.right)) / (sides.right || 1e-6);
+  const dy =
+    Math.max(0, (g.r != null ? g.y - g.r : g.top) - y) / (sides.top || 1e-6) +
+    Math.max(0, y - (g.r != null ? g.y + g.r : g.bottom)) /
+      (sides.bottom || 1e-6);
+  return 1 - Math.hypot(dx, dy);
+};
+
+/**
+ * Where the pointer is inside a target: 0 on its border, 1 at its centre.
+ * Chebyshev for a box and radial for a circle, so the contour matches the
+ * shape rather than cutting its corners.
+ */
+const coreDepth = (g, x, y) => {
+  if (g.r != null) return 1 - Math.min(1, Math.hypot(x - g.x, y - g.y) / g.r);
+  const halfW = (g.right - g.left) / 2 || 1;
+  const halfH = (g.bottom - g.top) / 2 || 1;
+  const nx = Math.abs(x - (g.left + g.right) / 2) / halfW;
+  const ny = Math.abs(y - (g.top + g.bottom) / 2) / halfH;
+  return 1 - Math.min(1, Math.max(nx, ny));
 };
 
 const centreOf = g =>
@@ -133,6 +187,7 @@ const evaluate = () => {
   let tone = null;
   let icon = null;
   let action = null;
+  let actionWatch = null;
   let actionMs = HOLD_MS;
   let smallest = Infinity;
   let nearest = Infinity;
@@ -150,17 +205,26 @@ const evaluate = () => {
         tone = desc.tone || null;
         icon = desc.icon || null;
         action = desc.hold || null;
+        actionWatch = desc.onHold || null;
         actionMs = desc.holdMs || HOLD_MS;
       }
     }
 
     const g = desc.gravity;
-    if (!g || d >= g.distance || d >= nearest) return;
+    if (!g) return;
+    const sides = sidesOf(g.distance);
+    if (reachInto(geom, sides, px, py) <= 0 || d >= nearest) return;
     nearest = d;
-    // Standing on the thing, the needle lets go. Being aimed at something the
-    // pointer is already inside says nothing, and it takes the ordinary
-    // cursor away from the one place the reader needs it.
-    if (d === 0 && g.releaseInside !== false) {
+    // Standing on the thing, the needle lets go — being aimed at something the
+    // pointer is already inside says nothing, and it takes the ordinary cursor
+    // away from the one place the reader needs it. A target with a `releaseCore`
+    // holds on further, until the pointer is that far in from its border.
+    const core = g.releaseCore == null ? 1 : g.releaseCore;
+    if (
+      d === 0 &&
+      g.releaseInside !== false &&
+      coreDepth(geom, px, py) >= core
+    ) {
       want = { angle: aim.angle, weight: 0 };
       return;
     }
@@ -184,6 +248,7 @@ const evaluate = () => {
   // target, not a stopwatch that keeps running wherever the hand goes.
   if (action !== holdAction) releaseHold();
   holdAction = action;
+  holdWatch = actionWatch;
   holdMs = actionMs;
   if (label !== shown.label || tone !== shown.tone || icon !== shown.icon) {
     shown = { label, tone, icon };
@@ -199,6 +264,7 @@ function releaseHold() {
   if (!heldFrom) return;
   heldFrom = 0;
   setHoldProgress(0);
+  holdWatch?.(0);
 }
 
 const loop = () => {
@@ -217,6 +283,7 @@ const loop = () => {
   if (heldFrom) {
     const progress = Math.min(1, (performance.now() - heldFrom) / holdMs);
     setHoldProgress(progress);
+    holdWatch?.(progress);
     if (progress >= 1) {
       const run = holdAction;
       releaseHold();
@@ -254,6 +321,7 @@ const onPointerDown = event => {
   if (event.button !== 0 || !holdAction) return;
   heldFrom = performance.now();
   setHoldProgress(0);
+  holdWatch?.(0.0001);
 };
 
 const onPointerUp = () => releaseHold();
@@ -359,7 +427,8 @@ export function debugFields() {
     out.push({
       name: desc.name || desc.label || 'field',
       geom,
-      distance: desc.gravity.distance,
+      sides: sidesOf(desc.gravity.distance),
+      core: desc.gravity.releaseCore == null ? 1 : desc.gravity.releaseCore,
       strength: desc.gravity.strength == null ? 1 : desc.gravity.strength,
     });
   };
