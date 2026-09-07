@@ -179,7 +179,7 @@ const PalmScene = () => {
       const nut = nearestNut(x, y);
       if (nut) {
         return {
-          label: nut.attached ? 'shake' : 'push',
+          label: nut.attached ? 'shake' : 'kick',
           geom: { x: nut.x, y: nut.y, r: nut.r },
           gravity: nut.attached ? { distance: NUT_GRAVITY_PX } : null,
         };

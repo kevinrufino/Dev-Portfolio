@@ -1,6 +1,7 @@
 import { useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Reveal from './Reveal.js';
+import PixelTrail from './PixelTrail.js';
 import { goToSection } from '../utils/navigateToSection.js';
 
 const footerLinks = [
@@ -71,7 +72,7 @@ export const Footer = ({ setCursor }) => {
   return (
     <footer
       ref={footerRef}
-      className='fixed inset-x-0 bottom-0 z-0 flex h-[100svh] min-h-[560px] w-full flex-col justify-center overflow-hidden bg-charcoal text-charcoal-ink'
+      className='fixed inset-x-0 bottom-0 z-0 flex h-[100svh] min-h-[560px] w-full flex-col justify-start overflow-hidden bg-charcoal pt-[clamp(84px,11vh,150px)] text-charcoal-ink lg:justify-center lg:pt-0'
       id='contact'
       onMouseEnter={() => {
         setCursor?.('');
@@ -79,9 +80,16 @@ export const Footer = ({ setCursor }) => {
     >
       <div className='grid-rule grid-rule--charcoal' aria-hidden='true' />
 
+      {/* The footer's own copy of the trail. It is fixed with a z-index, so
+          it is a stacking context nothing outside can paint into — the trail
+          has to be in here to end up between the charcoal and the type. */}
+      <PixelTrail />
+
       <div className='relative z-10 mx-auto w-full max-w-[1440px] px-[clamp(24px,7.4vw,110px)]'>
         <Reveal>
-          <div className='max-w-[46%] min-w-[280px]'>
+          {/* Half the width where there is width; all of it on a phone, where
+              the palm takes the bottom of the screen instead of the side. */}
+          <div className='min-w-[280px] max-w-none lg:max-w-[46%]'>
             <p className='type-label mb-[26px] text-charcoal-muted'>
               03 — Contact
             </p>
@@ -102,13 +110,17 @@ export const Footer = ({ setCursor }) => {
             >
               {footerLinks.map(link => (
                 <a
-                  className='type-body border-b border-[#50504b] py-[6px] text-[19px] text-[#dedbd0] transition-colors hover:text-charcoal-ink focus-visible:text-charcoal-ink'
+                  className='line-cta type-body text-[19px] text-[#dedbd0] transition-colors hover:text-charcoal-ink focus-visible:text-charcoal-ink'
+                  style={{ '--line-cta-ink': 'var(--acid)' }}
                   href={link.href}
                   key={link.label}
                   target={link.isExternal ? '_blank' : undefined}
                   rel={link.isExternal ? 'noreferrer' : undefined}
                 >
-                  {link.label} ↗
+                  {link.label}
+                  <span aria-hidden='true' className='line-cta__arrow--diagonal'>
+                    ↗
+                  </span>
                 </a>
               ))}
             </nav>
@@ -119,9 +131,9 @@ export const Footer = ({ setCursor }) => {
       {/* Baseline rule + credits, pinned to the bottom of the tall section. */}
       <div
         aria-hidden='true'
-        className='absolute bottom-[53px] left-0 right-0 z-10 mx-[clamp(24px,7.4vw,110px)] h-px bg-charcoal-rule'
+        className='absolute bottom-[86px] left-0 right-0 z-10 mx-[clamp(24px,7.4vw,110px)] h-px bg-charcoal-rule sm:bottom-[62px]'
       />
-      <div className='type-label absolute bottom-[17px] left-0 right-0 z-10 mx-auto flex max-w-[1440px] items-center justify-between gap-4 px-[clamp(24px,7.4vw,110px)] text-charcoal-muted'>
+      <div className='type-label absolute bottom-[18px] left-0 right-0 z-10 mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-x-4 gap-y-2 px-[clamp(24px,7.4vw,110px)] text-charcoal-muted'>
         <span>Designed and developed by Kevin Rufino</span>
         {/* The last hash on the page. `#home` put the destination in the URL,
             so a reload dropped the reader back at whatever they had last
@@ -130,9 +142,13 @@ export const Footer = ({ setCursor }) => {
         <button
           type='button'
           onClick={() => goToSection(navigate, pathname, 'home')}
-          className='border-0 bg-transparent p-[5px] font-[inherit] text-[inherit] text-charcoal-muted'
+          className='line-cta font-[inherit] text-[inherit] text-charcoal-muted'
+          style={{ '--line-cta-ink': 'var(--acid)' }}
         >
-          Back to top ↑
+          Back to top
+          <span aria-hidden='true' className='line-cta__arrow--up'>
+            ↑
+          </span>
         </button>
       </div>
     </footer>

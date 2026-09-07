@@ -16,15 +16,15 @@ import React from 'react';
  */
 const Segment = ({ ariaHidden = false }) => (
   <div
-    className='flex flex-row shrink-0 whitespace-nowrap'
+    className='flex shrink-0 flex-row whitespace-nowrap'
     aria-hidden={ariaHidden || undefined}
   >
-    <p className='font-offbit101Bold m-4'>{'skills: '}</p>
-    <p className='font-offbit101 m-4'>
+    <p className='m-2 font-offbit101Bold lg:m-4'>{'skills: '}</p>
+    <p className='m-2 font-offbit101 lg:m-4'>
       {'html, css, javascript, typescript, react, three.js'}
     </p>
-    <p className='font-offbit101Bold m-4'>{'soft skills: '}</p>
-    <p className='font-offbit101 m-4'>
+    <p className='m-2 font-offbit101Bold lg:m-4'>{'soft skills: '}</p>
+    <p className='m-2 font-offbit101 lg:m-4'>
       {'nerd 🤓, designer, gamer, music producer, sneaker collector'}
     </p>
   </div>
@@ -32,7 +32,7 @@ const Segment = ({ ariaHidden = false }) => (
 
 export const SkillsMarquee = () => {
   return (
-    <div className='relative z-[2] w-full overflow-hidden border-y-2 border-ultra bg-acid py-3 text-3xl text-ultra'>
+    <div className='relative z-[2] w-full overflow-hidden border-y-2 border-ultra bg-acid py-1 text-base text-ultra sm:py-2 sm:text-xl lg:py-3 lg:text-3xl'>
       <div className='marquee-skills'>
         <Segment />
         <Segment ariaHidden />

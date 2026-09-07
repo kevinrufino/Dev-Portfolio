@@ -380,12 +380,23 @@ export function createPalmScene({ displayCanvas, getConfig, getRects }) {
     // The palm is sized and placed to fit the band right of the copy column, so
     // no hard clip line cuts its left side — only the section's bottom edge
     // crops it.
-    const bandLeft = Math.max((r.copyRight || 0) + 24, intro.left + intro.width * 0.45);
+    // On a phone there is no band. The copy runs the full width and hugs the
+    // top of the section, so the palm gets the bottom of the screen instead of
+    // a column beside the text — centred, and scaled to fill it, rather than
+    // the sliver in the corner that squeezing it into a 140px gutter produced.
+    const narrow = intro.width < 700;
+    const bandLeft = narrow
+      ? intro.left
+      : Math.max((r.copyRight || 0) + 24, intro.left + intro.width * 0.45);
     const fitScale = Math.max(0.55, (intro.right - bandLeft) / 458);
-    const startScale = Math.min(Math.min(intro.width * 0.6, 800) / 440, fitScale);
+    const startScale = narrow
+      ? Math.min(intro.width / 415, (innerHeight * 0.46) / 340)
+      : Math.min(Math.min(intro.width * 0.6, 800) / 440, fitScale);
     const mobile = footer.width < 650;
+    // Lower and a little smaller on a phone: the footer's copy runs the full
+    // width there, so the crown has to clear it rather than sit behind it.
     const endScale = mobile
-      ? Math.min(footer.width / 570, (footer.height * 0.43) / 550)
+      ? Math.min(footer.width / 640, (footer.height * 0.38) / 550)
       : Math.min(footer.height * 0.8 / 550, footer.width * 0.48 / 520);
     const endOx = mobile ? (footer.width - 600 * endScale) / 2 : footer.width - 570 * endScale - 14;
     const endOy = footer.height - 54 - 655 * endScale;
@@ -403,8 +414,10 @@ export function createPalmScene({ displayCanvas, getConfig, getRects }) {
     // Crop against the visible bottom of the intro, so the leaf fan reads even
     // when the section is taller than the viewport.
     const anchorY = Math.min(intro.bottom, innerHeight);
-    const startOx = bandLeft - 74 * startScale;
-    const startOy = anchorY - 285 * startScale;
+    const startOx = narrow
+      ? intro.left + intro.width / 2 - 300 * startScale
+      : bandLeft - 74 * startScale;
+    const startOy = anchorY - (narrow ? 340 : 285) * startScale;
     return {
       scale: mix(startScale, endScale),
       ox: mix(startOx, footer.left + endOx),
