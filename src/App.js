@@ -171,9 +171,6 @@ const AppContent = () => {
           {`if you're reading this, you found a secret ;p`}
         </p>
 
-        {/* Global cursor component */}
-        <PixelTrail />
-
         {/* Navigation header */}
         <NavBar setCursor={setCursorType} />
 
@@ -204,6 +201,13 @@ const AppContent = () => {
 
         {/* Projects showcase */}
         <Projects />
+
+        {/* The trail, for the two grounds inside this wrapper.
+            Last in the wrapper on purpose: it is a z-index:0 layer, so paint
+            order against the sections (which are positioned but unindexed)
+            is DOM order — earlier, and the intro's own paper background
+            covers it. The sections lift their text above it. */}
+        <PixelTrail />
 
         {/* Beta / work-in-progress notice — dismissible, bottom-right */}
         <BetaBadge setCursor={setCursorType} />
