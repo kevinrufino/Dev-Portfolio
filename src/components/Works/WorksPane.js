@@ -100,16 +100,19 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
   const glyphFxRef = useCursorFx({
     label: active.hasStory ? 'view case study' : 'view project',
     icon: 'eye',
+    name: 'works / glyph',
     tone: chipTone,
     gravity: GLYPH_GRAVITY_PX,
   });
   // Only the option you are NOT on pulls: the one you are already using has
   // no reason to ask for the pointer.
   const workTabFx = useCursorFx({
+    name: 'works / idle tab',
     gravity: TOGGLE_GRAVITY_PX,
     enabled: category !== 'work',
   });
   const personalTabFx = useCursorFx({
+    name: 'works / idle tab',
     gravity: TOGGLE_GRAVITY_PX,
     enabled: category !== 'personal',
   });
@@ -591,57 +594,61 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
                     >
                       {/* Selecting, not navigating. Scroll stays the source of
                           truth for what is open, so a click scrolls to this
-                          row's slice of the range rather than setting state. */}
-                      <button
-                        type='button'
-                        data-row
-                        data-t-color={on ? 'accent' : 'rowIdle'}
-                        aria-pressed={on}
-                        onClick={() => scrollToProject(i)}
-                        onFocus={() => scrollToProject(i)}
-                        onMouseEnter={() => setRowHot(i)}
-                        onMouseLeave={() =>
-                          setRowHot(current => (current === i ? -1 : current))
-                        }
-                        className='block w-full border-0 bg-transparent py-[18px] text-left transition-colors duration-150'
-                        style={{ color: on ? palette.accent : palette.rowIdle }}
-                      >
-                        <span className='block font-offbit101Bold text-[clamp(24px,2.6vw,40px)] leading-[1.02] tracking-[-.01em]'>
-                          {row.display}
-                        </span>
-                        <span
-                          data-t-color={on ? 'metaOn' : 'metaIdle'}
-                          className='type-body mt-[9px] block text-[13px] leading-[1.5]'
-                          style={{
-                            color: on ? palette.metaOn : palette.metaIdle,
-                          }}
-                        >
-                          {row.meta}
-                        </span>
-                      </button>
+                          row's slice of the range rather than setting state.
 
-                      {on && (
-                        <div className='flex flex-col items-start gap-[16px] pb-[22px]'>
-                          <p
-                            data-t-color='desc'
-                            className='type-body m-0 max-w-[44ch] text-[15px] leading-[1.7] max-lg:text-[14px]'
-                            style={{ color: palette.desc }}
+                          The way in rides on the title's own line, pushed to
+                          the far edge — at the bottom of the block it read as
+                          a footnote to the description rather than as the
+                          thing to press. Baseline-aligned, so it sits on the
+                          title rather than beside its box. */}
+                      <div className='flex items-baseline gap-[18px]'>
+                        <button
+                          type='button'
+                          data-row
+                          data-t-color={on ? 'accent' : 'rowIdle'}
+                          aria-pressed={on}
+                          onClick={() => scrollToProject(i)}
+                          onFocus={() => scrollToProject(i)}
+                          onMouseEnter={() => setRowHot(i)}
+                          onMouseLeave={() =>
+                            setRowHot(current => (current === i ? -1 : current))
+                          }
+                          className='block min-w-0 flex-1 border-0 bg-transparent py-[18px] text-left transition-colors duration-150'
+                          style={{ color: on ? palette.accent : palette.rowIdle }}
+                        >
+                          <span className='block font-offbit101Bold text-[clamp(24px,2.6vw,40px)] leading-[1.02] tracking-[-.01em]'>
+                            {row.display}
+                          </span>
+                          <span
+                            data-t-color={on ? 'metaOn' : 'metaIdle'}
+                            className='type-body mt-[9px] block text-[13px] leading-[1.5]'
+                            style={{
+                              color: on ? palette.metaOn : palette.metaIdle,
+                            }}
                           >
-                            {row.description}
-                          </p>
-                          {/* One way in, whichever kind of thing it is. */}
-                          {row.hasStory ? (
+                            {row.meta}
+                          </span>
+                        </button>
+
+                        {on &&
+                          (row.hasStory ? (
                             <Link
                               data-t-color='link'
                               to={to}
-                              className='line-cta type-body text-[14px] font-medium'
+                              aria-label={`Check out ${row.display}`}
+                              className='line-cta type-body shrink-0 text-[14px] font-medium'
                               style={{
                                 color: palette.link,
                                 '--line-cta-ink': palette.accent,
                               }}
                             >
-                              Check it out
-                              <span aria-hidden='true' className='line-cta__arrow'>
+                              {/* Copy on a wide screen, the arrow alone on a
+                                  narrow one, where the title needs the room. */}
+                              <span className='max-lg:hidden'>Check it out</span>
+                              <span
+                                aria-hidden='true'
+                                className='line-cta__arrow'
+                              >
                                 →
                               </span>
                             </Link>
@@ -651,13 +658,14 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
                               href={row.linkHref}
                               target='_blank'
                               rel='noreferrer'
-                              className='line-cta type-body text-[14px] font-medium'
+                              aria-label={`Check out ${row.display}`}
+                              className='line-cta type-body shrink-0 text-[14px] font-medium'
                               style={{
                                 color: palette.link,
                                 '--line-cta-ink': palette.accent,
                               }}
                             >
-                              Check it out
+                              <span className='max-lg:hidden'>Check it out</span>
                               <span
                                 aria-hidden='true'
                                 className='line-cta__arrow--diagonal'
@@ -665,8 +673,17 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
                                 ↗
                               </span>
                             </a>
-                          )}
-                        </div>
+                          ))}
+                      </div>
+
+                      {on && (
+                        <p
+                          data-t-color='desc'
+                          className='type-body m-0 max-w-[44ch] pb-[22px] text-[15px] leading-[1.7] max-lg:text-[14px]'
+                          style={{ color: palette.desc }}
+                        >
+                          {row.description}
+                        </p>
                       )}
                     </div>
                   );
