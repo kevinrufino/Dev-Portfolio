@@ -13,6 +13,7 @@ import useCursorFx from '../hooks/useCursorFx.js';
 import GooPills from '../components/common/GooPills.js';
 import ProjectBlock from '../components/Project/ProjectBlocks.js';
 import AssetSlot from '../components/Project/AssetSlot.js';
+import { MediaLightboxProvider } from '../components/Project/MediaLightbox.js';
 
 const COVER_CELL = 12;
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
@@ -54,7 +55,7 @@ const firstLink = project => {
  * Three scroll-driven affordances share one listener: the progress rule, the
  * cover's slow push-in, and the chapter bar's active state.
  */
-const ProjectPage = () => {
+const ProjectPageBody = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
   const [active, setActive] = useState(0);
@@ -362,11 +363,17 @@ const ProjectPage = () => {
 
       <header className='relative h-[100svh] min-h-[560px] overflow-hidden bg-[#101014]'>
         <div ref={coverScaleRef} className='absolute inset-0 [will-change:transform]'>
+          {/* The cover is the only capture on most of these pages that is
+              real rather than a placeholder, and it is the one a reader most
+              wants a closer look at — it is cropped to the screen here, and
+              the inspector is where it is whole. Its mark goes top-right: the
+              bottom of this frame belongs to the title. */}
           <AssetSlot
             src={story?.coverSrc || project.scrapeGif}
             caption={story?.cover || `${display} — cover`}
             ratio='auto'
             className='h-full'
+            markCorner='tr'
           />
         </div>
         <canvas
@@ -374,15 +381,18 @@ const ProjectPage = () => {
           aria-hidden='true'
           className='pointer-events-none absolute inset-0 h-full w-full [image-rendering:pixelated]'
         />
+        {/* The scrim and the title sit over the cover, and the cover is
+            pressable now, so neither of them may swallow the press. Nothing in
+            either is interactive, so nothing is lost by letting it through. */}
         <div
           aria-hidden='true'
-          className='absolute inset-0'
+          className='pointer-events-none absolute inset-0'
           style={{
             background:
               'linear-gradient(to top,rgba(16,16,20,.94) 0%,rgba(16,16,20,.72) 34%,rgba(16,16,20,.12) 72%,rgba(16,16,20,.28) 100%)',
           }}
         />
-        <div className='absolute inset-x-0 bottom-0 flex flex-wrap items-end justify-between gap-8 px-[clamp(24px,6vw,88px)] pb-[clamp(34px,6vh,64px)]'>
+        <div className='pointer-events-none absolute inset-x-0 bottom-0 flex flex-wrap items-end justify-between gap-8 px-[clamp(24px,6vw,88px)] pb-[clamp(34px,6vh,64px)]'>
           <div className='min-w-0'>
             <p className='type-label m-0 mb-[18px] text-acid'>
               {project.client === 'Passion Project'
@@ -558,5 +568,18 @@ const ProjectPage = () => {
     </div>
   );
 };
+
+/**
+ * The page, under one media inspector.
+ *
+ * The provider wraps the page rather than living inside it so that the overlay
+ * survives anything the page itself re-renders, and so that every captioned
+ * figure on it — cover included — opens the same one.
+ */
+const ProjectPage = () => (
+  <MediaLightboxProvider>
+    <ProjectPageBody />
+  </MediaLightboxProvider>
+);
 
 export default ProjectPage;

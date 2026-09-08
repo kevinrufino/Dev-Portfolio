@@ -804,3 +804,188 @@ html {
     transition: none;
   }
 }
+
+/* ── the media inspector ────────────────────────────────────────────────────
+   The overlay a case study's figures open into. Everything here is either the
+   veil, the figure, or the two labels that tell a reader how to leave; the lift
+   itself is a FLIP driven from MediaLightbox.js, so the transform on
+   .media-lightbox__figure is written by script and deliberately not set here.
+
+   The figure is laid out against the media's own ratio and capped by the
+   viewport, so a 16:9 capture and a tall phone recording both land centred with
+   the caption under them rather than one of them running off the screen. */
+.media-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+}
+
+.media-lightbox__veil {
+  position: absolute;
+  inset: 0;
+  /* Nearly opaque rather than a tint: the page under this one carries a
+     mix-blend-difference nav, and at 0.9 its white pills read straight through
+     the veil as if they were part of the inspector. */
+  background: rgba(12, 12, 15, 0.96);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.media-lightbox__stage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(56px, 8vh, 96px) clamp(12px, 4vw, 56px);
+}
+
+.media-lightbox__figure {
+  position: relative;
+  margin: 0;
+  width: min(
+    100%,
+    calc((100vh - clamp(150px, 22vh, 230px)) * var(--media-ratio, 1.6))
+  );
+  transform-origin: center center;
+  will-change: transform;
+}
+
+/* The ratio is known from the thumbnail before this copy has loaded a frame of
+   its own, so the box is the right shape from the first paint. Without it the
+   figure is caption-height until metadata arrives and then grows — under the
+   lift, which is the one moment it must not move. */
+.media-lightbox__media {
+  display: block;
+  width: 100%;
+  aspect-ratio: var(--media-ratio, 1.6);
+  height: auto;
+  max-height: calc(100vh - clamp(150px, 22vh, 230px));
+  object-fit: contain;
+  background: #101014;
+}
+
+.media-lightbox__caption {
+  margin: 14px 0 0;
+  max-width: 62ch;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #a8a9a3;
+}
+
+.media-lightbox__close {
+  position: absolute;
+  top: clamp(16px, 3vh, 28px);
+  right: clamp(16px, 4vw, 40px);
+  border: 1px solid #4a4a45;
+  background: rgba(16, 16, 20, 0.7);
+  padding: 9px 14px;
+  color: #e2e3dd;
+  transition:
+    background-color 200ms ease,
+    color 200ms ease,
+    border-color 200ms ease;
+}
+
+/* The dialog is focused on open and has nothing to draw around itself. */
+.media-lightbox:focus {
+  outline: none;
+}
+
+.media-lightbox__close:focus-visible {
+  outline: 2px solid var(--ultra, #3e3bf4);
+  outline-offset: 2px;
+}
+
+.media-lightbox__close:hover,
+.media-lightbox__close:focus-visible {
+  border-color: var(--acid, #f1f43b);
+  background: var(--acid, #f1f43b);
+  color: #1e1e1e;
+}
+
+/* There is no Esc key on a phone, and a line of instructions for one is just
+   another thing in the way of the capture. */
+@media (hover: none) {
+  .media-lightbox__hint {
+    display: none;
+  }
+}
+
+.media-lightbox__hint {
+  position: absolute;
+  bottom: clamp(14px, 3vh, 26px);
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  font-size: 10px;
+  letter-spacing: 0.26em;
+  color: #6e6f69;
+}
+
+/* ── the figure's own invitation ────────────────────────────────────────────
+   A filled figure says it can be opened by lighting its corner mark on hover.
+   The frame itself does not move: a gallery of eight figures that each nudge
+   under the pointer reads as noise, and the mark is enough. */
+.media-zoom {
+  display: block;
+  width: 100%;
+  border: 0;
+  padding: 0;
+  background: none;
+  cursor: zoom-in;
+}
+
+.media-zoom__mark {
+  position: absolute;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid rgba(241, 244, 59, 0.4);
+  background: rgba(16, 16, 20, 0.66);
+  padding: 6px 10px;
+  color: var(--acid, #f1f43b);
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity 260ms cubic-bezier(0.62, 0.05, 0.2, 1),
+    transform 260ms cubic-bezier(0.62, 0.05, 0.2, 1);
+  pointer-events: none;
+}
+
+.media-zoom__mark--br {
+  bottom: 10px;
+}
+
+/* The cover's bottom edge already carries the title and the index count, so
+   its mark goes to the top instead — clear of the fixed nav by the same
+   distance the nav clears the top of the page. */
+.media-zoom__mark--tr {
+  top: 84px;
+}
+
+.media-zoom:hover .media-zoom__mark,
+.media-zoom:focus-visible .media-zoom__mark {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.media-zoom:focus-visible {
+  outline: 2px solid var(--acid, #f1f43b);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .media-lightbox__veil,
+  .media-lightbox__figure,
+  .media-zoom__mark {
+    transition: none;
+  }
+
+  .media-zoom__mark {
+    transform: none;
+  }
+}
