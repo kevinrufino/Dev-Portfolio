@@ -454,7 +454,7 @@
       },
       "archive": {
         "client": "Nike .Swoosh",
-        "role": "Front End Lead",
+        "role": "Front-End Lead",
         "year": "2025",
         "liveLink": "https://www.swoosh.nike/m/maxs-lab"
       }
@@ -577,9 +577,203 @@
       },
       "archive": {
         "client": "Candid",
-        "role": "Frontend Lead",
+        "role": "Front-End Lead",
         "year": "2026",
         "liveLink": ""
+      }
+    },
+    "EA Sports FC Partner Page": {
+      "display": "EA Sports FC",
+      "tagline": "An interactive player viewer and reusable components for the EA Sports FC launch.",
+      "cover": "Cover — player viewer orbit, kit swap",
+      "coverSrc": "",
+      "meta": [
+        {
+          "k": "Timeline",
+          "v": "7 weeks · 2023"
+        },
+        {
+          "k": "Scope",
+          "v": "Engineer · player viewer, shared component work"
+        },
+        {
+          "k": "Worked with",
+          "v": "2 designers, 3 engineers, EA partner team"
+        },
+        {
+          "k": "Stack",
+          "v": "React, Three.js"
+        }
+      ],
+      "blocks": [
+        {
+          "type": "text",
+          "label": "Context",
+          "title": "Why it exists",
+          "paras": [
+            "A co-branded launch with a partner’s asset pipeline, a partner’s review cycle, and a fixed date. The interesting engineering problem was not the viewer — it was making the viewer out of parts that already existed."
+          ]
+        },
+        {
+          "type": "assets",
+          "label": "Process",
+          "title": "Process assets",
+          "items": [
+            {
+              "caption": "Kit-swap material pipeline",
+              "span": 6,
+              "ratio": "4 / 3"
+            },
+            {
+              "caption": "Viewer controls — reach test",
+              "span": 6,
+              "ratio": "4 / 3"
+            }
+          ],
+          "paras": []
+        },
+        {
+          "type": "moments",
+          "label": "Decisions",
+          "title": "One decision worth framing",
+          "items": [
+            {
+              "kind": "Tradeoff",
+              "title": "Fork the viewer or extend the shared one",
+              "body": "The shared 3D viewer did 80% of this. Extending it meant negotiating with two other teams’ roadmaps; forking meant shipping on time and owning a duplicate.",
+              "chose": {
+                "k": "We shipped",
+                "v": "Extended the shared viewer behind a feature flag, with the partner-specific material work isolated in an adapter."
+              },
+              "passed": {
+                "k": "We passed on",
+                "v": "A fork. Faster that week, a tax every week after."
+              },
+              "call": "Two other launches used the adapter within a quarter. The negotiation paid for itself."
+            }
+          ],
+          "paras": []
+        },
+        {
+          "type": "assets",
+          "label": "Payoff",
+          "title": "Final artifacts",
+          "items": [
+            {
+              "caption": "Launch page",
+              "span": 12,
+              "ratio": "16 / 9"
+            },
+            {
+              "caption": "Player viewer",
+              "span": 6,
+              "ratio": "3 / 2"
+            },
+            {
+              "caption": "Component set in use elsewhere",
+              "span": 6,
+              "ratio": "3 / 2"
+            }
+          ],
+          "paras": []
+        },
+        {
+          "type": "reflection",
+          "label": "Reflection",
+          "title": "End note",
+          "paras": [
+            "Partner work is mostly interface design between organisations. The adapter boundary was the actual deliverable."
+          ]
+        }
+      ],
+      "index": {
+        "category": "work",
+        "shape": "sphere",
+        "glyphSrc": "/cursors/levels/eafc-L6.webm",
+        "summary": "An interactive player viewer and reusable components for the EA Sports FC launch."
+      },
+      "archive": {
+        "client": "Nike x EA Sports",
+        "role": "Front-End Engineer",
+        "year": "2024",
+        "liveLink": "https://www.swoosh.nike/p/ea-sports-fc"
+      }
+    },
+    "TINAJ Collection Listing Page": {
+      "display": "TINAJ",
+      "tagline": "A customizable 3D product viewer for virtual collectibles.",
+      "cover": "Cover — customization loop, three colourways",
+      "coverSrc": "",
+      "meta": [
+        {
+          "k": "Timeline",
+          "v": "5 weeks · 2023"
+        },
+        {
+          "k": "Scope",
+          "v": "Engineer · viewer, customization state, share images"
+        },
+        {
+          "k": "Worked with",
+          "v": "1 designer, 2 engineers"
+        },
+        {
+          "k": "Stack",
+          "v": "React, Three.js"
+        }
+      ],
+      "blocks": [
+        {
+          "type": "text",
+          "label": "Context",
+          "title": "Why it exists",
+          "paras": [
+            "Members owned a virtual product they couldn’t really look at. The viewer existed to make ownership feel like something — turn it over, change it, screenshot it."
+          ]
+        },
+        {
+          "type": "assets",
+          "label": "Assets",
+          "title": "Selected captures",
+          "items": [
+            {
+              "caption": "Customization panel",
+              "span": 6,
+              "ratio": "4 / 3"
+            },
+            {
+              "caption": "Share-image render",
+              "span": 6,
+              "ratio": "4 / 3"
+            },
+            {
+              "caption": "Viewer in context",
+              "span": 12,
+              "ratio": "16 / 9"
+            }
+          ],
+          "paras": []
+        },
+        {
+          "type": "reflection",
+          "label": "Reflection",
+          "title": "End note",
+          "paras": [
+            "Share images did more work than the viewer. The thing people wanted was proof, and proof is a picture."
+          ]
+        }
+      ],
+      "index": {
+        "category": "work",
+        "shape": "rings",
+        "glyphSrc": "/cursors/levels/tinaj-gimbal-L6.webm",
+        "summary": "A customizable 3D product viewer for virtual collectibles."
+      },
+      "archive": {
+        "client": "Nike .Swoosh",
+        "role": "Front-End Engineer",
+        "year": "2023",
+        "liveLink": "https://www.swoosh.nike/collections/our-force-1-tinaj/products/air-force-1-tinaj/tokens/301?tab=story"
       }
     },
     "Minecraft Clone": {
@@ -596,22 +790,10 @@
         "glyphSrc": "/cursors/levels/battlebot_run-L6.webm"
       }
     },
-    "TINAJ Collection Listing Page": {
-      "index": {
-        "glyphSrc": "/cursors/levels/tinaj-gimbal-L6.webm",
-        "category": "work"
-      }
-    },
     "Our Force 1 Poster Content Display Page": {
       "index": {
         "glyphSrc": "/cursors/levels/our-force-1-L6.webm",
         "category": "work"
-      }
-    },
-    "EA Sports FC Partner Page": {
-      "index": {
-        "category": "work",
-        "glyphSrc": "/cursors/levels/eafc-L6.webm"
       }
     }
   },
