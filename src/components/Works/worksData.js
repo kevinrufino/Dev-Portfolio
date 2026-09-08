@@ -157,6 +157,11 @@ const entryFor = title => {
     glyphSrc: meta.glyphSrc || '',
     linkHref: firstLink(project),
     hasStory: Boolean(PROJECT_STORIES[title]),
+    // A project that is listed but not ready to be opened. The row keeps its
+    // title, line and summary — it is real work, and saying so is the point —
+    // but the way in is replaced by a note rather than pointed at a page that
+    // cannot yet stand behind what it claims.
+    comingSoon: Boolean(meta.comingSoon),
   };
 };
 

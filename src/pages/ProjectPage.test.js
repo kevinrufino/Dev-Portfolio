@@ -10,6 +10,17 @@ jest.mock('../components/Works/worksData.js', () => ({
   archiveFor: title => ({ title, client: 'Client' }),
   WORKS: { work: [{ title: 'Alpha' }, { title: 'Beta' }], personal: [] },
 }));
+// The site-wide hold, off by default here so the existing tests exercise a
+// page with a body. `mock`-prefixed so jest lets the factory close over it.
+let mockNotice = { enabled: false, text: 'More coming soon.' };
+jest.mock('../content/siteSettings.js', () => ({
+  // A getter, so the factory — which jest hoists above this file's own
+  // initialisation — reads the object at render time rather than at mock time.
+  get PROJECT_NOTICE() {
+    return mockNotice;
+  },
+  DEFAULT_PROJECT_NOTICE: 'More coming soon.',
+}));
 jest.mock('../components/Project/projectStories.js', () => ({
   RETIRED_TITLES: new Set(),
   PROJECT_STORIES: {
@@ -37,6 +48,7 @@ jest.mock('../components/Project/ProjectBlocks.js', () => ({ block, id }) => (
 
 let frames;
 beforeEach(() => {
+  mockNotice = { enabled: false, text: 'More coming soon.' };
   frames = new Map();
   let id = 0;
   jest.spyOn(window, 'requestAnimationFrame').mockImplementation(fn => {
@@ -104,4 +116,15 @@ test('navigating to another project still starts at the top', () => {
   expect(window.scrollTo).toHaveBeenCalledTimes(1);
   expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'instant' });
   expect(document.title).toBe('Beta — Kevin Rufino');
+});
+
+test('the site notice stands in for the case study, and the footer stays', () => {
+  mockNotice = { enabled: true, text: 'More coming soon.' };
+  openProject();
+  expect(
+    screen.getByRole('heading', { name: 'More coming soon.' }),
+  ).toBeInTheDocument();
+  expect(screen.queryByRole('link', { name: /01 Introduction/ })).toBeNull();
+  expect(screen.queryByRole('heading', { name: 'Alpha' })).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: /Beta/ })).toBeInTheDocument();
 });

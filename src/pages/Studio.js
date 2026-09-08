@@ -2,6 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ProjectsData } from '../constants.js';
 import { PROJECT_STORIES } from '../components/Project/projectStories.js';
 import { WORKS } from '../components/Works/worksData.js';
+import {
+  DEFAULT_PROJECT_NOTICE,
+  PROJECT_NOTICE,
+} from '../content/siteSettings.js';
 import { toSlug } from '../utils/helpers.js';
 import {
   clearDraft,
@@ -106,7 +110,13 @@ const blankProject = title => ({
   coverSrc: '',
   meta: [{ k: '', v: '' }],
   blocks: [blankBlock('text')],
-  index: { category: 'work', shape: 'sphere', glyphSrc: '', summary: '' },
+  index: {
+    category: 'work',
+    shape: 'sphere',
+    glyphSrc: '',
+    summary: '',
+    comingSoon: false,
+  },
   archive: { client: '', role: '', year: '', liveLink: '' },
 });
 
@@ -128,6 +138,7 @@ const seedProject = title => {
       shape: row?.shape || 'sphere',
       glyphSrc: row?.glyphSrc || '',
       summary: row?.description || '',
+      comingSoon: Boolean(row?.comingSoon),
     },
     archive: {
       client: archive.client || '',
@@ -205,7 +216,16 @@ const Studio = () => {
   // being scattered across ten records as a rank each.
   const [draft, setDraft] = useState(() => {
     const saved = loadDraft() || {};
-    return { projects: saved.projects || {}, order: saved.order || {} };
+    return {
+      projects: saved.projects || {},
+      order: saved.order || {},
+      // Seeded from what the site is publishing right now, for the same reason
+      // the lists are: opening the studio should show the site as it stands,
+      // not an empty default that silently switches something off on export.
+      site: saved.site || {
+        projectNotice: { enabled: PROJECT_NOTICE.enabled, text: PROJECT_NOTICE.text },
+      },
+    };
   });
   const drafts = draft.projects;
   const commit = useCallback(mutate => {
@@ -283,6 +303,19 @@ const Studio = () => {
   );
 
   const setBlocks = blocks => update(p => ({ ...p, blocks }));
+
+  // Site settings are not a project's to hold, so they are edited straight on
+  // the draft rather than through `update`, which is scoped to whichever
+  // project is open.
+  const notice = draft.site.projectNotice;
+  const setNotice = patch =>
+    commit(previous => ({
+      ...previous,
+      site: {
+        ...previous.site,
+        projectNotice: { ...previous.site.projectNotice, ...patch },
+      },
+    }));
 
   // ── the two lists, and where each project sits in them ────────────────────
 
@@ -454,11 +487,14 @@ const Studio = () => {
     // is the one part of this file a human will read top to bottom, and a
     // complete list cannot disagree with itself.
     const order = { work: grouped.work, personal: grouped.personal };
+    // The third half of the file: what is true of the site rather than of any
+    // one project. It goes out whole for the same reason the order does.
+    const site = draft.site;
     const files = [
       {
         name: 'projects.json',
         bytes: new TextEncoder().encode(
-          `${JSON.stringify({ projects, order }, null, 2)}\n`,
+          `${JSON.stringify({ projects, order, site }, null, 2)}\n`,
         ),
       },
     ];
@@ -718,7 +754,16 @@ const Studio = () => {
             onClick={() => {
               if (!window.confirm('Discard every local edit?')) return;
               clearDraft();
-              setDraft({ projects: {}, order: {} });
+              setDraft({
+                projects: {},
+                order: {},
+                site: {
+                  projectNotice: {
+                    enabled: PROJECT_NOTICE.enabled,
+                    text: PROJECT_NOTICE.text,
+                  },
+                },
+              });
               setStatus('Draft cleared. The site’s current content is showing again.');
             }}
           >
@@ -797,6 +842,41 @@ const Studio = () => {
         </nav>
 
         <main className='studio-main'>
+          {/* The one card here that is not about the project on the rail. The
+              case studies ship with draft copy and stand-in captures, so the
+              body of every project page can be held behind a single line until
+              the real ones are written — the cover and the footer stay either
+              way. */}
+          <section className='studio-card'>
+            <h3>Site</h3>
+            <label className='studio-check'>
+              <input
+                type='checkbox'
+                checked={Boolean(notice.enabled)}
+                onChange={e => setNotice({ enabled: e.target.checked })}
+              />
+              <span>
+                Hold every project page
+                <em>
+                  hides the chapter bar, the metadata table and every block, on
+                  every project page
+                </em>
+              </span>
+            </label>
+            <Field label='Notice' hint='shown under the cover instead'>
+              <input
+                value={notice.text}
+                placeholder={DEFAULT_PROJECT_NOTICE}
+                onChange={e => setNotice({ text: e.target.value })}
+              />
+            </Field>
+            <p className='studio-hint'>
+              {notice.enabled
+                ? `Every project page shows “${notice.text || DEFAULT_PROJECT_NOTICE}” in place of its case study.`
+                : 'Project pages are showing their case studies in full.'}
+            </p>
+          </section>
+
           <section className='studio-card'>
             <div className='studio-card__head'>
               <h2>{current}</h2>
@@ -933,6 +1013,29 @@ const Studio = () => {
                 }
               />
             </Field>
+            {/* Listed, but not openable. The row keeps its title, line and
+                summary — the work is real — and the way in is replaced by a
+                note rather than pointed at a page that cannot yet stand
+                behind what it claims. */}
+            <label className='studio-check'>
+              <input
+                type='checkbox'
+                checked={Boolean(project.index.comingSoon)}
+                onChange={e =>
+                  update(p => ({
+                    ...p,
+                    index: { ...p.index, comingSoon: e.target.checked },
+                  }))
+                }
+              />
+              <span>
+                Coming soon
+                <em>
+                  the works pane reads “Coming soon” instead of linking to the
+                  project page
+                </em>
+              </span>
+            </label>
             <div className='studio-inline'>
               {ARCHIVE_FIELDS.map(({ key, label, hint }) => (
                 <Field key={key} label={label} hint={hint}>

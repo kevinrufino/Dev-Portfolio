@@ -573,7 +573,8 @@
         "category": "work",
         "shape": "rings",
         "glyphSrc": "/cursors/levels/candid-rotation-L6.webm",
-        "summary": "Agentic chat experience that exposes automatic workflows for the public sector."
+        "summary": "Agentic chat experience that exposes automatic workflows for the public sector.",
+        "comingSoon": true
       },
       "archive": {
         "client": "Candid",
@@ -813,5 +814,11 @@
       "Defenders of Dogewood",
       "SNK-Y Bot"
     ]
+  },
+  "site": {
+    "projectNotice": {
+      "enabled": true,
+      "text": "More coming soon."
+    }
   }
 }

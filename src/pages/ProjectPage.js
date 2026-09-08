@@ -8,6 +8,7 @@ import {
   RETIRED_TITLES,
 } from '../components/Project/projectStories.js';
 import { WORKS, archiveFor } from '../components/Works/worksData.js';
+import { PROJECT_NOTICE } from '../content/siteSettings.js';
 import useGooFollower from '../hooks/useGooFollower.js';
 import useCursorFx from '../hooks/useCursorFx.js';
 import GooPills from '../components/common/GooPills.js';
@@ -299,6 +300,11 @@ const ProjectPageBody = () => {
     );
   }
 
+  // Every case study on the site is seeded with draft copy and placeholder
+  // captures. Until the real ones are written, the studio can hold the body of
+  // every project page behind a single line — the cover above it and the way
+  // onward below it are real, so both stay.
+  const held = PROJECT_NOTICE.enabled;
   const display = story?.display || project.title;
   const liveLink = firstLink(project);
   // Counted within its own list, so the number means the same thing here as it
@@ -423,7 +429,7 @@ const ProjectPageBody = () => {
           floats over this bar once it sticks. The bar's charcoal ground runs up
           behind the nav so the two read as one header rather than as two things
           fighting over the same line. */}
-      {blocks.length > 0 && (
+      {blocks.length > 0 && !held && (
         <div
           ref={railRef}
           data-chapters=''
@@ -457,7 +463,7 @@ const ProjectPageBody = () => {
         </div>
       )}
 
-      {story?.meta && (
+      {story?.meta && !held && (
         <section
           aria-label='Project metadata'
           className='border-b border-[#3a3a36] bg-charcoal'
@@ -479,14 +485,30 @@ const ProjectPageBody = () => {
       )}
 
       <main className='bg-charcoal text-[#e2e3dd]'>
-        {blocks.map((block, i) => (
-          <ProjectBlock
-            key={block.title}
-            block={block}
-            num={String(i + 1).padStart(2, '0')}
-            id={`sec-${i}`}
-          />
-        ))}
+        {held ? (
+          // The whole case study, held behind one line. Set in the same type
+          // and at the same weight as the page a bad slug lands on, because it
+          // is the same kind of statement: this page has nothing to tell you
+          // yet, and saying so is more honest than the draft copy and
+          // placeholder captures underneath.
+          <section
+            aria-label='Case study status'
+            className='flex min-h-[46svh] flex-col items-center justify-center gap-6 px-6 py-[clamp(64px,14vh,150px)] text-center'
+          >
+            <h2 className='m-0 font-offbit101Bold text-[clamp(36px,6vw,72px)] leading-[.94] text-charcoal-ink'>
+              {PROJECT_NOTICE.text}
+            </h2>
+          </section>
+        ) : (
+          blocks.map((block, i) => (
+            <ProjectBlock
+              key={block.title}
+              block={block}
+              num={String(i + 1).padStart(2, '0')}
+              id={`sec-${i}`}
+            />
+          ))
+        )}
       </main>
 
       <footer className='relative overflow-hidden bg-acid text-charcoal'>
