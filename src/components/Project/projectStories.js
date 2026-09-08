@@ -831,8 +831,16 @@ export const PROJECT_STORIES = Object.fromEntries(
       const generated = GENERATED[title];
       if (!generated) return [title, SEED[title]];
       if (generated.removed) return null;
-      // `index` belongs to the works pane, not to the case study.
-      const { index, ...story } = generated;
+      // `index` and `archive` belong to the works pane, not to the case study.
+      const { index, archive, ...story } = generated;
+      // An entry that carries NO story at all is not a story of nothing.
+      //
+      // Replacement is right when there is something to replace with — but a
+      // record that exists only to say which list a project is in, or which
+      // loop its glyph should sample, would otherwise blank the case study it
+      // never mentioned. That is a silent, total loss triggered by editing an
+      // unrelated field, and it made this file unsafe to touch by hand.
+      if (Object.keys(story).length === 0) return [title, SEED[title]];
       return [title, story];
     })
     .filter(Boolean),

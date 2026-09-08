@@ -134,8 +134,16 @@ const entryFor = title => {
   const project = archiveFor(title);
   if (!project) return null;
   const studio = studioEntries.find(e => e.title === title);
+  // The same rule as the stories: what the studio does not say, it does not
+  // overwrite. Spreading `display` unconditionally set it to undefined for any
+  // entry that only carried an index, which quietly dropped the short name the
+  // pane lists a project under.
   const meta = studio
-    ? { ...OVERRIDES[title], ...studio.index, display: studio.display }
+    ? {
+        ...OVERRIDES[title],
+        ...studio.index,
+        ...(studio.display ? { display: studio.display } : {}),
+      }
     : OVERRIDES[title];
   if (!meta) return null;
   return {
