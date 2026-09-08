@@ -395,3 +395,32 @@
   font-size: 12px;
   line-height: 1.5;
 }
+
+/* A switch, laid out like a field but read left to right: the box first,
+   because that is the thing being answered, then the name and the consequence
+   under it. */
+.studio-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 12px;
+  cursor: pointer;
+}
+
+.studio-check input {
+  margin: 2px 0 0;
+  accent-color: var(--acid, #f1f43b);
+}
+
+.studio-check > span {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 12px;
+}
+
+.studio-check em {
+  color: #63636e;
+  font-size: 11px;
+  font-style: normal;
+}

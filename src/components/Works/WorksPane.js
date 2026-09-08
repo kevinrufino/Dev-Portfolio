@@ -115,18 +115,28 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
   // project goes — and it is the way there. Holding the press fills the chip;
   // let go early and nothing happens, which is what makes a canvas safe to
   // make clickable at all.
+  // A project the studio has marked as coming soon has nowhere to go yet, so
+  // the glyph keeps its pull and says why, but the hold does nothing — a chip
+  // that fills and then lands on a page of placeholder facts is the thing
+  // being avoided.
   const glyphFxRef = useCursorFx({
-    label: active.hasStory ? 'view case study' : 'view project',
+    label: active.comingSoon
+      ? 'coming soon'
+      : active.hasStory
+        ? 'view case study'
+        : 'view project',
     icon: 'eye',
     name: 'works / glyph',
     tone: chipTone,
     gravity: GLYPH_GRAVITY_PX,
     releaseCore: GLYPH_RELEASE_CORE,
     holdMs: GLYPH_HOLD_MS,
-    hold: () => {
-      if (active.hasStory) navigate(`/projects/${toSlug(active.title)}`);
-      else window.open(active.linkHref, '_blank', 'noreferrer');
-    },
+    hold: active.comingSoon
+      ? undefined
+      : () => {
+          if (active.hasStory) navigate(`/projects/${toSlug(active.title)}`);
+          else window.open(active.linkHref, '_blank', 'noreferrer');
+        },
   });
   // Only the option you are NOT on pulls: the one you are already using has
   // no reason to ask for the pointer.
@@ -706,7 +716,19 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
                         </button>
 
                         {on &&
-                          (row.hasStory ? (
+                          (row.comingSoon ? (
+                            // Not a link and not disabled-looking either: the
+                            // row still reads as a piece of work, it just
+                            // isn't openable yet. Nothing to press means
+                            // nothing to point the cursor field at.
+                            <span
+                              data-t-color='metaIdle'
+                              className='type-body shrink-0 text-[14px] font-medium'
+                              style={{ color: palette.metaIdle }}
+                            >
+                              Coming soon
+                            </span>
+                          ) : row.hasStory ? (
                             <Link
                               ref={rowCtaFx}
                               data-t-color='link'

@@ -67,6 +67,10 @@ const titles = Object.keys(parsed.projects || {});
 let kept = false;
 const order = parsed.order || {};
 const lists = ['work', 'personal'].filter(k => Array.isArray(order[k]) && order[k].length);
+// Worth calling out for the same reason: a switch that hides the body of every
+// project page leaves no trace in any project's own record, and applying a
+// bundle should never be the first time you find out it is on.
+const notice = parsed.site?.projectNotice;
 // The previous content, kept beside the file it replaces.
 //
 // This write is a REPLACEMENT, not a merge — the bundle is the whole of what
@@ -102,7 +106,7 @@ console.log(`
     public/projects/
 
   ${titles.map(t => `  · ${t}`).join('\n')}
-${lists.length ? `\n  Works pane order:\n${lists.map(k => `      ${k}: ${order[k].join(' · ')}`).join('\n')}\n` : ''}
+${lists.length ? `\n  Works pane order:\n${lists.map(k => `      ${k}: ${order[k].join(' · ')}`).join('\n')}\n` : ''}${notice?.enabled ? `\n  Project pages are held: every one shows “${notice.text}” instead of its case study.\n` : ''}
 ${kept ? `  The content this replaced was saved to projects.json.bak\n` : ''}
   Review with \`git status\` and \`git diff\`, then commit. Everything under
   public/ is served from Vercel's CDN once it is deployed — there is nothing
