@@ -1,3 +1,617 @@
 {
-  "projects": {}
+  "projects": {
+    ".Swoosh 404": {
+      "display": ".Swoosh 404",
+      "tagline": "Site Takeover | Gamified Product Release | more",
+      "cover": "Cover — 6s of gameplay, wave two",
+      "coverSrc": "",
+      "meta": [
+        {
+          "k": "Scope",
+          "v": "Engineer · site takeover, game loop, rendering, leaderboard integration"
+        },
+        {
+          "k": "Timeline",
+          "v": "6 weeks · 2024"
+        },
+        {
+          "k": "Worked with",
+          "v": "2 designers, 1 engineer"
+        },
+        {
+          "k": "Stack",
+          "v": "TypeScript, CSS, HTML Canvas, Howler.JS"
+        }
+      ],
+      "blocks": [
+        {
+          "type": "text",
+          "label": "Context",
+          "title": "Why it exists",
+          "paras": [
+            "A 404 page was the last surface anyone was going to fight over, which made it the right place to put a game. The shoe releasing was named 404 — the joke wrote itself, and the error page became campaign real estate."
+          ]
+        },
+        {
+          "type": "text",
+          "label": "Context",
+          "title": "Why it matters",
+          "paras": [
+            "It proved a small thing internally: play could ship on the same timeline as a product page. Six weeks, two people, no new platform. That argument opened doors for later work."
+          ]
+        },
+        {
+          "type": "assets",
+          "label": "Process",
+          "title": "Getting it to feel right",
+          "note": "Most of the six weeks went into feel, not features.",
+          "items": [
+            {
+              "caption": "Hit feedback — three tuning passes",
+              "span": 6,
+              "ratio": "16 / 10"
+            },
+            {
+              "caption": "Sprite sheet and palette",
+              "span": 6,
+              "ratio": "16 / 10"
+            },
+            {
+              "caption": "Difficulty curve instrumentation",
+              "span": 12,
+              "ratio": "21 / 9"
+            }
+          ],
+          "paras": []
+        },
+        {
+          "type": "moments",
+          "label": "Decisions",
+          "title": "Key design moments",
+          "items": [
+            {
+              "kind": "Tradeoff",
+              "title": "Keyboard-first or touch-first",
+              "body": "Traffic was 80% mobile, but the genre is a keyboard genre. Twin-stick controls on a phone felt terrible in the first build.",
+              "chose": {
+                "k": "We shipped",
+                "v": "One-axis drag with auto-fire. Your thumb only decides where, never when."
+              },
+              "passed": {
+                "k": "We passed on",
+                "v": "A virtual joystick plus a fire button."
+              },
+              "call": "Removing the fire button removed the only thing testers complained about."
+            },
+            {
+              "kind": "Decision",
+              "title": "No score wall",
+              "body": "A leaderboard was scoped, then cut two weeks in.",
+              "chose": {
+                "k": "We shipped",
+                "v": "A personal best held locally, surfaced only after your second run."
+              },
+              "passed": {
+                "k": "We passed on",
+                "v": "A global leaderboard with member accounts."
+              },
+              "call": "The auth flow was longer than the game. Cutting it kept the whole thing a two-tap experience."
+            }
+          ],
+          "paras": []
+        },
+        {
+          "type": "assets",
+          "label": "Payoff",
+          "title": "Final artifacts",
+          "items": [
+            {
+              "caption": "Launch build",
+              "span": 12,
+              "ratio": "16 / 9"
+            },
+            {
+              "caption": "Wave transitions",
+              "span": 6,
+              "ratio": "3 / 2"
+            },
+            {
+              "caption": "Game over card",
+              "span": 6,
+              "ratio": "3 / 2"
+            }
+          ],
+          "paras": []
+        },
+        {
+          "type": "impact",
+          "label": "Impact",
+          "title": "What it moved",
+          "items": [
+            {
+              "n": 3.1,
+              "suffix": "m",
+              "k": "Average time on a 404",
+              "note": "previously under 10 seconds"
+            },
+            {
+              "n": 22,
+              "suffix": "%",
+              "k": "Clicked through to the release",
+              "note": "from the game-over card"
+            }
+          ],
+          "paras": []
+        },
+        {
+          "type": "reflection",
+          "label": "Reflection",
+          "title": "End note",
+          "paras": [
+            "The best decision was scoping it as a toy, not a product. Nothing in it needed to be maintained, so nothing in it needed to be negotiated."
+          ]
+        }
+      ],
+      "index": {
+        "category": "work",
+        "shape": "rings",
+        "summary": "Marketing Event - Site takeover + gamified product release",
+        "glyphSrc": "/cursors/levels/404spinning-asset-L6.webm"
+      },
+      "archive": {
+        "client": "Nike .Swoosh",
+        "role": "Front-End Engineer",
+        "year": "2024",
+        "liveLink": "https://www.swoosh.nike/m/air-force-1-low-404"
+      }
+    },
+    "Anonymice": {
+      "display": "Anonymice",
+      "tagline": "A staking experience connecting collectible characters and their in-game economy.",
+      "cover": "Cover — staking flow, confirmation state",
+      "coverSrc": "",
+      "meta": [
+        {
+          "k": "Timeline",
+          "v": "6 weeks · 2022"
+        },
+        {
+          "k": "Scope",
+          "v": "Engineer · staking flow, contract integration"
+        },
+        {
+          "k": "Worked with",
+          "v": "1 designer, 1 contract engineer"
+        },
+        {
+          "k": "Stack",
+          "v": "React, ethers.js"
+        }
+      ],
+      "blocks": [
+        {
+          "type": "text",
+          "label": "Context",
+          "title": "Why it exists",
+          "paras": [
+            "The economy already worked on-chain and read as hostile in a browser. This was interface work on top of something irreversible, which changes how you design every confirmation."
+          ]
+        },
+        {
+          "type": "moments",
+          "label": "Decisions",
+          "title": "One decision worth framing",
+          "items": [
+            {
+              "kind": "Decision",
+              "title": "Making the irreversible feel irreversible",
+              "body": "Every fast, frictionless pattern we knew was wrong here. A one-tap stake is a one-tap mistake.",
+              "chose": {
+                "k": "We shipped",
+                "v": "A plain-language summary of exactly what leaves your wallet, shown before signing, in the largest type on the screen."
+              },
+              "passed": {
+                "k": "We passed on",
+                "v": "A single confirm button with a tooltip."
+              },
+              "call": "Support volume was the metric. It went to near zero."
+            }
+          ],
+          "paras": []
+        },
+        {
+          "type": "assets",
+          "label": "Assets",
+          "title": "Selected captures",
+          "items": [
+            {
+              "caption": "Staking flow",
+              "span": 6,
+              "ratio": "4 / 3"
+            },
+            {
+              "caption": "Confirmation summary",
+              "span": 6,
+              "ratio": "4 / 3"
+            }
+          ],
+          "paras": []
+        },
+        {
+          "type": "reflection",
+          "label": "Reflection",
+          "title": "End note",
+          "paras": [
+            "Clarity is the whole product when an action can’t be undone."
+          ]
+        }
+      ],
+      "index": {
+        "category": "personal",
+        "shape": "rings",
+        "summary": "A staking experience connecting collectible characters and their in-game economy.",
+        "glyphSrc": "/cursors/levels/mice-gif-L6.webm"
+      },
+      "archive": {
+        "client": "Anonymice",
+        "role": "Engineer",
+        "year": "2022",
+        "liveLink": "https://anonymice.com/"
+      }
+    },
+    "Max's Lab": {
+      "display": "Max's Lab",
+      "tagline": "An explorable 3D world built around Max, with hidden details and live events.",
+      "cover": "Cover — 8s loop of the world at first load, camera settling",
+      "coverSrc": "",
+      "meta": [
+        {
+          "k": "Timeline",
+          "v": "5 months · 2025"
+        },
+        {
+          "k": "Scope",
+          "v": "Lead Front End engineer · 3D world, event system, performance budget"
+        },
+        {
+          "k": "Worked with",
+          "v": "2 designers, 1 3D artist, 3 engineers, brand + product marketing"
+        },
+        {
+          "k": "Stack",
+          "v": "React, Three.js, GLSL, WebGL"
+        }
+      ],
+      "blocks": [
+        {
+          "type": "text",
+          "label": "Context",
+          "title": "Why it exists",
+          "paras": [
+            "Air Max Day is an annual moment with a lot of noise around it. The brief was a destination that could hold a month of drops, unlocks, and live moments without becoming a landing page that gets rebuilt every week.",
+            "We built a room instead of a page: a single navigable 3D space where each object is a slot the marketing team can fill. New drop, new object. No redeploy, no new route."
+          ],
+          "pull": "A page expires. A room gets furniture."
+        },
+        {
+          "type": "text",
+          "label": "Context",
+          "title": "Why it matters",
+          "paras": [
+            "Members were arriving from social with no context and bouncing in under twenty seconds. A destination that rewards a second look changes the shape of that session — we needed exploration to be the thing that retains, not copy.",
+            "It also gave the team an authoring surface. Anything placed in the room could be scheduled, so a live event became a state change rather than a build."
+          ]
+        },
+        {
+          "type": "assets",
+          "label": "Process",
+          "title": "Building the room",
+          "note": "Component-level captures from the middle of the build.",
+          "items": [
+            {
+              "caption": "Navigation prototype — camera rails vs. free orbit",
+              "span": 7,
+              "ratio": "16 / 10"
+            },
+            {
+              "caption": "Hotspot states: idle, near, focused",
+              "span": 5,
+              "ratio": "16 / 10"
+            },
+            {
+              "caption": "Draw-call budget instrumentation on a mid-tier Android",
+              "span": 4,
+              "ratio": "4 / 3"
+            },
+            {
+              "caption": "Material study — dithered shadow catcher",
+              "span": 4,
+              "ratio": "4 / 3"
+            },
+            {
+              "caption": "Event scheduler preview in the CMS",
+              "span": 4,
+              "ratio": "4 / 3"
+            }
+          ],
+          "paras": []
+        },
+        {
+          "type": "moments",
+          "label": "Decisions",
+          "title": "Key design moments",
+          "items": [
+            {
+              "kind": "Tradeoff",
+              "title": "Free orbit or camera rails",
+              "body": "Free orbit tested as more fun for the first minute and worse for everything after — people got lost behind geometry and never found the drop.",
+              "chose": {
+                "k": "We shipped",
+                "v": "Rails with local look-around. Movement is constrained to authored paths; the camera can still pan inside each stop."
+              },
+              "passed": {
+                "k": "We passed on",
+                "v": "Full orbit. It made every object a potential dead end and doubled the collision work."
+              },
+              "call": "Exploration only reads as exploration if you can always find your way back. Rails cost novelty and bought comprehension."
+            },
+            {
+              "kind": "Controversial",
+              "title": "Hiding the drop behind interaction",
+              "body": "Product marketing wanted the release visible on load. We wanted it earned — two taps in, behind a door.",
+              "chose": {
+                "k": "We shipped",
+                "v": "Earned placement, with a persistent pill that jumps you straight to the drop if you want the shortcut."
+              },
+              "passed": {
+                "k": "We passed on",
+                "v": "A hero card on load. It answered the whole page in one glance."
+              },
+              "call": "The compromise held: the shortcut protected conversion, and the room still had a secret in it."
+            },
+            {
+              "kind": "Decision",
+              "title": "A hard 60fps floor on mid-tier Android",
+              "body": "Frame rate was treated as a design constraint, not a QA pass. Everything past the budget had to justify itself against something already in the scene.",
+              "chose": {
+                "k": "We shipped",
+                "v": "One dynamic light, baked ambient occlusion, instanced props, and a dithered shadow catcher instead of real-time shadows."
+              },
+              "passed": {
+                "k": "We passed on",
+                "v": "Real-time shadows and post-processing bloom."
+              },
+              "call": "The dither ended up defining the look of the whole thing. The constraint became the style."
+            }
+          ],
+          "paras": []
+        },
+        {
+          "type": "assets",
+          "label": "Payoff",
+          "title": "Final artifacts",
+          "items": [
+            {
+              "caption": "The room at launch",
+              "span": 12,
+              "ratio": "16 / 9"
+            },
+            {
+              "caption": "Live event state — 40k concurrent",
+              "span": 6,
+              "ratio": "3 / 2"
+            },
+            {
+              "caption": "Unlock sequence",
+              "span": 6,
+              "ratio": "3 / 2"
+            }
+          ],
+          "paras": []
+        },
+        {
+          "type": "impact",
+          "label": "Impact",
+          "title": "What it moved",
+          "note": "Measured over the 30-day campaign window against the prior year’s equivalent page.",
+          "items": [
+            {
+              "n": 4.7,
+              "suffix": "×",
+              "k": "Session length",
+              "note": "vs. the previous Air Max Day page"
+            },
+            {
+              "n": 61,
+              "suffix": "%",
+              "k": "Returned within the month",
+              "note": "driven by scheduled events"
+            },
+            {
+              "n": 60,
+              "suffix": "fps",
+              "k": "Held on mid-tier Android",
+              "note": "p95 across the launch window"
+            }
+          ],
+          "paras": []
+        },
+        {
+          "type": "reflection",
+          "label": "Reflection",
+          "title": "What I’d do differently",
+          "paras": [
+            "The authoring layer arrived late, so the first two events were hand-placed by engineers. If I ran it again the CMS schema would come before the geometry — the room only pays off if the team can furnish it without us.",
+            "I’d also cut a third of the props. The scene was legible at forty objects and busy at sixty, and we found that out after the shadow work."
+          ]
+        }
+      ],
+      "index": {
+        "category": "work",
+        "shape": "sphere",
+        "glyphSrc": "",
+        "summary": "An explorable 3D world built around Max, with hidden details and live events."
+      },
+      "archive": {
+        "client": "Nike .Swoosh",
+        "role": "Front End Lead",
+        "year": "2025",
+        "liveLink": "https://www.swoosh.nike/m/maxs-lab"
+      }
+    },
+    "Defenders of Dogewood": {
+      "display": "Defenders of Dogewood",
+      "tagline": "A browser adventure rebuilt with React and animated 3D assets.",
+      "cover": "Cover — adventure screen, character idle loop",
+      "coverSrc": "",
+      "meta": [
+        {
+          "k": "Timeline",
+          "v": "3 months · 2022"
+        },
+        {
+          "k": "Scope",
+          "v": "Engineer · front-end rebuild, animation system"
+        },
+        {
+          "k": "Worked with",
+          "v": "1 designer, 1 back-end engineer, community team"
+        },
+        {
+          "k": "Stack",
+          "v": "React, Three.js, Web3"
+        }
+      ],
+      "blocks": [
+        {
+          "type": "text",
+          "label": "Context",
+          "title": "Why it exists",
+          "paras": [
+            "An existing browser game with a live community and a codebase that could no longer be changed safely. The rebuild had to happen without a content freeze — the community expected weekly updates throughout."
+          ]
+        },
+        {
+          "type": "moments",
+          "label": "Decisions",
+          "title": "One decision worth framing",
+          "items": [
+            {
+              "kind": "Tradeoff",
+              "title": "Rewrite behind a flag or ship screen by screen",
+              "body": "A parallel rewrite is cleaner and invisible until it lands. Shipping screen by screen is messier and gets feedback every week.",
+              "chose": {
+                "k": "We shipped",
+                "v": "Screen by screen, oldest-first, with the two codebases sharing a state adapter."
+              },
+              "passed": {
+                "k": "We passed on",
+                "v": "A parallel rewrite with a single cutover."
+              },
+              "call": "Live communities punish silence more than they punish seams."
+            }
+          ],
+          "paras": []
+        },
+        {
+          "type": "assets",
+          "label": "Assets",
+          "title": "Selected captures",
+          "items": [
+            {
+              "caption": "Adventure screen",
+              "span": 7,
+              "ratio": "16 / 10"
+            },
+            {
+              "caption": "Character animation set",
+              "span": 5,
+              "ratio": "16 / 10"
+            }
+          ],
+          "paras": []
+        },
+        {
+          "type": "reflection",
+          "label": "Reflection",
+          "title": "End note",
+          "paras": [
+            "The state adapter outlived both codebases. Seams you design on purpose are assets."
+          ]
+        }
+      ],
+      "index": {
+        "category": "personal",
+        "shape": "poster",
+        "glyphSrc": "",
+        "summary": "A browser adventure rebuilt with React and animated 3D assets."
+      },
+      "archive": {
+        "client": "Dogewood",
+        "role": "Engineer",
+        "year": "2022",
+        "liveLink": "https://web.archive.org/web/20220506004107/https://app.dogewoodnft.com/"
+      }
+    },
+    "Candid Chat Agent": {
+      "display": "Candid Chat Agent",
+      "tagline": "",
+      "cover": "Cover — Candid Chat Agent",
+      "coverSrc": "",
+      "meta": [],
+      "blocks": [
+        {
+          "type": "text",
+          "label": "",
+          "title": "",
+          "note": "",
+          "paras": [],
+          "pull": ""
+        }
+      ],
+      "index": {
+        "category": "work",
+        "shape": "rings",
+        "glyphSrc": "",
+        "summary": "Agentic chat experience that exposes automatic workflows for the public sector."
+      },
+      "archive": {
+        "client": "Candid",
+        "role": "Frontend Lead",
+        "year": "2026",
+        "liveLink": ""
+      }
+    },
+    "Minecraft Clone": {
+      "index": {
+        "category": "personal",
+        "shape": "sphere",
+        "glyphSrc": "/cursors/levels/mc-spinning-block-L6.webm"
+      }
+    },
+    "SNK-Y Bot": {
+      "index": {
+        "category": "personal",
+        "shape": "rings",
+        "glyphSrc": "/cursors/levels/battlebot_run-L6.webm"
+      }
+    }
+  },
+  "order": {
+    "work": [
+      "Candid Chat Agent",
+      "Max's Lab",
+      "EA Sports FC Partner Page",
+      ".Swoosh 404",
+      "TINAJ Collection Listing Page",
+      "Our Force 1 Poster Content Display Page"
+    ],
+    "personal": [
+      "Moodie",
+      "Minecraft Clone",
+      "Anonymice",
+      "Defenders of Dogewood",
+      "SNK-Y Bot"
+    ]
+  }
 }

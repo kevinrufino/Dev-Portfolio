@@ -48,6 +48,25 @@ const BLOCK_TYPES = [
 ];
 
 const RATIOS = ['16 / 10', '4 / 3', '3 / 2', '1 / 1', '9 / 16', 'auto'];
+
+// The rail's groups, in the order the works pane hands them to a reader: the
+// two lists it toggles between, then everything the site is not showing.
+// The three that make the line under a title in the works pane, and the link
+// the project page's `live` control points at. Labelled rather than keyed:
+// they were raw field names, which said nothing about where any of them
+// showed up.
+const ARCHIVE_FIELDS = [
+  { key: 'client', label: 'Client', hint: 'first' },
+  { key: 'role', label: 'Role', hint: 'second' },
+  { key: 'year', label: 'Year', hint: 'third' },
+  { key: 'liveLink', label: 'Live link', hint: 'the ↗ on the project page' },
+];
+
+const LISTS = [
+  { key: 'work', label: 'Work', note: 'nothing in this list' },
+  { key: 'personal', label: 'Personal', note: 'nothing in this list' },
+  { key: 'unlisted', label: 'Not listed', note: 'nothing retired or unlisted' },
+];
 const SHAPES = ['sphere', 'rings', 'poster'];
 
 const blankBlock = type => {
@@ -180,7 +199,22 @@ const Rows = ({ items, onChange, render, onAdd, addLabel }) => (
 // ── the page ────────────────────────────────────────────────────────────────
 
 const Studio = () => {
-  const [drafts, setDrafts] = useState(() => loadDraft() || {});
+  // One draft, two halves: the projects you have edited, and the order the
+  // works pane should list them in. The order is not a property of any project
+  // — it is the relationship between them — so it sits beside them rather than
+  // being scattered across ten records as a rank each.
+  const [draft, setDraft] = useState(() => {
+    const saved = loadDraft() || {};
+    return { projects: saved.projects || {}, order: saved.order || {} };
+  });
+  const drafts = draft.projects;
+  const commit = useCallback(mutate => {
+    setDraft(previous => {
+      const next = mutate(previous);
+      saveDraft(next);
+      return next;
+    });
+  }, []);
   // The seed plus anything the draft has added. A project invented here is a
   // first-class row from the moment it is named, so the rest of the editor
   // does not have to know whether it came from the repo or from this session.
@@ -199,6 +233,15 @@ const Studio = () => {
     drafts[current] ||
     (SEED_TITLES.has(current) ? seedProject(current) : blankProject(current));
   const retired = Boolean(drafts[current]?.removed);
+  // Exactly how the works pane will join them, shown back so the three fields
+  // above read as one line rather than three unrelated boxes.
+  const metaLine = [
+    project.archive.client,
+    project.archive.role,
+    project.archive.year,
+  ]
+    .filter(Boolean)
+    .join(' / ');
   const slug = toSlug(current);
 
   // Deleting the project you were looking at has to leave you somewhere.
@@ -224,17 +267,77 @@ const Studio = () => {
 
   const update = useCallback(
     mutate => {
-      setDrafts(previous => {
-        const base = previous[current] || seedProject(current);
-        const next = { ...previous, [current]: mutate(clone(base)) };
-        saveDraft(next);
-        return next;
+      commit(previous => {
+        const base =
+          previous.projects[current] ||
+          (SEED_TITLES.has(current)
+            ? seedProject(current)
+            : blankProject(current));
+        return {
+          ...previous,
+          projects: { ...previous.projects, [current]: mutate(clone(base)) },
+        };
       });
     },
-    [current],
+    [current, commit],
   );
 
   const setBlocks = blocks => update(p => ({ ...p, blocks }));
+
+  // ── the two lists, and where each project sits in them ────────────────────
+
+  // Which list a project is in RIGHT NOW: what the draft says if it says
+  // anything, and what the site is currently doing if it does not. A retired
+  // project is in neither, and neither is one the works pane never listed.
+  const listOf = useCallback(
+    title => {
+      const edited = drafts[title];
+      if (edited?.removed) return 'unlisted';
+      if (edited?.index?.category) return edited.index.category;
+      if (WORKS.work.some(row => row.title === title)) return 'work';
+      if (WORKS.personal.some(row => row.title === title)) return 'personal';
+      return 'unlisted';
+    },
+    [drafts],
+  );
+
+  // The rail, grouped and ordered exactly as the works pane will render it.
+  //
+  // With no order of its own each list falls back to the site's current one,
+  // so opening the studio shows what the site shows rather than an arbitrary
+  // arrangement you then have to fix. A title the order does not name sorts
+  // last — which is where a project lands when you move it between lists, and
+  // where a newly invented one starts.
+  const grouped = useMemo(() => {
+    const groups = { work: [], personal: [], unlisted: [] };
+    for (const title of titles) groups[listOf(title)].push(title);
+    for (const key of ['work', 'personal']) {
+      const published = draft.order[key]?.length
+        ? draft.order[key]
+        : WORKS[key].map(row => row.title);
+      const rank = title => {
+        const at = published.indexOf(title);
+        return at === -1 ? Infinity : at;
+      };
+      groups[key].sort((a, b) => rank(a) - rank(b));
+    }
+    return groups;
+  }, [titles, listOf, draft.order]);
+
+  // Swapping with a neighbour writes the WHOLE list back as the new order, so
+  // what is stored is always a complete, self-consistent arrangement rather
+  // than a patch against one the next edit might invalidate.
+  const move = (key, at, delta) => {
+    const list = grouped[key];
+    const to = at + delta;
+    if (to < 0 || to >= list.length) return;
+    const next = [...list];
+    [next[at], next[to]] = [next[to], next[at]];
+    commit(previous => ({
+      ...previous,
+      order: { ...previous.order, [key]: next },
+    }));
+  };
 
   // ── the list itself ───────────────────────────────────────────────────────
 
@@ -246,11 +349,10 @@ const Studio = () => {
       setStatus(`${name} is already in the list.`);
       return;
     }
-    setDrafts(previous => {
-      const next = { ...previous, [name]: blankProject(name) };
-      saveDraft(next);
-      return next;
-    });
+    commit(previous => ({
+      ...previous,
+      projects: { ...previous.projects, [name]: blankProject(name) },
+    }));
     setCurrent(name);
     setStatus(`Added ${name}. It reaches the site on the next export and apply.`);
   };
@@ -266,28 +368,29 @@ const Studio = () => {
       ? `Retire “${title}”? It stops being listed and its page stops resolving. The source stays in the repo.`
       : `Delete “${title}”? It only exists in this draft.`;
     if (!window.confirm(ask)) return;
-    setDrafts(previous => {
-      const next = { ...previous };
+    commit(previous => {
+      const projects = { ...previous.projects };
       if (seeded) {
-        next[title] = { ...(previous[title] || seedProject(title)), removed: true };
+        projects[title] = {
+          ...(previous.projects[title] || seedProject(title)),
+          removed: true,
+        };
       } else {
-        delete next[title];
+        delete projects[title];
       }
-      saveDraft(next);
-      return next;
+      return { ...previous, projects };
     });
     setStatus(seeded ? `${title} retired.` : `${title} deleted.`);
   };
 
   const restoreProject = title => {
-    setDrafts(previous => {
-      const next = { ...previous };
-      if (next[title]) {
-        const { removed: _gone, ...rest } = next[title];
-        next[title] = rest;
+    commit(previous => {
+      const projects = { ...previous.projects };
+      if (projects[title]) {
+        const { removed: _gone, ...rest } = projects[title];
+        projects[title] = rest;
       }
-      saveDraft(next);
-      return next;
+      return { ...previous, projects };
     });
     setStatus(`${title} is back in the list.`);
   };
@@ -347,11 +450,15 @@ const Studio = () => {
         })),
       };
     }
+    // The order goes out in full rather than as a delta. It is only titles, it
+    // is the one part of this file a human will read top to bottom, and a
+    // complete list cannot disagree with itself.
+    const order = { work: grouped.work, personal: grouped.personal };
     const files = [
       {
         name: 'projects.json',
         bytes: new TextEncoder().encode(
-          `${JSON.stringify({ projects }, null, 2)}\n`,
+          `${JSON.stringify({ projects, order }, null, 2)}\n`,
         ),
       },
     ];
@@ -611,7 +718,7 @@ const Studio = () => {
             onClick={() => {
               if (!window.confirm('Discard every local edit?')) return;
               clearDraft();
-              setDrafts({});
+              setDraft({ projects: {}, order: {} });
               setStatus('Draft cleared. The site’s current content is showing again.');
             }}
           >
@@ -623,23 +730,63 @@ const Studio = () => {
 
       <div className='studio-body'>
         <nav className='studio-list'>
-          {titles.map(title => {
-            const gone = Boolean(drafts[title]?.removed);
-            return (
-              <button
-                type='button'
-                key={title}
-                className={`${title === current ? 'is-on' : ''} ${
-                  gone ? 'is-gone' : ''
-                }`.trim()}
-                onClick={() => setCurrent(title)}
-              >
-                <span>{drafts[title]?.display || title}</span>
-                {gone && <em>retired</em>}
-                {!gone && drafts[title] && <em>edited</em>}
-              </button>
-            );
-          })}
+          {/* Grouped and ordered the way the works pane will render it, so the
+              rail is a preview of the index rather than a filing cabinet.
+              Unlisted comes last and is not orderable: nothing in it appears
+              on the site, and it exists so a retired project stays reachable
+              to restore. */}
+          {LISTS.map(({ key, label, note }) => (
+            <div className='studio-group' key={key}>
+              <p className='studio-group__label'>
+                {label}
+                <em>{grouped[key].length}</em>
+              </p>
+              {grouped[key].length === 0 && (
+                <p className='studio-group__empty'>{note}</p>
+              )}
+              {grouped[key].map((title, at) => {
+                const gone = Boolean(drafts[title]?.removed);
+                return (
+                  <div
+                    key={title}
+                    className={`studio-listrow ${
+                      title === current ? 'is-on' : ''
+                    } ${gone ? 'is-gone' : ''}`.trim()}
+                  >
+                    <button
+                      type='button'
+                      className='studio-listrow__pick'
+                      onClick={() => setCurrent(title)}
+                    >
+                      <span>{drafts[title]?.display || title}</span>
+                      {gone && <em>retired</em>}
+                      {!gone && drafts[title] && <em>edited</em>}
+                    </button>
+                    {key !== 'unlisted' && (
+                      <span className='studio-listrow__move'>
+                        <button
+                          type='button'
+                          disabled={at === 0}
+                          aria-label={`Move ${title} up`}
+                          onClick={() => move(key, at, -1)}
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type='button'
+                          disabled={at === grouped[key].length - 1}
+                          aria-label={`Move ${title} down`}
+                          onClick={() => move(key, at, 1)}
+                        >
+                          ↓
+                        </button>
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
           <button type='button' className='studio-add' onClick={addProject}>
             + New project
           </button>
@@ -787,8 +934,8 @@ const Studio = () => {
               />
             </Field>
             <div className='studio-inline'>
-              {['client', 'role', 'year', 'liveLink'].map(key => (
-                <Field key={key} label={key}>
+              {ARCHIVE_FIELDS.map(({ key, label, hint }) => (
+                <Field key={key} label={label} hint={hint}>
                   <input
                     value={project.archive[key]}
                     onChange={e =>
@@ -798,6 +945,10 @@ const Studio = () => {
                 </Field>
               ))}
             </div>
+            <p className='studio-hint'>
+              Client, role and year are the line under the title in the works
+              pane, joined with slashes — {metaLine || 'nothing set yet'}
+            </p>
           </section>
 
           <section className='studio-card'>
