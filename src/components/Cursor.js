@@ -1,116 +1,163 @@
-/* eslint-disable react/prop-types */
+import { useEffect, useRef } from 'react';
+import { aimState } from '../utils/cursorFx.js';
+
 /**
- * Custom cursor component with animated effects and project-specific cursors
+ * The page cursor.
  *
- * Follows the mouse with a smooth trailing motion and swaps to a
- * project-specific animated cursor on hover.
+ * A DOM arrow under `mix-blend-mode: difference` rather than a CSS
+ * `cursor: url()` bitmap. The page crosses four grounds — acid hero, paper
+ * intro, the projects index, charcoal footer — and a fixed-colour bitmap
+ * cursor has to pick one of them to be legible against. Difference blending
+ * inverts against whatever is underneath, so one white arrow reads on all
+ * four.
  *
- * Performance: pointer tracking writes to refs and the position is applied
- * via a requestAnimationFrame lerp directly on the element's transform — so
- * moving the mouse never triggers a React re-render. The rAF loop only runs
- * while a project cursor is actually active; otherwise the component renders
- * nothing and does no per-frame work.
+ * Position is written straight to the element's transform from the pointer
+ * event, so moving the mouse never costs a React render.
  *
- * @component
- * @param {Object} props - Component props
- * @param {string} props.cursor - Current cursor state/type
- * @returns {JSX.Element|null} The custom cursor element, or null when inactive
+ * The arrow also AIMS. When the pointer comes within range of something that
+ * wants to be found, `cursorFx` publishes the direction of it and the arrow
+ * turns to point that way, like a needle — from wherever the hand has left
+ * it, and pivoting on its own tip so the tip never leaves the pointer. The
+ * position is never touched: the only thing a gravity field changes is which
+ * way the cursor is looking.
+ *
+ * Bails out entirely for coarse pointers (there is no cursor to replace on
+ * touch) and for reduced motion, both of which leave the native cursor in
+ * place — `cursor: none` is only applied under the same `(pointer: fine)`
+ * query in index.css.
  */
-import React, { useRef, useEffect } from 'react';
-import spinningShoe from '../assets/404spinning-asset.gif';
-import bot from '../assets/battlebot_run.gif';
-import doge from '../assets/dogewood-gif.gif';
-import mc from '../assets/mc-spinning-block.gif';
-import mice from '../assets/mice-gif.gif';
 
-/** Map of cursor state → { img, style } for project-specific cursors */
-const CURSORS = {
-  "Max's Lab": {
-    img: spinningShoe,
-    style: { filter: 'brightness(1.2) hue-rotate(40deg)' },
-  },
-  'Minecraft Clone': { img: mc },
-  '.Swoosh 404': { img: spinningShoe },
-  'Defenders of Dogewood': { img: doge },
-  Anonymice: { img: mice },
-  'SNK-Y Bot': { img: bot },
-  'EA Sports FC Partner Page': {
-    img: spinningShoe,
-    style: { filter: 'brightness(1.2) hue-rotate(300deg)' },
-  },
-  'TINAJ Collection Listing Page': {
-    img: spinningShoe,
-    style: { filter: 'brightness(1.2) hue-rotate(150deg) grayscale(1)' },
-  },
-  'Our Force 1 Poster Content Display Page': {
-    img: spinningShoe,
-    style: { filter: 'brightness(1.2) hue-rotate(250deg)' },
-  },
-};
+// Which way the drawn arrow points when nothing is pulling on it: up and to
+// the left, the direction its own tip faces.
+const REST_ANGLE = (-135 * Math.PI) / 180;
+// The tip, in the 34px box. The SVG's point sits at (4.04, 4.04) of a 24-unit
+// viewBox, and rotation has to pivot there or the arrow swings off the
+// pointer as it turns.
+const TIP = (4.04 / 24) * 34;
 
-const Cursor = ({ cursor }) => {
+const Cursor = () => {
   const elRef = useRef(null);
-  const target = useRef({ x: 0, y: 0 });
-  const pos = useRef({ x: 0, y: 0 });
-  const rafRef = useRef(0);
+  const artRef = useRef(null);
 
-  const active = CURSORS[cursor];
-
-  // Track the pointer in a ref — no state, so no re-render on every move.
   useEffect(() => {
-    const onMove = e => {
-      target.current.x = e.pageX;
-      target.current.y = e.pageY;
+    const el = elRef.current;
+    const art = artRef.current;
+    if (!el || !art) return undefined;
+
+    const fine = window.matchMedia('(pointer: fine)');
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)');
+    if (!fine.matches || still.matches) {
+      el.style.display = 'none';
+      return undefined;
+    }
+
+    let x = -100;
+    let y = -100;
+    let down = false;
+    let shown = false;
+    let drawn = -999;
+
+    const place = () => {
+      el.style.transform = `translate3d(${x - 4}px, ${y - 4}px, 0)`;
     };
-    window.addEventListener('mousemove', onMove, { passive: true });
-    return () => window.removeEventListener('mousemove', onMove);
-  }, []);
 
-  // Smooth trailing follow via rAF lerp. Only runs while a cursor is active.
-  useEffect(() => {
-    if (!active) return undefined;
+    // The turn is the only part that needs a frame loop: the aim eases toward
+    // its target on its own clock, so the arrow has to be redrawn even while
+    // the mouse is perfectly still.
+    const turn = () => {
+      const { angle, weight } = aimState();
+      // Shortest way round, or the arrow takes the long way about whenever a
+      // target sits just across the -180/180 seam.
+      let delta = (angle - REST_ANGLE) % (Math.PI * 2);
+      if (delta > Math.PI) delta -= Math.PI * 2;
+      if (delta < -Math.PI) delta += Math.PI * 2;
+      const deg = (delta * weight * 180) / Math.PI;
+      if (Math.abs(deg - drawn) < 0.15) return;
+      drawn = deg;
+      art.style.transform =
+        `rotate(${deg.toFixed(2)}deg)` + (down ? ' scale(.94)' : '');
+    };
 
-    // Snap to the live pointer on activation so it doesn't fly in from (0,0).
-    pos.current.x = target.current.x;
-    pos.current.y = target.current.y;
-
+    let raf = 0;
     const tick = () => {
-      pos.current.x += (target.current.x - pos.current.x) * 0.18;
-      pos.current.y += (target.current.y - pos.current.y) * 0.18;
-      const el = elRef.current;
-      if (el) {
-        el.style.transform = `translate3d(${pos.current.x}px, ${pos.current.y}px, 0)`;
-      }
-      rafRef.current = requestAnimationFrame(tick);
+      raf = requestAnimationFrame(tick);
+      if (shown) turn();
     };
-    rafRef.current = requestAnimationFrame(tick);
+    raf = requestAnimationFrame(tick);
 
-    return () => cancelAnimationFrame(rafRef.current);
-  }, [active]);
+    const onMove = event => {
+      x = event.clientX;
+      y = event.clientY;
+      if (!shown) {
+        shown = true;
+        el.style.opacity = '1';
+      }
+      place();
+    };
+    const press = value => {
+      down = value;
+      drawn = -999;
+      turn();
+    };
+    // Hide when the pointer leaves the document, so the arrow isn't stranded
+    // at the last edge position while the user is in another window.
+    const onLeave = () => {
+      shown = false;
+      el.style.opacity = '0';
+    };
 
-  if (!active) return null;
+    const onDown = () => press(true);
+    const onUp = () => press(false);
+
+    window.addEventListener('pointermove', onMove, { passive: true });
+    window.addEventListener('pointerdown', onDown, { passive: true });
+    window.addEventListener('pointerup', onUp, { passive: true });
+    document.addEventListener('pointerleave', onLeave);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerdown', onDown);
+      window.removeEventListener('pointerup', onUp);
+      document.removeEventListener('pointerleave', onLeave);
+    };
+  }, []);
 
   return (
     <div
       ref={elRef}
+      aria-hidden='true'
       style={{
-        position: 'absolute',
+        position: 'fixed',
         top: 0,
         left: 0,
-        width: 150,
-        height: 150,
-        overflow: 'hidden',
         zIndex: 9999,
+        width: 34,
+        height: 34,
         pointerEvents: 'none',
+        mixBlendMode: 'difference',
+        opacity: 0,
         willChange: 'transform',
-        ...active.style,
       }}
     >
-      <img
-        src={active.img}
-        className='h-full w-full object-cover overflow-hidden'
-        alt=''
-      />
+      <svg
+        ref={artRef}
+        width='34'
+        height='34'
+        viewBox='0 0 24 24'
+        fill='none'
+        stroke='#ffffff'
+        strokeWidth='2.35'
+        strokeLinecap='round'
+        strokeLinejoin='round'
+        style={{
+          display: 'block',
+          transformOrigin: `${TIP}px ${TIP}px`,
+          willChange: 'transform',
+        }}
+      >
+        <path d='M4.037 4.688a.495.495 0 0 1 .651-.651l16 6.5a.5.5 0 0 1-.063.947l-6.124 1.58a2 2 0 0 0-1.438 1.435l-1.579 6.126a.5.5 0 0 1-.947.063z' />
+      </svg>
     </div>
   );
 };

@@ -22,7 +22,6 @@
     "react-spring": "^9.7.5",
     "simplex-noise": "^4.0.1",
     "three": "^0.159.0",
-    "typewriter-effect": "^2.21.0",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
@@ -30,7 +29,8 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "format": "prettier \"src/**/*.{js,html}\" --write"
+    "format": "prettier \"src/**/*.{js,html}\" --write",
+    "studio:apply": "node scripts/apply-studio-export.mjs"
   },
   "engines": {
     "node": "24.x"

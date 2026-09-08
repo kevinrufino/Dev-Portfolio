@@ -1,16 +1,12 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Reveal from './Reveal.js';
+import PixelTrail from './PixelTrail.js';
+import { goToSection } from '../utils/navigateToSection.js';
 
 const footerLinks = [
-  {
-    href: 'mailto:kevinrufino97@gmail.com',
-    label: 'Email',
-  },
-  {
-    href: "./Kevin Rufino's Resume.pdf",
-    label: 'Resume',
-    isExternal: true,
-  },
+  { href: 'mailto:kevinrufino97@gmail.com', label: 'Email' },
+  { href: "./Kevin Rufino's Resume.pdf", label: 'Resume', isExternal: true },
   {
     href: 'https://www.linkedin.com/in/kevinrufino/',
     label: 'LinkedIn',
@@ -23,270 +19,141 @@ const footerLinks = [
   },
 ];
 
-const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
-
-const noise = seed => {
-  const value = Math.sin(seed) * 10000;
-  return value - Math.floor(value);
-};
-
-const smoothNoise = (x, y) => {
-  const xi = Math.floor(x);
-  const yi = Math.floor(y);
-  const xf = x - xi;
-  const yf = y - yi;
-  const easeX = xf * xf * (3 - 2 * xf);
-  const easeY = yf * yf * (3 - 2 * yf);
-
-  const top =
-    noise(xi * 12.9898 + yi * 78.233) * (1 - easeX) +
-    noise((xi + 1) * 12.9898 + yi * 78.233) * easeX;
-  const bottom =
-    noise(xi * 12.9898 + (yi + 1) * 78.233) * (1 - easeX) +
-    noise((xi + 1) * 12.9898 + (yi + 1) * 78.233) * easeX;
-
-  return top * (1 - easeY) + bottom * easeY;
-};
-
-const PixelSmiley = () => (
-  <div className='footer-pixel-smiley' aria-hidden='true'>
-    <span className='footer-pixel-smiley__eye footer-pixel-smiley__eye--left' />
-    <span className='footer-pixel-smiley__eye footer-pixel-smiley__eye--right' />
-    <span className='footer-pixel-smiley__mouth footer-pixel-smiley__mouth--left' />
-    <span className='footer-pixel-smiley__mouth footer-pixel-smiley__mouth--center' />
-    <span className='footer-pixel-smiley__mouth footer-pixel-smiley__mouth--right' />
-  </div>
-);
-
+/**
+ * Section 03 — contact.
+ *
+ * Charcoal rather than ultra: the page has spent three sections in acid and
+ * blue, and this is where it lands.
+ *
+ * The footer does not scroll. It is fixed to the bottom of the viewport behind
+ * the page, and the content above — the works section, which is opaque — rides
+ * up over it and off, so the footer is uncovered rather than arriving. The
+ * page content carries a bottom margin the height of this footer, which is the
+ * scroll distance that performs the reveal.
+ *
+ * That makes the works section itself the curtain, which is why there is no
+ * curtain element in here any more: two curtains would fight, and only one of
+ * them can be the thing the reader is actually looking at.
+ *
+ * The measured height is published as `--footer-reveal-h` for the content
+ * above to reserve. Measured rather than assumed because the contact block
+ * rewraps at every breakpoint.
+ */
 export const Footer = ({ setCursor }) => {
   const footerRef = useRef(null);
-  const [isCurtainLifted, setIsCurtainLifted] = useState(false);
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
 
+  // Publish the footer's height so the content above can reserve exactly that
+  // much scroll for the reveal — too little and the footer is never fully
+  // uncovered, too much and the page ends on dead space.
   useEffect(() => {
     const node = footerRef.current;
     if (!node) return undefined;
 
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
-      setIsCurtainLifted(true);
-      return undefined;
-    }
+    const publish = () => {
+      document.documentElement.style.setProperty(
+        '--footer-reveal-h',
+        `${Math.round(node.offsetHeight)}px`,
+      );
+    };
+    publish();
 
-    if (!('IntersectionObserver' in window)) {
-      setIsCurtainLifted(true);
-      return undefined;
-    }
-
-    const observer = new IntersectionObserver(
-      entries => {
-        if (!entries[0]?.isIntersecting) return;
-        setIsCurtainLifted(true);
-        observer.disconnect();
-      },
-      { threshold: 0.35, rootMargin: '0px 0px -12% 0px' },
-    );
-
+    const observer = new ResizeObserver(publish);
     observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    const node = footerRef.current;
-    if (!node) return undefined;
-
-    let frame = 0;
-    const updateSmileyOffset = () => {
-      frame = 0;
-      const rect = node.getBoundingClientRect();
-      const viewportHeight =
-        window.innerHeight || document.documentElement.clientHeight;
-      const progress = clamp(
-        (viewportHeight - rect.top) / viewportHeight,
-        0,
-        1,
-      );
-      const offset = 34 + progress * 106;
-
-      node.style.setProperty('--footer-smiley-progress', progress.toFixed(3));
-      node.style.setProperty('--footer-smiley-offset', `${offset.toFixed(1)}%`);
-    };
-
-    const requestUpdate = () => {
-      if (frame) return;
-      frame = requestAnimationFrame(updateSmileyOffset);
-    };
-
-    updateSmileyOffset();
-    window.addEventListener('scroll', requestUpdate, { passive: true });
-    window.addEventListener('resize', requestUpdate);
-
+    window.addEventListener('resize', publish);
     return () => {
-      if (frame) cancelAnimationFrame(frame);
-      window.removeEventListener('scroll', requestUpdate);
-      window.removeEventListener('resize', requestUpdate);
+      observer.disconnect();
+      window.removeEventListener('resize', publish);
+      document.documentElement.style.removeProperty('--footer-reveal-h');
     };
   }, []);
-
-  useEffect(() => {
-    const node = footerRef.current;
-    if (!node) return undefined;
-
-    let pointerFrame = 0;
-    let gridX = 0;
-    let gridY = 0;
-
-    const updateGridLight = () => {
-      pointerFrame = 0;
-      const fieldX = gridX / 86;
-      const fieldY = gridY / 86;
-      const wave =
-        Math.sin(fieldX * 1.7 + fieldY * 0.55) * 0.5 +
-        Math.cos(fieldY * 1.45 - fieldX * 0.35) * 0.5;
-      const grain = smoothNoise(fieldX, fieldY);
-      const lobeOne = smoothNoise(fieldX + 7.2, fieldY - 3.4);
-      const lobeTwo = smoothNoise(fieldX - 2.6, fieldY + 6.1);
-      const lobeThree = smoothNoise(fieldX + 3.8, fieldY + 2.5);
-
-      node.style.setProperty('--footer-grid-x', `${gridX.toFixed(1)}px`);
-      node.style.setProperty('--footer-grid-y', `${gridY.toFixed(1)}px`);
-      node.style.setProperty(
-        '--footer-grid-line-alpha',
-        clamp(0.42 + grain * 0.12 + wave * 0.04, 0.34, 0.56).toFixed(3),
-      );
-      node.style.setProperty(
-        '--footer-grid-mask-alpha',
-        clamp(0.58 + grain * 0.16 + wave * 0.05, 0.48, 0.74).toFixed(3),
-      );
-      node.style.setProperty(
-        '--footer-grid-lobe-1-x',
-        `${(gridX + Math.sin(fieldY * 1.8) * 78).toFixed(1)}px`,
-      );
-      node.style.setProperty(
-        '--footer-grid-lobe-1-y',
-        `${(gridY + Math.cos(fieldX * 1.4) * 58).toFixed(1)}px`,
-      );
-      node.style.setProperty(
-        '--footer-grid-lobe-2-x',
-        `${(gridX + Math.cos(fieldY * 1.2 + 1.4) * 96).toFixed(1)}px`,
-      );
-      node.style.setProperty(
-        '--footer-grid-lobe-2-y',
-        `${(gridY + Math.sin(fieldX * 1.5 - 0.6) * 72).toFixed(1)}px`,
-      );
-      node.style.setProperty(
-        '--footer-grid-lobe-3-x',
-        `${(gridX + Math.sin((fieldX + fieldY) * 0.9) * 54).toFixed(1)}px`,
-      );
-      node.style.setProperty(
-        '--footer-grid-lobe-3-y',
-        `${(gridY + Math.cos((fieldX - fieldY) * 1.1) * 92).toFixed(1)}px`,
-      );
-      node.style.setProperty(
-        '--footer-grid-lobe-1-alpha',
-        clamp(0.2 + lobeOne * 0.32, 0.18, 0.48).toFixed(3),
-      );
-      node.style.setProperty(
-        '--footer-grid-lobe-2-alpha',
-        clamp(0.16 + lobeTwo * 0.28, 0.14, 0.4).toFixed(3),
-      );
-      node.style.setProperty(
-        '--footer-grid-lobe-3-alpha',
-        clamp(0.12 + lobeThree * 0.24, 0.1, 0.32).toFixed(3),
-      );
-    };
-
-    const requestGridLight = event => {
-      const rect = node.getBoundingClientRect();
-      gridX = event.clientX - rect.left;
-      gridY = event.clientY - rect.top;
-      node.style.setProperty('--footer-grid-opacity', '1');
-
-      if (pointerFrame) return;
-      pointerFrame = requestAnimationFrame(updateGridLight);
-    };
-
-    const hideGridLight = () => {
-      node.style.setProperty('--footer-grid-opacity', '0');
-    };
-
-    node.addEventListener('pointerenter', requestGridLight);
-    node.addEventListener('pointermove', requestGridLight);
-    node.addEventListener('pointerleave', hideGridLight);
-
-    return () => {
-      if (pointerFrame) cancelAnimationFrame(pointerFrame);
-      node.removeEventListener('pointerenter', requestGridLight);
-      node.removeEventListener('pointermove', requestGridLight);
-      node.removeEventListener('pointerleave', hideGridLight);
-    };
-  }, []);
-
-  const contactLinkClass =
-    'w-max hover:bg-acid hover:text-ultra transition-colors px-1 -mx-1 focus-visible:bg-acid focus-visible:text-ultra';
 
   return (
     <footer
       ref={footerRef}
-      className={`footer-curtain-stage relative mt-24 overflow-hidden bg-ultra text-acid ${
-        isCurtainLifted ? 'footer-curtain-stage--lifted' : ''
-      }`}
+      className='fixed inset-x-0 bottom-0 z-0 flex h-[100svh] min-h-[560px] w-full flex-col justify-start overflow-hidden bg-charcoal pt-[clamp(84px,11vh,150px)] text-charcoal-ink lg:justify-center lg:pt-0'
       id='contact'
       onMouseEnter={() => {
         setCursor?.('');
       }}
     >
-      <div className='footer-curtain' aria-hidden='true'>
-        <div className='footer-curtain__texture' />
-      </div>
+      <div className='grid-rule grid-rule--charcoal' aria-hidden='true' />
 
-      <PixelSmiley />
+      {/* The footer's own copy of the trail. It is fixed with a z-index, so
+          it is a stacking context nothing outside can paint into — the trail
+          has to be in here to end up between the charcoal and the type. */}
+      <PixelTrail
+        className='portfolio-pixel-trail--under'
+        clipTo='#contact'
+        zone='footer'
+      />
 
-      <div className='footer-curtain-content relative z-10 max-w-4xl m-auto flex min-h-[100svh] flex-col justify-center font-offbit101Bold px-4 md:px-0 py-14 md:py-20'>
+      <div className='relative z-10 mx-auto w-full max-w-[1440px] px-[clamp(24px,7.4vw,110px)]'>
         <Reveal>
-          <div className='flex items-center max-w-xl'>
-            <p className='font-offbitDot text-[10px] md:text-xs tracking-[0.3em] uppercase m-2 self-start mt-4 opacity-80'>
-              {'04 — Contact'}
+          {/* Half the width where there is width; all of it on a phone, where
+              the palm takes the bottom of the screen instead of the side. */}
+          <div className='min-w-[280px] max-w-none lg:max-w-[46%]'>
+            <p className='type-label mb-[26px] text-charcoal-muted'>
+              03 — Contact
             </p>
-          </div>
-          <div className='flex max-w-xl items-start'>
-            <p className='text-4xl md:text-7xl m-2 leading-[0.95]'>
-              {'Lets Connect'}
+            <h2 className='mb-[clamp(26px,3.4vh,36px)] font-offbit101Bold text-[clamp(44px,5.4vw,82px)] leading-[.92] tracking-[-.01em] text-charcoal-ink'>
+              {'Let’s connect.'}
+            </h2>
+            <p className='type-body mb-[clamp(30px,4vh,42px)] text-[15px] leading-[1.8] text-charcoal-muted'>
+              <strong className='font-medium text-charcoal-ink'>
+                Kevin Rufino
+              </strong>
+              <br />
+              Brooklyn, NY
             </p>
-            <img
-              src='/smile.svg'
-              alt='smile'
-              className='footer-contact-smile p-2 mt-1 md:mt-2'
-            />
-          </div>
-        </Reveal>
-        <div className='flex flex-col md:flex-row md:text-3xl m-2 md:m-4 w-max max-w-full'>
-          <img
-            src='/pixel-selfie.png'
-            alt="it's a me"
-            width={240}
-            className='m-2 h-[200px] w-[200px] md:h-[240px] md:w-[240px] object-cover border-2 border-acid shadow-hard-acid'
-          />
-          <div className='m-2'>
-            <p>{'Kevin Rufino'}</p>
-            <p>{'Brooklyn, NY'}</p>
-            <br />
-            <div className='flex flex-col'>
+
+            <nav
+              aria-label='Contact links'
+              className='grid w-max grid-cols-2 gap-x-[38px] gap-y-[14px]'
+            >
               {footerLinks.map(link => (
                 <a
-                  className={contactLinkClass}
+                  className='line-cta type-body text-[19px] text-[#dedbd0] transition-colors hover:text-charcoal-ink focus-visible:text-charcoal-ink'
+                  style={{ '--line-cta-ink': 'var(--acid)' }}
                   href={link.href}
                   key={link.label}
                   target={link.isExternal ? '_blank' : undefined}
                   rel={link.isExternal ? 'noreferrer' : undefined}
                 >
                   {link.label}
+                  <span aria-hidden='true' className='line-cta__arrow--diagonal'>
+                    ↗
+                  </span>
                 </a>
               ))}
-            </div>
+            </nav>
           </div>
-        </div>
-        <p className='text-xs md:text-2xl font-offbitDot text-center self-center m-2 pb-8 md:pb-12'>
-          {'* Designed and Developed by Kevin Rufino *'}
-        </p>
+        </Reveal>
+      </div>
+
+      {/* Baseline rule + credits, pinned to the bottom of the tall section. */}
+      <div
+        aria-hidden='true'
+        className='absolute bottom-[86px] left-0 right-0 z-10 mx-[clamp(24px,7.4vw,110px)] h-px bg-charcoal-rule sm:bottom-[62px]'
+      />
+      <div className='type-label absolute bottom-[18px] left-0 right-0 z-10 mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-x-4 gap-y-2 px-[clamp(24px,7.4vw,110px)] text-charcoal-muted'>
+        <span>Designed and developed by Kevin Rufino</span>
+        {/* The last hash on the page. `#home` put the destination in the URL,
+            so a reload dropped the reader back at whatever they had last
+            jumped to — and it hard-coded a route into a control that only ever
+            means "the top of this page". */}
+        <button
+          type='button'
+          onClick={() => goToSection(navigate, pathname, 'home')}
+          className='line-cta font-[inherit] text-[inherit] text-charcoal-muted'
+          style={{ '--line-cta-ink': 'var(--acid)' }}
+        >
+          Back to top
+          <span aria-hidden='true' className='line-cta__arrow--up'>
+            ↑
+          </span>
+        </button>
       </div>
     </footer>
   );

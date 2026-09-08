@@ -3,6 +3,9 @@ import PropTypes from 'prop-types';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { FirstNameComponent } from './Hero/components/FirstNameComponent.js';
 import { LastNameComponent } from './Hero/components/LastNameComponent.js';
+import { getLeafColliders, shakePalm } from './Palm/leafColliders.js';
+import { addSource } from '../utils/cursorFx.js';
+import { HERO_MIN_SCALE, HERO_SHRINK_PX } from '../utils/heroRunway.js';
 
 /**
  * Full-page physics canvas for the landing sequence.
@@ -25,6 +28,8 @@ import { LastNameComponent } from './Hero/components/LastNameComponent.js';
  */
 const ACID = '#F1F43B';
 const ULTRA = '#3e3bf4';
+// Fully transparent, spelled as a colour so the SVG's `fill` still parses.
+const CLEAR = '#00000000';
 
 // ── Firework burst (ported from the retired MatterJSCanvas) ──────────────────
 // Clicking a name sprite in the pile pops a pixel/cell firework at the hit
@@ -194,9 +199,25 @@ const ROW_CAP = 40; // sanity cap on the computed row count
 const GRAVITY_FILL = 1.8; // heavier gravity while the stack drops, so the fill reads fast
 const FILL_TIMEOUT_MS = 7000; // report "filled" even if a body never quite settles
 const FLOOR_T = 16; // floor bar thickness (collision only — invisible)
-const SCROLL_RANGE = 1.2; // fold-heights of scroll to fully open the floor
+// Fraction of the width that stays solid. The floor opens to the right only,
+// so the pile slides along the fixed left section and exits down the right
+// edge rather than dropping straight through a widening centre gap.
+const FLOOR_SPLIT = 0.42;
 const DRAIN_TICK_MS = 400; // wake/cull cadence while the floor is open
+// Leaf colliders: one static circle per frond sample. The palm emits three
+// samples for each of its ten fronds, so thirty is the exact count.
+const LEAF_COUNT = 30;
+const LEAF_RADIUS = 12;
+// The fronds deflect the pile on its way past, then get out of the way. Long
+// enough to read as a bounce; short enough that nothing sits parked in the
+// palm waiting for the window to close, which at five seconds it visibly did.
+const LEAF_WINDOW_MS = 2000;
+const LEAF_PARK = { x: -5000, y: -5000 };
 const CULL_MARGIN = 600; // px past the document bottom before a name is retired
+// A name landing on a frond shakes the tree; a pile grinding along one must
+// not hold it there. Long enough for the shake to ring out and be re-triggered
+// by the next name rather than the next contact.
+const SHAKE_THROTTLE_MS = 260;
 const IMPULSE_RADIUS_FRAC = 0.28; // click impulse reach, as a fraction of viewport width
 const IMPULSE_UP = 12; // upward kick strength on click
 const IMPULSE_PUSH = 8; // radial push strength on click
@@ -224,12 +245,20 @@ const svgToImage = (element, vb) => {
   });
 };
 
-const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
+const FillPhysicsCanvas = ({
+  active,
+  getSpawnRect,
+  onHandoff,
+  onFilled,
+  onDrained,
+}) => {
   const canvasRef = useRef(null);
   const onHandoffRef = useRef(onHandoff);
   const onFilledRef = useRef(onFilled);
+  const onDrainedRef = useRef(onDrained);
   onHandoffRef.current = onHandoff;
   onFilledRef.current = onFilled;
+  onDrainedRef.current = onDrained;
 
   useEffect(() => {
     if (!active) return undefined;
@@ -239,7 +268,12 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
 
     // Colorways follow NameInstance's convention:
     // Component(primaryColor=outline, secondaryColor=fill)
-    // filled = solid ultra (the loader's end state); unfilled = the outline variant.
+    //
+    // `filled` is solid ultra — the loader's end state. The other variant
+    // leaves the letterforms CLEAR rather than acid: painted yellow they only
+    // ever matched the hero's own ground, and the moment the pile left it the
+    // names carried a patch of the hero down onto the paper with them. Empty,
+    // the counters show whatever the names happen to be falling across.
     Promise.all([
       import('matter-js'),
       svgToImage(
@@ -247,7 +281,7 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
         FIRST_VB,
       ),
       svgToImage(
-        <FirstNameComponent primaryColor={ULTRA} secondaryColor={ACID} />,
+        <FirstNameComponent primaryColor={ULTRA} secondaryColor={CLEAR} />,
         FIRST_VB,
       ),
       svgToImage(
@@ -255,7 +289,7 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
         LAST_VB,
       ),
       svgToImage(
-        <LastNameComponent primaryColor={ULTRA} secondaryColor={ACID} />,
+        <LastNameComponent primaryColor={ULTRA} secondaryColor={CLEAR} />,
         LAST_VB,
       ),
     ]).then(
@@ -270,7 +304,23 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
 
         let W = window.innerWidth;
         let fold = window.innerHeight; // the hero fold — where the floor sits
-        let docH = Math.max(document.body.scrollHeight, fold);
+        // Names are retired at the top of the projects section, not at the end
+        // of the document. They belong to the landing: they fall through the
+        // hero and the intro and off the page, and they must never reach the
+        // works pane or the footer — both of which they would otherwise be
+        // drawn over, since this canvas sits above the sections.
+        //
+        // The boundary is always below the viewport while the reader is still
+        // in the intro, so nothing is ever seen to vanish.
+        const contentEnd = () => {
+          const works = document.getElementById('projects');
+          if (!works) return Math.max(document.body.scrollHeight, fold);
+          return Math.max(
+            works.getBoundingClientRect().top + window.scrollY,
+            fold,
+          );
+        };
+        let docH = contentEnd();
 
         const engine = Matter.Engine.create({ enableSleeping: true });
         // Heavier gravity while the stack drops in, so the fill animation is
@@ -309,17 +359,20 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
           friction: 0.05, // slippery so the pile slides off as it retracts
           render: invisible,
         };
+        // The left section never moves; only the right one slides away.
+        let leftW = W * FLOOR_SPLIT;
+        let rightW = W - leftW;
         const leftFloor = Matter.Bodies.rectangle(
-          W / 4,
+          leftW / 2,
           floorY,
-          W / 2,
+          leftW,
           FLOOR_T,
           floorOpts,
         );
         const rightFloor = Matter.Bodies.rectangle(
-          (3 * W) / 4,
+          leftW + rightW / 2,
           floorY,
-          W / 2,
+          rightW,
           FLOOR_T,
           floorOpts,
         );
@@ -343,7 +396,7 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
         // grows (images/videos below the fold change it) — it sets the depth a
         // falling name has to clear before it can be retired.
         const docObserver = new ResizeObserver(() => {
-          const h = Math.max(document.body.scrollHeight, fold);
+          const h = contentEnd();
           if (h === docH) return;
           docH = h;
         });
@@ -446,24 +499,59 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
         // mid-air over an open gap). Sleeping is only needed while the floor is
         // closed, for the fill gauge.
         let lastShift = 0;
+        let opened = false;
+
+        // How big the pile is drawn. One while it sits at full size in the
+        // hero, easing to HERO_MIN_SCALE across the shrink runway, then held
+        // there — once the bodies themselves have been scaled at the handoff,
+        // the drawing is 1:1 with the physics again.
+        let spriteScale = 1;
+        const shrinkNow = () =>
+          Math.min(1, Math.max(0, window.scrollY / HERO_SHRINK_PX));
+        const drawScale = () =>
+          opened ? 1 : 1 - (1 - HERO_MIN_SCALE) * shrinkNow();
+
         const wakeAll = () => {
           for (const { body } of sprites) Matter.Sleeping.set(body, false);
         };
         const updateFloor = () => {
-          const p = Math.min(
-            1,
-            Math.max(0, window.scrollY / (fold * SCROLL_RANGE)),
-          );
-          const shift = p * (W / 2);
+          // 0 while the pile is still shrinking in place, 1 once the runway
+          // is spent and it is time for it to go.
+          const p = window.scrollY >= HERO_SHRINK_PX ? 1 : 0;
+          // Leaving the hero takes the box apart: the floor and the right
+          // wall are removed outright, and only the left wall stays. From then
+          // on the pile is held up by nothing, and the only things in its way
+          // are the intro's copy column and the palm's fronds — so it falls
+          // down and, with nowhere to stop on the right, off that edge.
           engine.enableSleeping = p === 0;
-          if (shift !== lastShift) {
-            lastShift = shift;
-            Matter.Body.setPosition(leftFloor, { x: W / 4 - shift, y: floorY });
-            Matter.Body.setPosition(rightFloor, {
-              x: (3 * W) / 4 + shift,
-              y: floorY,
-            });
+          if (p > 0 && !opened) {
+            opened = true;
+            // Until now the pile has been drawn pinned to the viewport while
+            // the page scrolled behind it, and scaled about the middle of the
+            // screen. Move and scale the bodies to match exactly where they
+            // were last drawn, so the moment it starts to fall is the one
+            // frame where nothing jumps.
+            const k = HERO_MIN_SCALE;
+            const cx = W / 2;
+            const cy = fold / 2;
+            const drop = window.scrollY;
+            for (const sp of sprites) {
+              const b = sp.body;
+              Matter.Body.setPosition(b, {
+                x: cx + (b.position.x - cx) * k,
+                y: cy + (b.position.y - cy) * k + drop,
+              });
+              Matter.Body.scale(b, k, k);
+            }
+            spriteScale = k;
+            Matter.World.remove(world, [leftFloor, rightFloor, rightWall]);
+            // A pronounced lean, so the pile tips off whatever it lands on
+            // rather than balancing there. Gently sloped, names sat on the
+            // copy column for ten seconds or more before finding an edge.
+            engine.gravity.x = 0.7;
+            engine.gravity.y = 1.5;
           }
+          lastShift = p > 0 ? 1 : 0;
           if (p > 0) wakeAll();
         };
         updateFloor();
@@ -485,6 +573,9 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
           Matter.Render.stop(render);
           Matter.Runner.stop(runner);
           render.context.clearRect(0, 0, W, fold);
+          // The landing is over: the hero can be taken out of the document now
+          // without interrupting anything the reader was watching.
+          onDrainedRef.current?.();
         };
         const cullFallen = () => {
           const limit = docH + CULL_MARGIN;
@@ -508,26 +599,213 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
           cullFallen();
         }, DRAIN_TICK_MS);
 
+        // Static circles tracking the palm's fronds, parked far off-page and
+        // moved into place each step while the palm is in its intro pose. The
+        // palm registers itself as the provider; with no palm mounted the
+        // provider returns nothing and these simply stay parked.
+        const leafBodies = Array.from({ length: LEAF_COUNT }, () =>
+          Matter.Bodies.circle(LEAF_PARK.x, LEAF_PARK.y, LEAF_RADIUS, {
+            isStatic: true,
+            restitution: 0.42,
+            friction: 0.02,
+            render: invisible,
+          }),
+        );
+        Matter.World.add(world, leafBodies);
+
+        // A name that hits a frond shakes the tree.
+        //
+        // The collision is already in the solver — the names visibly deflect
+        // off the palm on their way down — so the only thing missing was the
+        // palm being told. Throttled, because a pile sliding along a frond
+        // generates contacts every step, and re-arming the shake on each of
+        // them would hold the tree at full amplitude instead of letting it
+        // ring out.
+        const leafSet = new Set(leafBodies);
+        let lastShakeAt = 0;
+        Matter.Events.on(engine, 'collisionStart', event => {
+          if (reduceMotion) return;
+          const now = performance.now();
+          if (now - lastShakeAt < SHAKE_THROTTLE_MS) return;
+          for (const pair of event.pairs) {
+            if (!leafSet.has(pair.bodyA) && !leafSet.has(pair.bodyB)) continue;
+            lastShakeAt = now;
+            shakePalm();
+            return;
+          }
+        });
+
+        // The intro's copy column, as a solid body. The names must never end
+        // up over the text, and the honest way to guarantee that is to make
+        // the text something they cannot pass through. Parked off-page until
+        // the intro is actually on screen.
+        const copyBody = Matter.Bodies.rectangle(
+          LEAF_PARK.x,
+          LEAF_PARK.y,
+          10,
+          10,
+          {
+            isStatic: true,
+            // Almost frictionless: this body exists to keep names off the
+            // text, not to collect them.
+            friction: 0.001,
+            restitution: 0.15,
+            render: invisible,
+          },
+        );
+        Matter.World.add(world, copyBody);
+        let copySize = { w: 10, h: 10 };
+
+        const trackCopyColumn = () => {
+          const copy = document.querySelector('[data-palm-clip]');
+          const intro = document.getElementById('intro');
+          if (!copy || !intro || !opened) {
+            if (copyBody.position.x !== LEAF_PARK.x) {
+              Matter.Body.setPosition(copyBody, LEAF_PARK);
+            }
+            return;
+          }
+          const r = copy.getBoundingClientRect();
+          if (r.height < 2 || r.bottom < 0 || r.top > window.innerHeight) {
+            if (copyBody.position.x !== LEAF_PARK.x) {
+              Matter.Body.setPosition(copyBody, LEAF_PARK);
+            }
+            return;
+          }
+          if (
+            Math.abs(r.width - copySize.w) > 2 ||
+            Math.abs(r.height - copySize.h) > 2
+          ) {
+            Matter.Body.scale(
+              copyBody,
+              r.width / copySize.w,
+              r.height / copySize.h,
+            );
+            copySize = { w: r.width, h: r.height };
+          }
+          Matter.Body.setPosition(copyBody, {
+            x: r.left + r.width / 2,
+            y: r.top + r.height / 2 + window.scrollY,
+          });
+        };
+
+        let drainStart = 0;
+        Matter.Events.on(engine, 'beforeUpdate', () => {
+          trackCopyColumn();
+          if (!drainStart && lastShift > 0) drainStart = performance.now();
+          // Live only for the length of the fall. The fronds are there to
+          // deflect the pile on its way past, and a static circle a name can
+          // deflect off is also one it can come to rest on — left permanently
+          // live, the pile ended up parked in the palm and never cleared.
+          const live =
+            drainStart && performance.now() - drainStart < LEAF_WINDOW_MS;
+          const colliders = live ? getLeafColliders(performance.now()) : [];
+          for (let i = 0; i < leafBodies.length; i++) {
+            const c = colliders[i];
+            const body = leafBodies[i];
+            if (!c) {
+              if (body.position.x !== LEAF_PARK.x) {
+                Matter.Body.setPosition(body, LEAF_PARK);
+              }
+              continue;
+            }
+            const scale = c.r / body.circleRadius;
+            if (Math.abs(scale - 1) > 0.02) {
+              Matter.Body.scale(body, scale, scale);
+              body.circleRadius = c.r;
+            }
+            Matter.Body.setPosition(body, { x: c.x, y: c.y });
+          }
+        });
+
         // Draw the name sprites each frame, bottom-aligned to the (shorter)
         // collision box. Bodies live in document coordinates; the canvas is a
         // fixed viewport slice, so shift everything up by scrollY.
         Matter.Events.on(render, 'afterRender', () => {
           const ctx = render.context;
-          const offset = window.scrollY;
+
+          // Two regimes.
+          //
+          // Before the pile is released it is pinned to the viewport and
+          // scaled about the middle of the screen: the page scrolls behind it
+          // while it shrinks in place, which is what makes the hero feel
+          // elongated rather than simply tall.
+          //
+          // After release the bodies have been moved and scaled to match, so
+          // this goes back to plain document-space drawing and the physics is
+          // what moves them.
+          const offset = opened ? window.scrollY : 0;
+          const k = drawScale();
+          const cx = W / 2;
+          const cy = fold / 2;
+
           ctx.save();
           ctx.translate(0, -offset);
           for (const { body, img, width, height } of sprites) {
             ctx.save();
-            ctx.translate(body.position.x, body.position.y);
+            if (opened) {
+              ctx.translate(body.position.x, body.position.y);
+            } else {
+              // Scale the whole composition toward the centre of the screen,
+              // not each name about its own middle — the pile has to hold its
+              // arrangement as it shrinks, or it just develops gaps.
+              ctx.translate(
+                cx + (body.position.x - cx) * k,
+                cy + (body.position.y - cy) * k,
+              );
+            }
             ctx.rotate(body.angle);
-            ctx.drawImage(img, -width / 2, drawTop, width, height);
+            const w = width * (opened ? spriteScale : k);
+            const h = height * (opened ? spriteScale : k);
+            const top = drawTop * (opened ? spriteScale : k);
+            ctx.drawImage(img, -w / 2, top, w, h);
             ctx.restore();
           }
-          // Bursts live in document coords too, so they ride the same offset.
           if (fireworks.length > 0) {
             drawFireworks(ctx, fireworks, performance.now());
           }
           ctx.restore();
+        });
+
+        // The names are canvas, so they cannot carry a hover of their own.
+        // They answer the cursor through a source instead: asked what is at a
+        // point, this reports the sprite drawn there, and the chip says what
+        // clicking it will do.
+        //
+        // The box is the one the sprite is actually DRAWN in, not the body's,
+        // because before the pile is released the two are different — the pile
+        // is pinned to the viewport and scaled while the page moves behind it.
+        const spriteBoxAt = (clientX, clientY) => {
+          const k = drawScale();
+          const scale = opened ? spriteScale : k;
+          const offset = opened ? window.scrollY : 0;
+          const cx = W / 2;
+          const cy = fold / 2;
+          for (let i = sprites.length - 1; i >= 0; i--) {
+            const sp = sprites[i];
+            const b = sp.body;
+            const bx = opened ? b.position.x : cx + (b.position.x - cx) * k;
+            const by = opened ? b.position.y : cy + (b.position.y - cy) * k;
+            const w = sp.width * scale;
+            const h = sp.height * scale;
+            const left = bx - w / 2;
+            const top = by - offset + drawTop * scale;
+            if (
+              clientX >= left &&
+              clientX <= left + w &&
+              clientY >= top &&
+              clientY <= top + h
+            ) {
+              return { left, top, right: left + w, bottom: top + h };
+            }
+          }
+          return null;
+        };
+
+        const dropSource = addSource((x, y) => {
+          if (stopped || sprites.length === 0) return null;
+          const geom = spriteBoxAt(x, y);
+          return geom ? { label: 'explode', geom } : null;
         });
 
         // Click anywhere to poke the pile: radial + upward impulse on nearby
@@ -648,11 +926,23 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
         const handleResize = () => {
           W = window.innerWidth;
           fold = window.innerHeight;
-          docH = Math.max(document.body.scrollHeight, fold);
+          docH = contentEnd();
           render.options.width = W;
           render.options.height = fold;
           render.canvas.width = W;
           render.canvas.height = fold;
+          // The split is a fraction of the width, so both sections have to be
+          // rebuilt at the new size before updateFloor re-places the right one.
+          const nextLeftW = W * FLOOR_SPLIT;
+          const nextRightW = W - nextLeftW;
+          Matter.Body.setPosition(leftFloor, {
+            x: nextLeftW / 2,
+            y: floorY,
+          });
+          Matter.Body.scale(leftFloor, nextLeftW / leftW, 1);
+          Matter.Body.scale(rightFloor, nextRightW / rightW, 1);
+          leftW = nextLeftW;
+          rightW = nextRightW;
           Matter.Body.setPosition(leftWall, { x: -30, y: 0 });
           Matter.Body.setPosition(rightWall, { x: W + 30, y: 0 });
           lastShift = -1; // force floor reposition on the next scroll tick
@@ -672,6 +962,7 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
         });
 
         teardown = () => {
+          dropSource();
           if (spawnTimer) clearInterval(spawnTimer);
           if (fillTimeout) clearTimeout(fillTimeout);
           clearInterval(drainTimer);
@@ -688,7 +979,24 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
           fireworks.length = 0;
         };
       },
-    );
+    ).catch(error => {
+      // Never strand the visitor on the loading screen.
+      //
+      // The landing sequence freezes scrolling until `onFilled` fires, and
+      // `onFilled` is only reached from inside the block above. If the
+      // matter-js chunk or one of the name rasterizations fails — an offline
+      // reload with a cold cache, a hashed chunk 404 after a redeploy — none
+      // of that runs, the loader overlay never unmounts, and the page is
+      // permanently stuck at 100%.
+      //
+      // So on failure, hand off and release anyway: the hero loses its pile
+      // of names and is simply empty, which is a survivable degradation, and
+      // the rest of the page becomes reachable.
+      if (cancelled) return;
+      console.error('Landing physics failed to load', error);
+      onHandoffRef.current?.();
+      onFilledRef.current?.();
+    });
 
     return () => {
       cancelled = true;
@@ -704,7 +1012,10 @@ const FillPhysicsCanvas = ({ active, getSpawnRect, onHandoff, onFilled }) => {
         top: 0,
         left: 0,
         pointerEvents: 'none',
-        zIndex: 0,
+        // Above the sections, like the palm. The names are meant to fall INTO
+        // the intro and glance off the palm's fronds on the way past — behind
+        // the sections they simply vanished under the intro's paper ground.
+        zIndex: 1,
       }}
     />
   );

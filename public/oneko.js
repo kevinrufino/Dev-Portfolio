@@ -21,6 +21,37 @@
   let idleAnimationFrame = 0;
 
   const nekoSpeed = 20;
+
+  // The cat belongs to the intro and the footer, and to nothing else. It is
+  // one script for the whole document, so rather than mounting and unmounting
+  // it, it fades out wherever it has no business being — over the hero, the
+  // works pane, the marquee — and keeps walking behind the scenes so it is
+  // already in the right place when the reader comes back.
+  const HOME_SECTIONS = '#intro, #contact';
+
+  // Following the TRAIL, not the pointer.
+  //
+  // `PixelTrail` publishes the path it painted along as `window.__pixelTrail`.
+  // The cat goes for the NEAR END of what is still lit: the closest point on
+  // the trail it has not already reached. Walking the queue in order looked
+  // right until the far end faded — the cat would keep trudging toward ink
+  // that was no longer there while a fresh stroke sat right beside it. Going
+  // for the near end means a closer trail always wins, and following the ink
+  // toward the cursor falls out of it, because each point it reaches puts the
+  // next one along the stroke in front of it.
+  //
+  // When nothing is lit there is nothing to chase, and it goes back to the
+  // cursor itself.
+  const TRAIL_MAX_AGE_MS = 1400; // roughly how long a trail cell stays visible
+  const TRAIL_ARRIVE_PX = 30; // close enough to call a point reached
+  const MOUSE_ARRIVE_PX = 48; // the cat sits this far off the cursor
+  // Once a point is chosen the cat commits to it. Picking the nearest one
+  // afresh every frame made her pace: standing among the ink, the point just
+  // behind and the point just ahead take turns being nearest, and she stepped
+  // between them for as long as the trail lasted. A new point has to be
+  // meaningfully closer than the one she is walking to before it wins.
+  const SWITCH_MARGIN = 0.62;
+  let heldId = -1;
   const spriteSets = {
     idle: [[-3, -3]],
     alert: [[-7, -3]],
@@ -92,10 +123,13 @@
     nekoEl.style.position = "fixed";
     nekoEl.style.pointerEvents = "auto";
     nekoEl.style.imageRendering = "pixelated";
-    nekoEl.style.right = `${nekoPosX - 16}px`;
+    // Left, not right: `frame` writes `left` on every move, and starting from
+    // the opposite edge made the first step jump the width of the screen.
+    nekoEl.style.left = `${nekoPosX - 16}px`;
     nekoEl.style.top = `${nekoPosY - 16}px`;
     nekoEl.style.zIndex = 20;
     nekoEl.style.mixBlendMode = "difference";
+    nekoEl.style.transition = "opacity 260ms ease";
 
     let nekoFile = "./oneko-white.png";
     const curScript = document.currentScript;
@@ -197,13 +231,17 @@
     idleAnimationFrame += 1;
   }
 
+  // Hearts are drawn in VIEWPORT space, above the page.
+  //
+  // They used to be absolutely positioned in document coordinates on the
+  // body, which put them underneath the page's own content wrapper — an
+  // opaque, z-indexed element — so every burst happened out of sight behind
+  // the section the cat was standing on.
   function explodeHearts() {
-    const parent = nekoEl.parentElement;
+    const parent = document.body;
     const rect = nekoEl.getBoundingClientRect();
-    const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
-    const scrollTop = window.scrollY || document.documentElement.scrollTop;
-    const centerX = rect.left + rect.width / 2 + scrollLeft;
-    const centerY = rect.top + rect.height / 2 + scrollTop;
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
 
     for (let i = 0; i < 10; i++) {
       const heart = document.createElement("div");
@@ -231,7 +269,9 @@
 			  100% { transform: scale(1); opacity: 0; }
 		  }
 		  .heart {
-			  position: absolute;
+			  position: fixed;
+			  z-index: 9997;
+			  pointer-events: none;
 			  font-size: 2em;
 			  animation: heartBurst 1s ease-out;
 			  animation-fill-mode: forwards;
@@ -242,15 +282,91 @@
   document.head.appendChild(style);
   nekoEl.addEventListener("click", explodeHearts);
 
+  // Is the cat standing on ground it is allowed to be seen on?
+  //
+  // A hit test rather than a rect comparison, for the same reason the trail
+  // uses one: the footer is fixed behind the page and its rect claims the
+  // whole viewport at every scroll position, so only asking what is actually
+  // on top at this point can tell the covered footer from the revealed one.
+  // The cat itself is skipped — it is the topmost thing at its own position.
+  function onHomeGround() {
+    const x = Math.round(nekoPosX);
+    const y = Math.round(nekoPosY);
+    if (x < 0 || y < 0 || x > window.innerWidth || y > window.innerHeight) {
+      return false;
+    }
+    const stack = document.elementsFromPoint(x, y);
+    for (const el of stack) {
+      if (el === nekoEl || nekoEl.contains(el)) continue;
+      return !!el.closest?.(HOME_SECTIONS);
+    }
+    return false;
+  }
+
+  // The nearest still-lit point the cat has not already reached.
+  //
+  // Points inside the arrival radius are skipped rather than returned: they
+  // are where the cat already is, and treating one as a target would park it
+  // there. Skipping them is what makes it walk on — the nearest remaining
+  // point is always the next bit of ink along the stroke. Later points win
+  // ties, so a stroke drawn back over itself is followed forwards.
+  function trailTarget() {
+    const trail = window.__pixelTrail;
+    if (!trail || trail.points.length === 0) {
+      heldId = -1;
+      return null;
+    }
+    const now = performance.now();
+    const scrollY = window.scrollY;
+    let best = null;
+    let bestDistance = Infinity;
+    let held = null;
+    let heldDistance = Infinity;
+
+    for (const point of trail.points) {
+      if (now - point.at > TRAIL_MAX_AGE_MS) continue;
+      const y = point.docY - scrollY;
+      const distance = Math.sqrt(
+        (nekoPosX - point.x) ** 2 + (nekoPosY - y) ** 2,
+      );
+      if (point.id === heldId && distance > TRAIL_ARRIVE_PX) {
+        held = { x: point.x, y: y };
+        heldDistance = distance;
+      }
+      if (distance <= TRAIL_ARRIVE_PX || distance >= bestDistance) continue;
+      bestDistance = distance;
+      best = { x: point.x, y: y, id: point.id };
+    }
+
+    // Stay on the point she is already walking to unless something is clearly
+    // closer — reaching it, or watching it fade, is what releases her.
+    if (held && bestDistance > heldDistance * SWITCH_MARGIN) return held;
+    if (!best) {
+      heldId = -1;
+      return null;
+    }
+    heldId = best.id;
+    return best;
+  }
+
   function frame() {
     frameCount += 1;
-    const diffX =
-      nekoPosX -
-      (nekoEl.parentElement.getBoundingClientRect().width - mousePosX);
-    const diffY = nekoPosY - mousePosY;
+
+    const home = onHomeGround();
+    nekoEl.style.opacity = home ? "1" : "0";
+    // An invisible cat should not be catching clicks meant for the page.
+    nekoEl.style.pointerEvents = home ? "auto" : "none";
+
+    const trail = trailTarget();
+    const targetX = trail ? trail.x : mousePosX;
+    const targetY = trail ? trail.y : mousePosY;
+    const arrive = trail ? TRAIL_ARRIVE_PX : MOUSE_ARRIVE_PX;
+
+    const diffX = nekoPosX - targetX;
+    const diffY = nekoPosY - targetY;
     const distance = Math.sqrt(diffX ** 2 + diffY ** 2);
 
-    if (distance < nekoSpeed || distance < 48) {
+    if (distance < nekoSpeed || distance < arrive) {
       idle();
       return;
     }

@@ -1,16 +1,13 @@
-import LedgerIndex from '../ProjectsLab/LedgerIndex.js';
-import '../ProjectsLab/lab.css';
+import WorksPane from '../Works/WorksPane.js';
 
 /**
  * Homepage projects showcase.
  *
- * THE LEDGER was selected from the projects lab: an edge-to-edge file index
- * that keeps project discovery quick while preserving the portfolio's pixel
- * archive language.
+ * The pinned works pane: one project at a time, selected by scroll position
+ * within the section's pinned range, with a generative glyph standing in for
+ * each project and a Work/Personal split.
+ *
+ * Replaces THE LEDGER (#13), which remains available in the projects lab at
+ * /lab alongside the other two renditions.
  */
-export const Projects = () => (
-  <LedgerIndex
-    id="projects"
-    className="w-full scroll-mt-6 pt-16 pb-6 md:scroll-mt-8 md:pt-24 md:pb-10"
-  />
-);
+export const Projects = () => <WorksPane id='projects' />;

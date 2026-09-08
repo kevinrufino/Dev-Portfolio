@@ -11,12 +11,13 @@
  * @returns {JSX.Element} The rendered application
  */
 
-import React, { useEffect, Suspense } from 'react';
+import React, { useEffect, useRef, Suspense } from 'react';
 import {
   BrowserRouter,
   Routes,
   Route,
   useLocation,
+  useNavigate,
 } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import AppProviders from './context/AppProviders.js';
@@ -30,7 +31,8 @@ import { NavBar } from './components/Nav.js';
 import { Projects } from './components/Projects/Projects.js';
 import { SkillsMarquee } from './components/Intro/SkillsMarquee.js';
 import Cursor from './components/Cursor.js';
-import BetaBadge from './components/BetaBadge.js';
+import CursorAnnotation from './components/CursorAnnotation.js';
+import CursorFxDebug from './components/CursorFxDebug.js';
 import { HeaderSequence } from './components/HeaderSequence.js';
 import PixelTrail from './components/PixelTrail.js';
 import { preloadImages } from './services/AssetService.js';
@@ -38,8 +40,13 @@ import FillPhysicsCanvas from './components/FillPhysicsCanvas.js';
 import ProjectPage from './pages/ProjectPage.js';
 import ProjectPreview from './pages/ProjectPreview.js';
 import ProjectsLab from './pages/ProjectsLab.js';
+import Studio from './pages/Studio.js';
 import PageTransition from './components/PageTransition.js';
+import PageCurtain from './components/PageCurtain.js';
 import Reveal from './components/Reveal.js';
+import { watchGrids } from './utils/grid.js';
+import { scrollToSection } from './utils/navigateToSection.js';
+import PalmScene from './components/Palm/PalmScene.js';
 import { ENABLE_SHADER_BACKGROUND } from './featureFlags.js';
 
 // Only referenced when the flag is on, so the Three.js chunk is never fetched
@@ -55,14 +62,17 @@ const MikaShaderEffect = React.lazy(
  */
 const AppContent = () => {
   // Use context hooks instead of local state
-  const { setCursorType, type: cursorType } = useCursor();
+  const { setCursorType } = useCursor();
   const { getThemeColors } = useTheme();
   const seq = useLandingSequence();
   // Freeze scroll until the loader has handed off AND every name row has
   // landed; after that, the first scroll-down (or the scroll cue) snaps past
   // the hero to the Intro and the drained hero is locked off (no scrolling
   // back up into empty space).
-  const snapPastHero = useHeroScrollJack(seq.filled);
+  // The hero collapses to nothing once it has been scrolled past, so the jack
+  // needs the section itself, not just a signal.
+  const heroRef = useRef(null);
+  const snapPastHero = useHeroScrollJack(seq.filled, heroRef, seq.drained);
 
   // Preload critical assets
   useEffect(() => {
@@ -80,16 +90,42 @@ const AppContent = () => {
     setCursorType('');
   }, [setCursorType]);
 
-  // Scroll to the hash target after SPA navigation (e.g. "← INDEX" → /#projects)
-  const { hash } = useLocation();
+  // Keep every section's 6px background grid phased to the document origin.
+  useEffect(() => watchGrids(), []);
+
+  // Arriving from another route with a section in mind.
+  //
+  // The target travels as router state rather than as a URL hash: the address
+  // bar stays at `/`, so a reload starts the page from the top instead of
+  // dropping the reader back into whichever section they last jumped to. The
+  // state is cleared once consumed, so a later reload cannot replay it either.
+  const location = useLocation();
+  const navigate = useNavigate();
+  const target = location.state?.scrollTo;
+  // A project travelling with the target means "put me back on that one in the
+  // index". Only the works pane can do that, and only once it has mounted and
+  // measured itself — so this asks, and keeps asking briefly, before falling
+  // back to the top of the section.
+  const wanted = location.state?.project;
   useEffect(() => {
-    if (!hash) return;
-    const el = document.querySelector(hash);
-    if (el) {
-      const id = setTimeout(() => el.scrollIntoView(), 80);
-      return () => clearTimeout(id);
-    }
-  }, [hash]);
+    if (!target) return undefined;
+    let id = 0;
+    let tries = 0;
+    const done = () =>
+      navigate(location.pathname, { replace: true, state: null });
+    const attempt = () => {
+      if (wanted && scrollToSection(target, wanted)) return done();
+      if (wanted && tries < 8) {
+        tries += 1;
+        id = setTimeout(attempt, 80);
+        return undefined;
+      }
+      scrollToSection(target);
+      return done();
+    };
+    id = setTimeout(attempt, 120);
+    return () => clearTimeout(id);
+  }, [target, wanted, navigate, location.pathname]);
 
   // Get theme colors
   const themeColors = getThemeColors();
@@ -105,28 +141,54 @@ const AppContent = () => {
         </Suspense>
       )}
 
-      {/* Full-page physics canvas — z:0, between shader and content.
-          Fills the header on handoff, then drains down the page on scroll. */}
-      <FillPhysicsCanvas
-        active={seq.filling}
-        getSpawnRect={seq.getSpawnRect}
-        onHandoff={seq.onHandoff}
-        onFilled={seq.onFilled}
-      />
-
-      {/* Page content — z:2, on top */}
+      {/* Page content — rides over the fixed footer, so it needs an opaque
+          background of its own and a stacking position above it. The bottom
+          margin is the footer's measured height: that is the scroll distance
+          which uncovers the footer, and it is what makes the works section
+          read as a curtain lifting off it.
+          overflow-x: clip rather than overflow: hidden. `hidden` makes this
+          element a scroll container, which silently defeats `position: sticky`
+          on every descendant — the sticky element pins to this box instead of
+          the viewport and so never moves relative to its section. `clip` gives
+          the same horizontal clipping without establishing that container. */}
       <div
-        className="text-ultra scroll-smooth relative overflow-hidden grain"
-        style={{ position: 'relative' }}
+        data-trail-clip
+        className="text-ultra relative z-[1] bg-acid [overflow-x:clip]"
+        style={{
+          position: 'relative',
+          marginBottom: 'var(--footer-reveal-h, 100svh)',
+        }}
       >
-        {/* Hidden easter egg text */}
-        <p style={{ color: themeColors.primary }}>
+        {/* Both full-page canvases live INSIDE this wrapper. The wrapper is
+            opaque — it has to be, to cover the fixed footer during the reveal
+            — so a canvas outside it is simply painted over, and the hero came
+            up empty.
+
+            Order matters: the physics canvas comes first so the palm paints
+            over the falling names rather than under them. Both are clipped to
+            the band beside the intro copy, so neither ever crosses the text —
+            the names fall past the palm, down and to the right, through the
+            same band the shooting stars use. */}
+        <FillPhysicsCanvas
+          active={seq.filling}
+          getSpawnRect={seq.getSpawnRect}
+          onHandoff={seq.onHandoff}
+          onFilled={seq.onFilled}
+          onDrained={seq.onDrained}
+        />
+        <PalmScene />
+
+        {/* Hidden easter egg text — acid on acid, found by selecting it.
+            Taken out of flow: in flow it reserved a line of height above the
+            hero, which showed as a strip of bare acid at the very top of the
+            page once the hero collapsed, and meant "home" never scrolled to
+            something that looked like the top. */}
+        <p
+          className='pointer-events-none absolute left-0 top-0 m-0'
+          style={{ color: themeColors.primary }}
+        >
           {`if you're reading this, you found a secret ;p`}
         </p>
-
-        {/* Global cursor component */}
-        <PixelTrail />
-        <Cursor cursor={cursorType} />
 
         {/* Navigation header */}
         <NavBar setCursor={setCursorType} />
@@ -140,17 +202,16 @@ const AppContent = () => {
           filled={seq.filled}
           onCue={snapPastHero}
           nameRef={seq.nameRef}
+          heroRef={heroRef}
           secondaryColor={themeColors.secondary}
         />
 
-        {/* Introduction section */}
-        <Reveal>
-          <Intro
-            secondaryColor={themeColors.secondary}
-            cursor={''}
-            setCursor={setCursorType}
-          />
-        </Reveal>
+        {/* Introduction section.
+            Deliberately NOT wrapped in <Reveal>: the section is sticky, and a
+            transformed ancestor becomes its containing block — the wrapper is
+            exactly the section's height, so sticky would have no travel and
+            never engage. */}
+        <Intro setCursor={setCursorType} />
 
         {/* Skills marquee */}
         <Reveal delay={0.1}>
@@ -160,12 +221,21 @@ const AppContent = () => {
         {/* Projects showcase */}
         <Projects />
 
-        {/* Footer section */}
-        <Footer cursor={''} setCursor={setCursorType} />
-
-        {/* Beta / work-in-progress notice — dismissible, bottom-right */}
-        <BetaBadge setCursor={setCursorType} />
+        {/* The trail over everything in this wrapper that is not the intro.
+            Last in the wrapper on purpose: it is a z-index:0 layer, so paint
+            order against the sections (which are positioned but unindexed)
+            is DOM order. The intro keeps a surface of its own, mounted inside
+            itself, because there the trail has to go UNDER the copy rather
+            than over it — see PixelTrail. */}
+        <PixelTrail clipTo='[data-trail-clip]' zone='page' />
       </div>
+
+      {/* Outside the content wrapper on purpose. The footer is fixed, and a
+          fixed element inside that z-indexed wrapper would be trapped in its
+          stacking context and paint OVER the page rather than behind it. Out
+          here it sits below the content, which is what lets the works section
+          uncover it. */}
+      <Footer cursor={''} setCursor={setCursorType} />
     </>
   );
 };
@@ -207,6 +277,9 @@ const AnimatedRoutes = () => {
           path="/projects/:slug/preview"
           element={<ProjectPreview />}
         />
+        {/* Unlinked on purpose: the content editor, which writes nothing on
+            its own and hands over a bundle to be committed. */}
+        <Route path="/studio" element={<Studio />} />
         <Route
           path="/lab"
           element={
@@ -224,6 +297,26 @@ const AppRefactored = () => {
   return (
     <BrowserRouter>
       <AppProviders>
+        {/* One cursor for the whole app, outside <Routes>.
+            index.css hides the native cursor under `@media (pointer: fine)`
+            for the entire document, so the replacement has to exist on every
+            route — mounted per-route it left the project pages with no
+            visible cursor at all. Keeping it outside <Routes> also means it
+            survives the page transition instead of unmounting mid-navigation. */}
+        <Cursor />
+        {/* One annotation chip for the whole app, beside the cursor and for
+            the same reason: every route can label what is under the pointer,
+            and it must survive the page transition rather than unmounting
+            mid-navigation. */}
+        <CursorAnnotation />
+        {/* Draws every gravity field. Off unless `?gravity` is in the URL or
+            shift+G has been pressed. */}
+        <CursorFxDebug />
+        {/* The blind sweep between routes. Outside <Routes> because it has to
+            outlive the page it covers: it goes up over the outgoing route and
+            comes off the incoming one, and a canvas belonging to either would
+            be gone in between. */}
+        <PageCurtain />
         <AnimatedRoutes />
       </AppProviders>
     </BrowserRouter>

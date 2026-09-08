@@ -1,6 +1,7 @@
 import PropTypes from 'prop-types';
 import { HeroName } from './Hero/components/HeroName.js';
 import PixelWaterFill from './PixelWaterFill.js';
+import { HERO_SHRINK_PX } from '../utils/heroRunway.js';
 
 /**
  * Landing header: the loader overlay + the hero-fold region the physics fills.
@@ -51,6 +52,7 @@ export const HeaderSequence = ({
   filled,
   onCue,
   nameRef,
+  heroRef,
   secondaryColor,
 }) => {
   return (
@@ -78,20 +80,42 @@ export const HeaderSequence = ({
       )}
 
       {/* Hero fold: empty flow region the document-sized physics canvas fills
-          behind the page content. Also the nav's scroll anchor. */}
-      <section id='home' className='relative w-full h-screen'>
-        <button
-          type='button'
-          aria-label='Scroll to content'
-          onClick={onCue}
-          className={`absolute bottom-8 left-1/2 -translate-x-1/2 transition-opacity duration-700 ${
-            filled ? 'opacity-100' : 'opacity-0 pointer-events-none'
-          }`}
-        >
-          <span className='block cue-bob'>
-            <PixelScrollCue />
-          </span>
-        </button>
+          behind the page content. Also the nav's scroll anchor.
+
+          A viewport tall PLUS the shrink runway. Scrolling that runway is
+          still being in the hero — the pile is pinned to the screen and
+          shrinking — so the section has to own that scroll distance. */}
+      <section
+        id='home'
+        ref={heroRef}
+        className='relative w-full'
+        style={{ height: `calc(100svh + ${HERO_SHRINK_PX}px)` }}
+      >
+        {/* Stuck to the viewport for the length of the runway, so the cue
+            stays where the reader is rather than sliding up out of view
+            while the names shrink.
+
+            Above the physics canvas, which is fixed at z-index 1 in this same
+            stacking context. Without that the cue was painted UNDER the pile
+            it sits on top of — buried by the names exactly as they finished
+            landing, which is the moment it appears. The layer is transparent
+            and only the button in it paints, so nothing else is lifted with
+            it; the cue's own acid disc is what makes it read against the
+            ultra names underneath. */}
+        <div className='sticky top-0 z-[2] h-[100svh]'>
+          <button
+            type='button'
+            aria-label='Scroll to content'
+            onClick={onCue}
+            className={`absolute bottom-8 left-1/2 -translate-x-1/2 transition-opacity duration-700 ${
+              filled ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+          >
+            <span className='block cue-bob'>
+              <PixelScrollCue />
+            </span>
+          </button>
+        </div>
       </section>
     </>
   );
@@ -107,6 +131,7 @@ HeaderSequence.propTypes = {
     PropTypes.func,
     PropTypes.shape({ current: PropTypes.any }),
   ]).isRequired,
+  heroRef: PropTypes.shape({ current: PropTypes.any }),
   secondaryColor: PropTypes.string.isRequired,
 };
 

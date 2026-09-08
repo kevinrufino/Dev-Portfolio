@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef } from 'react';
 
+// 18px cells = three of the page's 6px grid cells, so a trail cell always
+// lands on the lattice the sections and the palm share.
 const TRAIL = {
-  pixelSize: 28,
+  pixelSize: 18,
   gap: 0,
   maxOpacity: 0.82,
   attackDuration: 32,
@@ -15,6 +17,290 @@ const TRAIL = {
 };
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+// The path the trail was painted along, published for anything that wants to
+// walk it rather than cut across it. `oneko` is the one consumer: the cat
+// chases the trail instead of the pointer, so it retraces the route the
+// reader's hand actually took.
+//
+// A plain global rather than a React value on purpose — the cat is a vendored
+// script in `public/`, outside the bundle, and this is the only surface the
+// two share. Points carry a document-space y so they stay put under the
+// content while the page scrolls, and a monotonic id so a follower can keep
+// its place without owning the array.
+const TRAIL_PATH_MAX = 96;
+
+const publishTrailPoint = (x, y) => {
+  const trail = (window.__pixelTrail ??= { points: [], nextId: 0 });
+  trail.points.push({
+    id: trail.nextId++,
+    x,
+    docY: y + window.scrollY,
+    at: performance.now(),
+  });
+  if (trail.points.length > TRAIL_PATH_MAX) {
+    trail.points.splice(0, trail.points.length - TRAIL_PATH_MAX);
+  }
+};
+
+// Ink per ground: ultra over the acid hero and the paper intro, gold over the
+// charcoal footer. Over the projects section — the one surface with no grid —
+// the trail doesn't paint at all, so it never fights the index's own type.
+//
+// Canvas fillStyle does not resolve CSS custom properties, so the tokens are
+// read into real values once per resize rather than per cell (getComputedStyle
+// is a layout read, and a fast pointer paints up to 24 cells per event).
+const INK_FALLBACK = { ultra: '#3e3bf4', gold: '#ebc035' };
+
+const readToken = (name, fallback) =>
+  getComputedStyle(document.documentElement).getPropertyValue(name).trim() ||
+  fallback;
+
+// Which ground is actually under the pointer.
+//
+// Deliberately a hit-test rather than a rect comparison. The footer is fixed
+// behind the page and uncovered by scrolling, so its rect says it is at the
+// bottom of the viewport at ALL times — comparing against it painted footer
+// gold across the lower half of every section. Asking what is really under the
+// cursor is correct whether the footer is revealed, covered, or in flow.
+//
+// Both overlays are pointer-events: none, so this returns page content, never
+// the trail canvas or the cursor.
+const inkUnder = (x, y, ctx) => {
+  const el = document.elementFromPoint(x, y);
+  if (!el) return { color: ctx.ultra, zone: 'page' };
+  if (ctx.footer?.contains(el)) return { color: ctx.gold, zone: 'footer' };
+  if (ctx.works?.contains(el)) return null;
+  if (ctx.intro?.contains(el)) return { color: ctx.ultra, zone: 'intro' };
+  return { color: ctx.ultra, zone: 'page' };
+};
+
+/**
+ * The trail engine, shared by every canvas that draws it.
+ *
+ * One set of cells, one pointer listener, one frame loop — and any number of
+ * surfaces painting the same thing. That indirection exists for one reason:
+ * the trail has to sit BEHIND the page's text, and "behind the text" is a
+ * different place in three different stacking contexts. The hero and the
+ * intro live inside the opaque content wrapper; the footer is fixed behind
+ * that wrapper with a stacking context of its own that nothing outside it can
+ * reach into. A single overlay can be above everything or below everything,
+ * and neither is what this wants.
+ */
+const engine = {
+  cells: new Map(),
+  surfaces: new Set(),
+  ink: { ...INK_FALLBACK },
+  size: { width: 0, height: 0, dpr: 1 },
+  lastPointer: null,
+  reduced: false,
+  raf: 0,
+  bound: false,
+};
+
+const pitch = () => TRAIL.pixelSize + TRAIL.gap;
+
+const sizeSurface = surface => {
+  const { width, height, dpr } = engine.size;
+  const { canvas, ctx } = surface;
+  canvas.width = Math.ceil(width * dpr);
+  canvas.height = Math.ceil(height * dpr);
+  canvas.style.width = `${width}px`;
+  canvas.style.height = `${height}px`;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+};
+
+const resize = () => {
+  engine.size = {
+    width: window.innerWidth,
+    height: window.innerHeight,
+    dpr: Math.min(window.devicePixelRatio || 1, 2),
+  };
+  // Re-resolved here so a token change (or a theme swap) is picked up, and the
+  // section lookups survive route changes that remount the page.
+  engine.ink = {
+    ultra: readToken('--ultra', INK_FALLBACK.ultra),
+    gold: readToken('--palm-gold', INK_FALLBACK.gold),
+    works: document.getElementById('projects'),
+    intro: document.getElementById('intro'),
+    footer: document.getElementById('contact'),
+  };
+  engine.surfaces.forEach(sizeSurface);
+};
+
+const draw = now => {
+  const total =
+    TRAIL.attackDuration + TRAIL.holdDuration + TRAIL.fadeDuration;
+  const { width, height } = engine.size;
+  const p = pitch();
+  const scroll = window.scrollY;
+
+  // Each surface is clipped to the thing it belongs to. Both canvases are
+  // fixed and cover the viewport, so without this the page's copy kept
+  // painting over the footer long after the page itself had scrolled off it.
+  for (const surface of engine.surfaces) {
+    const { ctx } = surface;
+    ctx.restore();
+    ctx.clearRect(0, 0, width, height);
+    ctx.save();
+    const box = surface.clipTo
+      ? document.querySelector(surface.clipTo)?.getBoundingClientRect()
+      : null;
+    if (box) {
+      ctx.beginPath();
+      ctx.rect(box.left, box.top, box.width, box.height);
+      ctx.clip();
+    }
+  }
+
+  for (const [key, cell] of engine.cells) {
+    const age = now - cell.startedAt;
+    if (age >= total) {
+      engine.cells.delete(key);
+      continue;
+    }
+    const attack = clamp(age / TRAIL.attackDuration, 0, 1);
+    const fadeAge = age - TRAIL.attackDuration - TRAIL.holdDuration;
+    const fade = fadeAge <= 0 ? 0 : clamp(fadeAge / TRAIL.fadeDuration, 0, 1);
+    const boosted = clamp(
+      1 + cell.velocity * TRAIL.velocityInfluence * 0.08,
+      0,
+      1,
+    );
+    const opacity = TRAIL.maxOpacity * boosted * attack * (1 - fade);
+    if (opacity <= 0) continue;
+
+    // Rows are document-space, so subtract the scroll to place the cell.
+    const x = cell.column * p;
+    const y = cell.row * p - scroll;
+    for (const surface of engine.surfaces) {
+      // A cell belongs to the ground it was painted on, and only that
+      // ground's surface draws it. Clipping alone was not enough: the intro
+      // is sticky, so it stays pinned behind the sections that follow it, and
+      // a surface clipped to its box would have swallowed the trail over
+      // everything sitting on top of it.
+      if (surface.zone !== cell.zone) continue;
+      const { ctx } = surface;
+      ctx.globalAlpha = opacity;
+      ctx.fillStyle = cell.color;
+      ctx.fillRect(x, y, TRAIL.pixelSize, TRAIL.pixelSize);
+    }
+  }
+
+  for (const { ctx } of engine.surfaces) ctx.globalAlpha = 1;
+  engine.raf = engine.cells.size > 0 ? requestAnimationFrame(draw) : 0;
+};
+
+const scheduleDraw = () => {
+  if (engine.raf === 0) engine.raf = requestAnimationFrame(draw);
+};
+
+const paintAt = (clientX, clientY, velocity, ground) => {
+  if (engine.reduced || !ground) return;
+  const { width, height } = engine.size;
+  if (clientX < 0 || clientX > width || clientY < 0 || clientY > height) return;
+  const p = pitch();
+  const column = Math.floor(clientX / p);
+  // Document-space row: the cell belongs to the page, not the viewport, so it
+  // stays under the same content while the page scrolls beneath it.
+  const row = Math.floor((clientY + window.scrollY) / p);
+  engine.cells.set(`${column}:${row}`, {
+    column,
+    row,
+    velocity,
+    color: ground.color,
+    zone: ground.zone,
+    startedAt: performance.now(),
+  });
+  scheduleDraw();
+};
+
+const handlePointer = event => {
+  if (event.pointerType !== 'mouse' && event.pointerType !== 'pen') return;
+
+  const now = performance.now();
+  const previous = engine.lastPointer;
+  const velocity = previous
+    ? clamp(
+        Math.hypot(event.clientX - previous.x, event.clientY - previous.y) /
+          (now - previous.time + 1),
+        0,
+        4,
+      )
+    : 0;
+
+  // One hit-test per event, not per interpolated cell: the sampled path is
+  // short enough that its two ends are always on the same ground.
+  const ground = inkUnder(event.clientX, event.clientY, engine.ink);
+  publishTrailPoint(event.clientX, event.clientY);
+
+  if (previous) {
+    const distance = Math.hypot(
+      event.clientX - previous.x,
+      event.clientY - previous.y,
+    );
+    const spacing = Math.max(1, TRAIL.sampleSpacing * pitch());
+    const steps = clamp(Math.ceil(distance / spacing), 1, 24);
+    for (let step = 1; step <= steps; step += 1) {
+      const t = step / steps;
+      paintAt(
+        previous.x + (event.clientX - previous.x) * t,
+        previous.y + (event.clientY - previous.y) * t,
+        velocity,
+        ground,
+      );
+    }
+  } else {
+    paintAt(event.clientX, event.clientY, velocity, ground);
+  }
+
+  engine.lastPointer = { x: event.clientX, y: event.clientY, time: now };
+};
+
+// Live cells have to be redrawn while scrolling, since their rows are anchored
+// to the document rather than the viewport.
+const onScroll = () => {
+  if (engine.cells.size > 0) scheduleDraw();
+};
+
+let motionQuery = null;
+const syncMotion = () => {
+  engine.reduced = motionQuery.matches;
+  if (engine.reduced) {
+    engine.cells.clear();
+    scheduleDraw();
+  }
+};
+
+const bind = () => {
+  if (engine.bound) return;
+  engine.bound = true;
+  motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+  resize();
+  syncMotion();
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', resize);
+  window.addEventListener('pointermove', handlePointer, { passive: true });
+  window.addEventListener('pointerdown', handlePointer, { passive: true });
+  motionQuery.addEventListener('change', syncMotion);
+};
+
+const unbind = () => {
+  if (!engine.bound) return;
+  engine.bound = false;
+  window.removeEventListener('scroll', onScroll);
+  window.removeEventListener('resize', resize);
+  window.removeEventListener('pointermove', handlePointer);
+  window.removeEventListener('pointerdown', handlePointer);
+  motionQuery?.removeEventListener('change', syncMotion);
+  cancelAnimationFrame(engine.raf);
+  engine.raf = 0;
+  engine.cells.clear();
+  engine.lastPointer = null;
+  // The path outlives this component otherwise, and the cat would spend its
+  // first seconds on the next route walking a route from the last one.
+  if (window.__pixelTrail) window.__pixelTrail.points.length = 0;
+};
 
 const GooeyFilter = ({ id }) => (
   <svg className='gooey-defs' aria-hidden='true' focusable='false'>
@@ -37,14 +323,25 @@ const GooeyFilter = ({ id }) => (
   </svg>
 );
 
-const PixelTrail = () => {
+/**
+ * One surface the trail is drawn on.
+ *
+ * Mounted more than once, in the stacking context of each ground it has to
+ * appear on, so it can sit under that ground's text instead of over it. All
+ * of them draw the same cells from the same engine.
+ *
+ * @param {string} [className] - extra classes on the wrapper; this is where
+ *   the layer's z-index comes from.
+ * @param {string} [clipTo] - selector for the element this surface belongs to.
+ *   Cells outside its box are not drawn, which is what stops a fixed canvas
+ *   from painting over a section that is no longer under it.
+ * @param {'page'|'intro'|'footer'} [zone] - which ground's cells this surface
+ *   is responsible for. Decided by hit-test when the cell is painted, so a
+ *   section that is covered — or pinned behind the one covering it — keeps
+ *   only the cells that were actually laid down on it.
+ */
+const PixelTrail = ({ className = '', clipTo = null, zone = 'page' }) => {
   const canvasRef = useRef(null);
-  const activeCellsRef = useRef(new Map());
-  const rafRef = useRef(0);
-  const lastPointerRef = useRef(null);
-  const sizeRef = useRef({ width: 0, height: 0, dpr: 1 });
-  const colorRef = useRef('#3e3bf4');
-  const reducedMotionRef = useRef(false);
   const filterId = useMemo(
     () => `portfolio-pixel-trail-${Math.random().toString(36).slice(2)}`,
     [],
@@ -53,180 +350,25 @@ const PixelTrail = () => {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return undefined;
-
-    const ctx = canvas.getContext('2d', { alpha: true });
-    const pitch = TRAIL.pixelSize + TRAIL.gap;
-
-    const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const width = window.innerWidth;
-      const height = window.innerHeight;
-      const ultra = getComputedStyle(document.documentElement)
-        .getPropertyValue('--ultra')
-        .trim();
-
-      sizeRef.current = { width, height, dpr };
-      colorRef.current = ultra || '#3e3bf4';
-      canvas.width = Math.ceil(width * dpr);
-      canvas.height = Math.ceil(height * dpr);
-      canvas.style.width = `${width}px`;
-      canvas.style.height = `${height}px`;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const surface = {
+      canvas,
+      ctx: canvas.getContext('2d', { alpha: true }),
+      clipTo,
+      zone,
     };
-
-    const clearCanvas = () => {
-      const { width, height } = sizeRef.current;
-      ctx.clearRect(0, 0, width, height);
-    };
-
-    const draw = now => {
-      const cells = activeCellsRef.current;
-      const totalDuration =
-        TRAIL.attackDuration + TRAIL.holdDuration + TRAIL.fadeDuration;
-
-      clearCanvas();
-      ctx.fillStyle = colorRef.current;
-
-      for (const [key, cell] of cells) {
-        const age = now - cell.startedAt;
-        if (age >= totalDuration) {
-          cells.delete(key);
-          continue;
-        }
-
-        const attackProgress = clamp(age / TRAIL.attackDuration, 0, 1);
-        const fadeAge = age - TRAIL.attackDuration - TRAIL.holdDuration;
-        const fadeProgress =
-          fadeAge <= 0 ? 0 : clamp(fadeAge / TRAIL.fadeDuration, 0, 1);
-        const boosted = clamp(
-          1 + cell.velocity * TRAIL.velocityInfluence * 0.08,
-          0,
-          1,
-        );
-        const opacity =
-          TRAIL.maxOpacity * boosted * attackProgress * (1 - fadeProgress);
-
-        if (opacity <= 0) continue;
-
-        ctx.globalAlpha = opacity;
-        ctx.fillRect(
-          cell.column * pitch,
-          cell.row * pitch,
-          TRAIL.pixelSize,
-          TRAIL.pixelSize,
-        );
-      }
-
-      ctx.globalAlpha = 1;
-
-      if (cells.size > 0) {
-        rafRef.current = requestAnimationFrame(draw);
-      } else {
-        rafRef.current = 0;
-      }
-    };
-
-    const scheduleDraw = () => {
-      if (rafRef.current === 0) {
-        rafRef.current = requestAnimationFrame(draw);
-      }
-    };
-
-    const paintAt = (clientX, clientY, velocity = 0) => {
-      if (reducedMotionRef.current) return;
-      const { width, height } = sizeRef.current;
-      if (clientX < 0 || clientX > width || clientY < 0 || clientY > height) {
-        return;
-      }
-
-      const column = Math.floor(clientX / pitch);
-      const row = Math.floor(clientY / pitch);
-      const key = `${column}:${row}`;
-      activeCellsRef.current.set(key, {
-        column,
-        row,
-        velocity,
-        startedAt: performance.now(),
-      });
-      scheduleDraw();
-    };
-
-    const handlePointer = event => {
-      if (event.pointerType !== 'mouse' && event.pointerType !== 'pen') return;
-
-      const now = performance.now();
-      const previous = lastPointerRef.current;
-      const velocity = previous
-        ? clamp(
-            Math.hypot(event.clientX - previous.x, event.clientY - previous.y) /
-              (now - previous.time + 1),
-            0,
-            4,
-          )
-        : 0;
-
-      if (!previous) {
-        paintAt(event.clientX, event.clientY, velocity);
-        lastPointerRef.current = {
-          x: event.clientX,
-          y: event.clientY,
-          time: now,
-        };
-        return;
-      }
-
-      const distance = Math.hypot(
-        event.clientX - previous.x,
-        event.clientY - previous.y,
-      );
-      const spacing = Math.max(1, TRAIL.sampleSpacing * pitch);
-      const steps = clamp(Math.ceil(distance / spacing), 1, 24);
-
-      for (let step = 1; step <= steps; step += 1) {
-        const t = step / steps;
-        paintAt(
-          previous.x + (event.clientX - previous.x) * t,
-          previous.y + (event.clientY - previous.y) * t,
-          velocity,
-        );
-      }
-
-      lastPointerRef.current = {
-        x: event.clientX,
-        y: event.clientY,
-        time: now,
-      };
-    };
-
-    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const syncMotion = () => {
-      reducedMotionRef.current = motionQuery.matches;
-      if (reducedMotionRef.current) {
-        activeCellsRef.current.clear();
-        clearCanvas();
-      }
-    };
-
-    resize();
-    syncMotion();
-
-    window.addEventListener('resize', resize);
-    window.addEventListener('pointermove', handlePointer, { passive: true });
-    window.addEventListener('pointerdown', handlePointer, { passive: true });
-    motionQuery.addEventListener('change', syncMotion);
-
+    // One save to balance the restore at the top of every draw.
+    surface.ctx.save();
+    bind();
+    engine.surfaces.add(surface);
+    sizeSurface(surface);
     return () => {
-      window.removeEventListener('resize', resize);
-      window.removeEventListener('pointermove', handlePointer);
-      window.removeEventListener('pointerdown', handlePointer);
-      motionQuery.removeEventListener('change', syncMotion);
-      cancelAnimationFrame(rafRef.current);
-      activeCellsRef.current.clear();
+      engine.surfaces.delete(surface);
+      if (engine.surfaces.size === 0) unbind();
     };
-  }, []);
+  }, [clipTo, zone]);
 
   return (
-    <div className='portfolio-pixel-trail'>
+    <div className={`portfolio-pixel-trail ${className}`.trim()}>
       <GooeyFilter id={filterId} />
       <canvas
         ref={canvasRef}

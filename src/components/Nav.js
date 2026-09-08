@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import {
+  goToSection,
+  SECTIONS,
+  documentTop,
+  revealStart,
+} from '../utils/navigateToSection.js';
 import ArrowBackUpIcon from './ArrowBackUpIcon.js';
 
 /**
@@ -15,10 +21,12 @@ import ArrowBackUpIcon from './ArrowBackUpIcon.js';
  * background and the ultra name pile, no per-section palette needed.
  */
 
+// `key` addresses a section; the element it resolves to is SECTIONS[key].
+// No URLs here on purpose — see utils/navigateToSection.js.
 const NAV_LINKS = [
-  { label: 'home', href: '/#home', sectionId: 'home' },
-  { label: 'work', href: '/#projects', sectionId: 'projects' },
-  { label: 'connect', href: '/#contact', sectionId: 'contact' },
+  { label: 'home', key: 'home' },
+  { label: 'work', key: 'work' },
+  { label: 'connect', key: 'contact' },
 ];
 
 const GOO_PAD = 90;
@@ -65,6 +73,8 @@ GooeyNavFilter.propTypes = {
 };
 
 const HomeNav = ({ setCursor }) => {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
   const navRef = useRef(null);
   const followerRef = useRef(null);
   const linkRefs = useRef([]);
@@ -117,13 +127,17 @@ const HomeNav = ({ setCursor }) => {
 
     // Active item follows scroll position; shown once the hero has scrolled
     // into the intro (~55% of the fold), hidden (and unclickable) on the hero.
+    // Compared against DOCUMENT positions, not viewport rects. Two sections
+    // lie about their rect: the intro is sticky, so it reports top 0 for as
+    // long as it is pinned, and the footer is fixed, so it reports the same
+    // box at every scroll position — which made "connect" look active from the
+    // moment the page loaded.
     const onScroll = () => {
-      const line = window.innerHeight * 0.38;
-      let idx = 0;
-      NAV_LINKS.forEach((link, i) => {
-        const el = document.getElementById(link.sectionId);
-        if (el && el.getBoundingClientRect().top <= line) idx = i;
-      });
+      const line = window.scrollY + window.innerHeight * 0.38;
+      const works = document.getElementById(SECTIONS.work);
+      const worksTop = works ? documentTop(works) : Infinity;
+      const contactTop = revealStart();
+      const idx = line >= contactTop ? 2 : line >= worksTop ? 1 : 0;
       setActiveIndex(prev => {
         if (idx === prev) return prev;
         setSliding(true);
@@ -131,19 +145,34 @@ const HomeNav = ({ setCursor }) => {
         slideTimerRef.current = setTimeout(() => setSliding(false), 520);
         return idx;
       });
-      setShown(window.scrollY >= window.innerHeight * 0.55);
+      // The nav hides on the hero, not on the top of the page. Once the hero
+      // has collapsed there is no hero to hide from, so it shows immediately —
+      // keying off scroll alone kept it hidden through the first half of the
+      // intro, which by then is the top of the document.
+      const hero = document.getElementById('home');
+      const heroGone = !hero || hero.offsetHeight === 0;
+      // Measured against the hero's own height, not a viewport fraction: the
+      // hero is a viewport PLUS the shrink runway, and the nav belongs to the
+      // page below it rather than to the runway.
+      setShown(heroGone || window.scrollY >= hero.offsetHeight * 0.55);
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     onScroll();
 
-    // Spring-follower blob: eases toward the pointer, ramps up size/opacity
-    // as it nears the nav so it appears (and starts merging into pills via
-    // the goo filter) well before the cursor actually arrives.
-    const reduce = window.matchMedia(
-      '(prefers-reduced-motion: reduce)',
-    ).matches;
+    // Follower blob: tracks the pointer and ramps up size/opacity as it nears
+    // the nav, so it appears (and starts merging into pills via the goo
+    // filter) well before the cursor actually arrives.
+    //
+    // Tracks rather than chases. On a spring it overshot every direction
+    // change and swung past the pills and back, which read as the blob having
+    // its own ideas. And mouse only: a tap fires one pointermove, which used
+    // to prime the blob and leave it parked on the page as a stray dot.
+    const reduce =
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+      window.matchMedia('(pointer: fine)').matches === false;
     const p = pointerRef.current;
     const onMove = e => {
+      if (e.pointerType && e.pointerType !== 'mouse') return;
       const nav = navRef.current;
       if (!nav) return;
       const navBox = nav.getBoundingClientRect();
@@ -160,10 +189,8 @@ const HomeNav = ({ setCursor }) => {
       }
     };
     const loop = () => {
-      p.vx = (p.vx + (p.tx - p.px) * 0.16) * 0.74;
-      p.vy = (p.vy + (p.ty - p.py) * 0.16) * 0.74;
-      p.px += p.vx;
-      p.py += p.vy;
+      p.px += (p.tx - p.px) * 0.34;
+      p.py += (p.ty - p.py) * 0.34;
       p.near += (p.targetNear - p.near) * 0.13;
       const el = followerRef.current;
       if (el && p.primed) {
@@ -278,18 +305,19 @@ const HomeNav = ({ setCursor }) => {
       <ul className='relative flex items-center gap-0.5 list-none m-0 p-0 font-offbit101Bold text-[22px] leading-none text-white'>
         {NAV_LINKS.map((link, i) => (
           <li key={link.label}>
-            <a
+            <button
+              type='button'
               ref={el => {
                 linkRefs.current[i] = el;
               }}
-              href={link.href}
-              className='block px-5 py-3 no-underline tracking-[0.02em] transition-colors duration-200'
+              onClick={() => goToSection(navigate, pathname, link.key)}
+              className='block border-0 bg-transparent px-5 py-3 font-[inherit] text-[inherit] tracking-[0.02em] transition-colors duration-200'
               style={{ color: navColor(i) }}
               onMouseEnter={() => setHotIndex(i)}
               onMouseLeave={() => setHotIndex(-1)}
             >
               {link.label}
-            </a>
+            </button>
           </li>
         ))}
       </ul>
@@ -303,6 +331,8 @@ HomeNav.propTypes = {
 
 const ProjectBackNav = ({ setCursor }) => {
   const iconRef = useRef(null);
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
 
   return (
     <nav
@@ -310,15 +340,19 @@ const ProjectBackNav = ({ setCursor }) => {
       className='fixed top-4 left-4 z-20 mix-blend-difference'
       onMouseEnter={() => setCursor('')}
     >
-      <Link
-        to='/#projects'
+      {/* The destination travels as router state like every other nav item —
+          `/#projects` left the section in the address bar, so a reload after
+          coming back landed the reader in the middle of the page. */}
+      <button
+        type='button'
+        onClick={() => goToSection(navigate, pathname, 'work')}
         aria-label='Back to projects'
-        className='flex h-12 w-12 items-center justify-center text-white no-underline transition-transform duration-200 hover:-translate-x-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white'
+        className='flex h-12 w-12 items-center justify-center border-0 bg-transparent text-white transition-transform duration-200 hover:-translate-x-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white'
         onFocus={() => iconRef.current?.startAnimation()}
         onBlur={() => iconRef.current?.stopAnimation()}
       >
         <ArrowBackUpIcon ref={iconRef} size={34} className='h-full w-full' />
-      </Link>
+      </button>
     </nav>
   );
 };
