@@ -7,6 +7,7 @@ import {
   PROJECT_STORIES,
   RETIRED_TITLES,
 } from '../components/Project/projectStories.js';
+import { WORKS } from '../components/Works/worksData.js';
 import useGooFollower from '../hooks/useGooFollower.js';
 import useCursorFx from '../hooks/useCursorFx.js';
 import GooPills from '../components/common/GooPills.js';
@@ -91,9 +92,35 @@ const ProjectPage = () => {
   const live = ProjectsData.filter(p => !RETIRED_TITLES.has(p.title));
   const index = live.findIndex(p => toSlug(p.title) === slug);
   const project = index !== -1 ? live[index] : null;
-  const next = live[(index + 1) % live.length];
+
+  // Where this project sits in the index the reader came from, which is the
+  // sequence the footer walks. It used to walk `constants.js` in file order —
+  // a fixed carousel that ignored the two lists entirely, so from a work
+  // project it would offer a personal one and back again. The order is the
+  // studio's to set now, and this follows it.
+  const place = useMemo(() => {
+    if (!project) return null;
+    for (const key of ['work', 'personal']) {
+      const at = WORKS[key].findIndex(row => row.title === project.title);
+      if (at !== -1) return { key, at, list: WORKS[key] };
+    }
+    return null;
+  }, [project]);
+
+  // The next one along, or the first of the OTHER list once this one is spent.
+  // A project in neither list — none today, but nothing prevents one — falls
+  // back to the archive walk this used to do.
+  const next = useMemo(() => {
+    if (!place) return live[(index + 1) % live.length];
+    if (place.at + 1 < place.list.length) return place.list[place.at + 1];
+    const other = WORKS[place.key === 'work' ? 'personal' : 'work'];
+    return other.length ? other[0] : place.list[0];
+  }, [place, live, index]);
   const story = project ? PROJECT_STORIES[project.title] : null;
   const nextStory = next ? PROJECT_STORIES[next.title] : null;
+  // A works row already carries the short display name; an archive record does
+  // not, so the fallback path reads the title instead.
+  const nextName = nextStory?.display || next?.display || next?.title;
 
   const blocks = useMemo(() => story?.blocks ?? [], [story]);
 
@@ -262,7 +289,10 @@ const ProjectPage = () => {
 
   const display = story?.display || project.title;
   const liveLink = firstLink(project);
-  const total = live.length;
+  // Counted within its own list, so the number means the same thing here as it
+  // does in the works pane — and describes the sequence the footer walks.
+  const position = place ? place.at + 1 : index + 1;
+  const total = place ? place.list.length : live.length;
 
   return (
     <div ref={rootRef} className='relative bg-charcoal [overflow-x:clip]'>
@@ -362,7 +392,7 @@ const ProjectPage = () => {
             </p>
           </div>
           <p className='type-label m-0 whitespace-nowrap text-[#c8c9c3]'>
-            {String(index + 1).padStart(2, '0')} /{' '}
+            {String(position).padStart(2, '0')} /{' '}
             {String(total).padStart(2, '0')}
           </p>
         </div>
@@ -449,7 +479,7 @@ const ProjectPage = () => {
             to={`/projects/${toSlug(next.title)}`}
             className='sweep-cta m-0 mb-5 inline-block font-offbit101Bold text-[clamp(38px,7vw,110px)] leading-[.9] tracking-[-.02em] text-charcoal'
           >
-            {nextStory?.display || next.title}{' '}
+            {nextName}{' '}
             <span ref={nextFx} className='sweep-cta__mark'>
               <span aria-hidden='true'>→</span>
               <span aria-hidden='true' className='sweep-cta__over'>

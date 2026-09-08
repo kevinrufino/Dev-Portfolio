@@ -16,6 +16,10 @@ import STUDIO from '../../content/projects.json';
  *
  * A project absent from OVERRIDES simply doesn't appear in the pane, which is
  * deliberate — the pane is a selected-work edit, not the full archive.
+ *
+ * The ORDER of each list is the studio's to set; see `asPublished`. Without a
+ * published order the lists fall back to archive order, which is what they
+ * were before there was anywhere else to say it.
  */
 const OVERRIDES = {
   "Max's Lab": {
@@ -132,6 +136,33 @@ const entryFor = title => {
   };
 };
 
+// The order `/studio` published, per list. Titles only: reordering should not
+// mean rewriting a record for every project you did not otherwise touch, and a
+// single list of names is the one thing in this file that reads as a diff.
+const STUDIO_ORDER = STUDIO.order || {};
+
+/**
+ * Put a list in the order the studio published it.
+ *
+ * Anything the published order does not name keeps its archive position and
+ * follows the ones it does. That is what makes the two sources safe to hold at
+ * once: a project added to `constants.js` later appends to the end of its list
+ * rather than vanishing from it, and the published order never has to be
+ * exhaustive to be useful.
+ *
+ * `sort` is stable, which is the whole reason the unnamed ones can be given a
+ * single rank and still come out in the order they arrived.
+ */
+const asPublished = (key, titles) => {
+  const published = STUDIO_ORDER[key];
+  if (!Array.isArray(published) || published.length === 0) return titles;
+  const rank = title => {
+    const at = published.indexOf(title);
+    return at === -1 ? Infinity : at;
+  };
+  return [...titles].sort((a, b) => rank(a) - rank(b));
+};
+
 const inCategory = key => {
   const seeded = ProjectsData.map(p => p.title).filter(
     t =>
@@ -142,7 +173,7 @@ const inCategory = key => {
   const added = studioEntries
     .map(e => e.title)
     .filter(t => !seeded.includes(t) && STUDIO_PROJECTS[t].index.category === key);
-  return [...seeded, ...added].map(entryFor).filter(Boolean);
+  return asPublished(key, [...seeded, ...added]).map(entryFor).filter(Boolean);
 };
 
 export const WORKS = {

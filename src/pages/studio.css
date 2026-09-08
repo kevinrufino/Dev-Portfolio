@@ -101,7 +101,68 @@
   overflow: auto;
 }
 
-.studio-list button {
+.studio-list em {
+  color: var(--acid);
+  font-size: 11px;
+  font-style: normal;
+}
+
+/* ── the rail's groups ────────────────────────────────────────────────────
+   Work, Personal, Not listed. The first two are the works pane's own lists
+   in the order it will render them, so the rail reads as a preview of the
+   index; the third is everything the site is not showing. */
+.studio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.studio-group + .studio-group {
+  margin-top: 16px;
+}
+
+.studio-group__label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 4px 6px;
+  color: var(--dim);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.studio-group__empty {
+  margin: 0 4px;
+  color: #6a6a74;
+  font-size: 11px;
+  font-style: italic;
+}
+
+/* A row is no longer a single button: the name selects, and the two arrows
+   move it. Buttons cannot nest, so the row is the frame around both. */
+.studio-listrow {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+}
+
+.studio-listrow.is-on {
+  border-color: var(--edge);
+  background: #24242c;
+}
+
+.studio-listrow.is-gone .studio-listrow__pick span {
+  text-decoration: line-through;
+  opacity: 0.55;
+}
+
+.studio-listrow__pick {
+  flex: 1;
+  min-width: 0;
   display: flex;
   justify-content: space-between;
   gap: 8px;
@@ -110,15 +171,39 @@
   text-align: left;
 }
 
-.studio-list button.is-on {
-  border-color: var(--edge);
-  background: #24242c;
+.studio-listrow__pick span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.studio-list em {
-  color: var(--acid);
-  font-size: 11px;
-  font-style: normal;
+/* Kept out of the way until the row is worth arranging — the arrows are for
+   the list you are looking at, not decoration on every name. */
+.studio-listrow__move {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-right: 4px;
+  opacity: 0;
+  transition: opacity 120ms;
+}
+
+.studio-listrow:hover .studio-listrow__move,
+.studio-listrow.is-on .studio-listrow__move,
+.studio-listrow__move:focus-within {
+  opacity: 1;
+}
+
+.studio-listrow__move button {
+  padding: 2px 6px;
+  border-color: transparent;
+  background: transparent;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.studio-listrow__move button:hover:not(:disabled) {
+  border-color: var(--edge);
 }
 
 .studio-note {
@@ -277,13 +362,8 @@
    The rail's own add button, and the two states a project can be in besides
    "edited". Retiring is reversible right up until the export, so it reads as
    a state rather than as a deletion: the row stays, dimmed and struck. */
-.studio-list button.is-gone span {
-  text-decoration: line-through;
-  opacity: 0.55;
-}
-
 .studio-list .studio-add {
-  margin-top: 10px;
+  margin-top: 18px;
   width: 100%;
   justify-content: flex-start;
 }

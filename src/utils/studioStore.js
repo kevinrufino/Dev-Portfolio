@@ -10,14 +10,20 @@
  *
  * Two stores, because they have very different shapes:
  *
- * - The DRAFT (every word and every block) is small and goes in localStorage,
- *   so a reload never loses an afternoon of writing.
+ * - The DRAFT (every word and every block, plus the order the works pane
+ *   should list them in) is small and goes in localStorage, so a reload never
+ *   loses an afternoon of writing.
  * - The ASSETS are megabytes of video and go in IndexedDB, which is the only
  *   browser store that will hold them. They are kept as real Blobs, so the
  *   export writes the original bytes rather than a re-encoded copy.
  */
 
-const DRAFT_KEY = 'studio.draft.v1';
+const DRAFT_KEY = 'studio.draft.v2';
+// v1 kept the projects map at the top level. v2 keeps `{ projects, order }`,
+// because the order the works pane lists them in belongs to the draft too and
+// is not a property of any one project. A v1 draft is somebody's afternoon, so
+// it is lifted into the new shape rather than dropped.
+const DRAFT_KEY_V1 = 'studio.draft.v1';
 const DB_NAME = 'studio-assets';
 const DB_STORE = 'files';
 
@@ -26,7 +32,9 @@ const DB_STORE = 'files';
 export function loadDraft() {
   try {
     const raw = window.localStorage.getItem(DRAFT_KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (raw) return JSON.parse(raw);
+    const legacy = window.localStorage.getItem(DRAFT_KEY_V1);
+    return legacy ? { projects: JSON.parse(legacy), order: {} } : null;
   } catch {
     return null;
   }
@@ -46,6 +54,7 @@ export function saveDraft(draft) {
 export function clearDraft() {
   try {
     window.localStorage.removeItem(DRAFT_KEY);
+    window.localStorage.removeItem(DRAFT_KEY_V1);
   } catch {
     /* nothing to do */
   }

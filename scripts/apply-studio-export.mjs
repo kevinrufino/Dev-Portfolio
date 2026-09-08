@@ -62,6 +62,10 @@ try {
 }
 
 const titles = Object.keys(parsed.projects || {});
+// Titles only, and worth showing: reordering the index is the one change that
+// leaves no trace in any project's own record.
+const order = parsed.order || {};
+const lists = ['work', 'personal'].filter(k => Array.isArray(order[k]) && order[k].length);
 mkdirSync(path.dirname(CONTENT), { recursive: true });
 writeFileSync(CONTENT, `${JSON.stringify(parsed, null, 2)}\n`);
 
@@ -83,7 +87,7 @@ console.log(`
     public/projects/
 
   ${titles.map(t => `  · ${t}`).join('\n')}
-
+${lists.length ? `\n  Works pane order:\n${lists.map(k => `      ${k}: ${order[k].join(' · ')}`).join('\n')}\n` : ''}
   Review with \`git status\` and \`git diff\`, then commit. Everything under
   public/ is served from Vercel's CDN once it is deployed — there is nothing
   else to upload.
