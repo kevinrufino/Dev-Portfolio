@@ -449,7 +449,7 @@
       "index": {
         "category": "work",
         "shape": "sphere",
-        "glyphSrc": "",
+        "glyphSrc": "/cursors/levels/maxs-lab-L6.webm",
         "summary": "An explorable 3D world built around Max, with hidden details and live events."
       },
       "archive": {
@@ -572,7 +572,7 @@
       "index": {
         "category": "work",
         "shape": "rings",
-        "glyphSrc": "",
+        "glyphSrc": "/cursors/levels/candid-rotation-L6.webm",
         "summary": "Agentic chat experience that exposes automatic workflows for the public sector."
       },
       "archive": {
@@ -594,6 +594,24 @@
         "category": "personal",
         "shape": "rings",
         "glyphSrc": "/cursors/levels/battlebot_run-L6.webm"
+      }
+    },
+    "TINAJ Collection Listing Page": {
+      "index": {
+        "glyphSrc": "/cursors/levels/tinaj-gimbal-L6.webm",
+        "category": "work"
+      }
+    },
+    "Our Force 1 Poster Content Display Page": {
+      "index": {
+        "glyphSrc": "/cursors/levels/our-force-1-L6.webm",
+        "category": "work"
+      }
+    },
+    "EA Sports FC Partner Page": {
+      "index": {
+        "category": "work",
+        "glyphSrc": "/cursors/levels/eafc-L6.webm"
       }
     }
   },

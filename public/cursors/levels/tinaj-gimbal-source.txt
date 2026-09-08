@@ -1,0 +1,5 @@
+TINAJ gimbal glyph
+Source: https://commons.wikimedia.org/wiki/File:Rotating_gimbal-xyz.gif
+Original: Rotating gimbal-xyz.gif by Lars H. Rohwedder (RokerHRO), 9 November 2006.
+License: Released into the public domain by its author.
+Changes: white background removed, padded, converted to grayscale, resized before quantization to six tones, playback accelerated from 5 to 2.5 seconds, encoded as lossless VP9.
