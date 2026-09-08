@@ -51,6 +51,17 @@ const RATIOS = ['16 / 10', '4 / 3', '3 / 2', '1 / 1', '9 / 16', 'auto'];
 
 // The rail's groups, in the order the works pane hands them to a reader: the
 // two lists it toggles between, then everything the site is not showing.
+// The three that make the line under a title in the works pane, and the link
+// the project page's `live` control points at. Labelled rather than keyed:
+// they were raw field names, which said nothing about where any of them
+// showed up.
+const ARCHIVE_FIELDS = [
+  { key: 'client', label: 'Client', hint: 'first' },
+  { key: 'role', label: 'Role', hint: 'second' },
+  { key: 'year', label: 'Year', hint: 'third' },
+  { key: 'liveLink', label: 'Live link', hint: 'the ↗ on the project page' },
+];
+
 const LISTS = [
   { key: 'work', label: 'Work', note: 'nothing in this list' },
   { key: 'personal', label: 'Personal', note: 'nothing in this list' },
@@ -222,6 +233,15 @@ const Studio = () => {
     drafts[current] ||
     (SEED_TITLES.has(current) ? seedProject(current) : blankProject(current));
   const retired = Boolean(drafts[current]?.removed);
+  // Exactly how the works pane will join them, shown back so the three fields
+  // above read as one line rather than three unrelated boxes.
+  const metaLine = [
+    project.archive.client,
+    project.archive.role,
+    project.archive.year,
+  ]
+    .filter(Boolean)
+    .join(' / ');
   const slug = toSlug(current);
 
   // Deleting the project you were looking at has to leave you somewhere.
@@ -914,8 +934,8 @@ const Studio = () => {
               />
             </Field>
             <div className='studio-inline'>
-              {['client', 'role', 'year', 'liveLink'].map(key => (
-                <Field key={key} label={key}>
+              {ARCHIVE_FIELDS.map(({ key, label, hint }) => (
+                <Field key={key} label={label} hint={hint}>
                   <input
                     value={project.archive[key]}
                     onChange={e =>
@@ -925,6 +945,10 @@ const Studio = () => {
                 </Field>
               ))}
             </div>
+            <p className='studio-hint'>
+              Client, role and year are the line under the title in the works
+              pane, joined with slashes — {metaLine || 'nothing set yet'}
+            </p>
           </section>
 
           <section className='studio-card'>

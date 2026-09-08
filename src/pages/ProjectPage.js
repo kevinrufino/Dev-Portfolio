@@ -7,7 +7,7 @@ import {
   PROJECT_STORIES,
   RETIRED_TITLES,
 } from '../components/Project/projectStories.js';
-import { WORKS } from '../components/Works/worksData.js';
+import { WORKS, archiveFor } from '../components/Works/worksData.js';
 import useGooFollower from '../hooks/useGooFollower.js';
 import useCursorFx from '../hooks/useCursorFx.js';
 import GooPills from '../components/common/GooPills.js';
@@ -89,7 +89,12 @@ const ProjectPage = () => {
   // The archive minus anything the studio has retired. A retired project has
   // to stop resolving as well as stop being listed — otherwise the only way
   // to reach it is the only way anyone ever would: a link that already exists.
-  const live = ProjectsData.filter(p => !RETIRED_TITLES.has(p.title));
+  // Read through `archiveFor` rather than straight off `ProjectsData`, so a
+  // client, role, year or link the studio has published reaches this page too
+  // — otherwise those edits would show in the index and nowhere else.
+  const live = ProjectsData.filter(p => !RETIRED_TITLES.has(p.title)).map(p =>
+    archiveFor(p.title),
+  );
   const index = live.findIndex(p => toSlug(p.title) === slug);
   const project = index !== -1 ? live[index] : null;
 

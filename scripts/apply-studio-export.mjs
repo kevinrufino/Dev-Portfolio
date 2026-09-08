@@ -64,9 +64,24 @@ try {
 const titles = Object.keys(parsed.projects || {});
 // Titles only, and worth showing: reordering the index is the one change that
 // leaves no trace in any project's own record.
+let kept = false;
 const order = parsed.order || {};
 const lists = ['work', 'personal'].filter(k => Array.isArray(order[k]) && order[k].length);
+// The previous content, kept beside the file it replaces.
+//
+// This write is a REPLACEMENT, not a merge — the bundle is the whole of what
+// the site renders — so applying an export made from a stale draft silently
+// discards whatever was published in between. Nothing here can tell those
+// apart, and the file is routinely uncommitted (it is generated), so `git
+// checkout` is not always a way back. One copy costs nothing and is.
 mkdirSync(path.dirname(CONTENT), { recursive: true });
+if (existsSync(CONTENT)) {
+  const previous = readFileSync(CONTENT, 'utf8');
+  if (previous.trim() && previous.trim() !== '{\n  "projects": {}\n}') {
+    writeFileSync(`${CONTENT}.bak`, previous);
+    kept = true;
+  }
+}
 writeFileSync(CONTENT, `${JSON.stringify(parsed, null, 2)}\n`);
 
 let assets = 0;
@@ -88,6 +103,7 @@ console.log(`
 
   ${titles.map(t => `  · ${t}`).join('\n')}
 ${lists.length ? `\n  Works pane order:\n${lists.map(k => `      ${k}: ${order[k].join(' · ')}`).join('\n')}\n` : ''}
+${kept ? `  The content this replaced was saved to projects.json.bak\n` : ''}
   Review with \`git status\` and \`git diff\`, then commit. Everything under
   public/ is served from Vercel's CDN once it is deployed — there is nothing
   else to upload.

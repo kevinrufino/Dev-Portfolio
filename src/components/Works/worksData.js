@@ -106,11 +106,27 @@ const studioEntries = Object.entries(STUDIO_PROJECTS)
     display: data.display,
   }));
 
-const archiveFor = title => {
+/**
+ * A project's archive record, with anything the studio has published over it.
+ *
+ * The merge is the point. This used to return the `constants.js` record
+ * outright whenever it found one, and only fall back to the studio for a
+ * project that existed nowhere else — which meant the studio's client, role,
+ * year and link fields were editable, exported, applied, and then read by
+ * nobody, for every project the site actually ships. Those three fields are
+ * the line under a title in the works pane, so the one piece of a project the
+ * studio most obviously ought to own was the one it could not change.
+ *
+ * The studio seeds those fields FROM this record, so a value it did not touch
+ * comes back identical and an empty one is a deliberate clearing. Fields it
+ * does not manage at all — the link groups, the archive gif — are carried
+ * through from the code record untouched.
+ */
+export const archiveFor = title => {
   const found = ProjectsData.find(p => p.title === title);
-  if (found) return found;
   const studio = studioEntries.find(e => e.title === title);
-  return studio ? { title, ...studio.archive } : null;
+  if (!found && !studio) return null;
+  return { title, ...found, ...(studio?.archive || {}) };
 };
 
 const entryFor = title => {
