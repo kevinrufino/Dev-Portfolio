@@ -93,8 +93,14 @@ const ProjectPageBody = () => {
   // Read through `archiveFor` rather than straight off `ProjectsData`, so a
   // client, role, year or link the studio has published reaches this page too
   // — otherwise those edits would show in the index and nowhere else.
-  const live = ProjectsData.filter(p => !RETIRED_TITLES.has(p.title)).map(p =>
-    archiveFor(p.title),
+  // The published archive is static for this mount. archiveFor returns a new
+  // object, so rebuilding it on chapter/hover updates would retrigger the
+  // project-entry effects, including the scroll reset and cover reveal.
+  const live = useMemo(
+    () => ProjectsData.filter(p => !RETIRED_TITLES.has(p.title)).map(p =>
+      archiveFor(p.title),
+    ),
+    [],
   );
   const index = live.findIndex(p => toSlug(p.title) === slug);
   const project = index !== -1 ? live[index] : null;
