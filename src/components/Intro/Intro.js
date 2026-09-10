@@ -5,9 +5,12 @@ import useCursorFx from '../../hooks/useCursorFx.js';
 import { scrollToSection } from '../../utils/navigateToSection.js';
 
 const ROLES = [
-  'Front-end Developer',
+  'Front-End Developer',
+  'Design Engineer',
   'Full Stack Developer',
-  'Creative Engineer',
+  'Product Engineer',
+  'Creative Technologist',
+  'Just a chill guy',
 ];
 
 // The longest of them, reserved as width. The line types and deletes itself,
@@ -47,7 +50,6 @@ const CTA_GRAVITY = { top: 130, right: 260, bottom: 130, left: 130 };
  * Running copy is DM Sans. OffBit is a display face; below about 20px its
  * counters close up and paragraph text stops being comfortable to read.
  */
-// eslint-disable-next-line react/prop-types
 export const Intro = ({ setCursor }) => {
   const typed = useTypewriter(ROLES);
   // Full strength, like everything else. The 0.9 it carried was a holdover
