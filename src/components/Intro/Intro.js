@@ -129,8 +129,8 @@ export const Intro = ({ setCursor }) => {
 
           <p className='type-body mb-[clamp(26px,4vh,40px)] max-w-[46ch] text-[clamp(15px,1.25vw,18px)] leading-[1.65] text-paper-muted'>
             I enjoy fusing my love for art and tech to build fun interactive
-            experiences. I currently am working at Nike as a Front-end Creative
-            Developer. Check out my work below 👇🏾
+            experiences. I currently am working at Candid as a Prodcut / Design
+            Engineer.
           </p>
 
           <button
@@ -146,7 +146,7 @@ export const Intro = ({ setCursor }) => {
               <i />
               <i />
             </span>
-            <span>See selected work</span>
+            <span>Check out my work below 👇🏾</span>
             <span aria-hidden='true'>↓</span>
           </button>
         </div>
