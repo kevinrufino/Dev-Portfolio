@@ -39,7 +39,6 @@ import { preloadImages } from './services/AssetService.js';
 import FillPhysicsCanvas from './components/FillPhysicsCanvas.js';
 import ProjectPage from './pages/ProjectPage.js';
 import ProjectPreview from './pages/ProjectPreview.js';
-import ProjectsLab from './pages/ProjectsLab.js';
 import Studio from './pages/Studio.js';
 import PageTransition from './components/PageTransition.js';
 import PageCurtain from './components/PageCurtain.js';
@@ -280,14 +279,6 @@ const AnimatedRoutes = () => {
         {/* Unlinked on purpose: the content editor, which writes nothing on
             its own and hands over a bundle to be committed. */}
         <Route path="/studio" element={<Studio />} />
-        <Route
-          path="/lab"
-          element={
-            <PageTransition>
-              <ProjectsLab />
-            </PageTransition>
-          }
-        />
       </Routes>
     </AnimatePresence>
   );

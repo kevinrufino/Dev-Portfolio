@@ -7,7 +7,8 @@ import WorksPane from '../Works/WorksPane.js';
  * within the section's pinned range, with a generative glyph standing in for
  * each project and a Work/Personal split.
  *
- * Replaces THE LEDGER (#13), which remains available in the projects lab at
- * /lab alongside the other two renditions.
+ * Replaces THE LEDGER (#13). That rendition and the two alternatives it was
+ * chosen against lived at /lab, which has been retired now that the question
+ * it existed to answer is settled.
  */
 export const Projects = () => <WorksPane id='projects' />;
