@@ -787,7 +787,7 @@
         "shape": "rings",
         "glyphSrc": "",
         "summary": "A folder collection of my toolcraft explorations",
-        "comingSoon": false
+        "comingSoon": true
       },
       "archive": {
         "client": "",
@@ -817,7 +817,7 @@
         "shape": "sphere",
         "glyphSrc": "/projects/warcraft-3-book-rts/glyph.webm",
         "summary": "Interactive E-Book exploration. What if the stories we read came out an brought us into an immersive world.",
-        "comingSoon": false
+        "comingSoon": true
       },
       "archive": {
         "client": "",
@@ -1067,7 +1067,7 @@
   },
   "site": {
     "projectNotice": {
-      "enabled": false,
+      "enabled": true,
       "text": "More coming soon."
     }
   }
