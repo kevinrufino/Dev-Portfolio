@@ -244,8 +244,8 @@
     "Candid Chat Agent": {
       "display": "Candid Chat Agent",
       "tagline": "An agentic chat surface for the public sector, and the work of deciding what it should look like while it is thinking.",
-      "cover": "Cover — Candid Chat Agent",
-      "coverSrc": "",
+      "cover": "Cover — Ask Candid at rest, and a prompt going in",
+      "coverSrc": "/projects/candid-chat-agent/chat-bar-journey.mp4",
       "meta": [
         {
           "k": "Timeline",
