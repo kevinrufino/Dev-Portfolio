@@ -10,6 +10,7 @@ jest.mock('../components/Works/worksData.js', () => ({
   archiveFor: title => ({ title, client: 'Client' }),
   WORKS: { work: [{ title: 'Alpha' }, { title: 'Beta' }], personal: [] },
 }));
+jest.mock('../components/common/EmailCta.js', () => () => null);
 // The site-wide hold, off by default here so the existing tests exercise a
 // page with a body. `mock`-prefixed so jest lets the factory close over it.
 let mockNotice = { enabled: false, text: 'More coming soon.' };
@@ -23,6 +24,7 @@ jest.mock('../content/siteSettings.js', () => ({
 }));
 jest.mock('../components/Project/projectStories.js', () => ({
   RETIRED_TITLES: new Set(),
+  LIVE_ONLY_TITLES: new Set(),
   PROJECT_STORIES: {
     Alpha: { blocks: [{ title: 'Introduction' }, { title: 'Reflection' }] },
     Beta: { blocks: [{ title: 'Beta introduction' }] },

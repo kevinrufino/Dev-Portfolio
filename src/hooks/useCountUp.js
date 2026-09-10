@@ -3,24 +3,34 @@ import { useEffect, useRef } from 'react';
 /**
  * Counts a number up when it first scrolls into view.
  *
- * Writes to the node directly rather than through state: the value changes
- * every frame for ~900ms and none of that belongs in a React render. The
- * element keeps its final value in the markup, so with JS disabled, under
- * reduced motion, or before the observer fires, the real figure is what shows —
- * the animation only ever replaces a correct value with the same correct value.
+ * Reports each frame's value to a callback rather than writing anything
+ * itself: the value changes every frame for ~900ms and none of that belongs in
+ * a React render, but nor does this hook need to know whether it is driving a
+ * text node or a stack of digit columns.
+ *
+ * Nothing runs under reduced motion, without an IntersectionObserver, or
+ * before the observer fires — so whatever the caller renders on its own is the
+ * value that shows in all three cases. The animation only ever replaces a
+ * correct value with the same correct value.
  *
  * @param {number} to - the final value.
- * @param {number} decimals - fixed decimal places.
- * @param {string} suffix - appended verbatim (%, ×, fps…).
+ * @param {(value: number) => void} onFrame - called with the value each frame.
+ * @param {boolean} enabled - false leaves the final value alone.
+ * @returns {import('react').RefObject} attach to the element to observe.
  */
 const DURATION_MS = 900;
 
-export default function useCountUp(to, decimals, suffix) {
+export default function useCountUp(to, onFrame, enabled = true) {
   const ref = useRef(null);
+  // Held in a ref so a caller that rebuilds the callback every render — which
+  // is every caller, since it closes over the element being written — does not
+  // restart the count.
+  const frameCb = useRef(onFrame);
+  frameCb.current = onFrame;
 
   useEffect(() => {
     const el = ref.current;
-    if (!el) return undefined;
+    if (!el || !enabled) return undefined;
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
       return undefined;
     }
@@ -37,7 +47,7 @@ export default function useCountUp(to, decimals, suffix) {
         const frame = now => {
           const p = Math.min(1, (now - start) / DURATION_MS);
           const eased = 1 - Math.pow(1 - p, 3);
-          el.textContent = `${(to * eased).toFixed(decimals)}${suffix}`;
+          frameCb.current(to * eased);
           if (p < 1) raf = requestAnimationFrame(frame);
         };
         raf = requestAnimationFrame(frame);
@@ -52,7 +62,7 @@ export default function useCountUp(to, decimals, suffix) {
       observer.disconnect();
       cancelAnimationFrame(raf);
     };
-  }, [to, decimals, suffix]);
+  }, [to, enabled]);
 
   return ref;
 }

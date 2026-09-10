@@ -1,11 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ProjectsData } from '../constants.js';
-import { PROJECT_STORIES } from '../components/Project/projectStories.js';
 import { WORKS } from '../components/Works/worksData.js';
-import {
-  DEFAULT_PROJECT_NOTICE,
-  PROJECT_NOTICE,
-} from '../content/siteSettings.js';
 import { toSlug } from '../utils/helpers.js';
 import {
   clearDraft,
@@ -13,11 +7,28 @@ import {
   download,
   getAsset,
   listAssets,
-  loadDraft,
   putAsset,
   saveDraft,
   zip,
 } from '../utils/studioStore.js';
+import {
+  ARCHIVE_FIELDS,
+  BLOCK_TYPES,
+  DEFAULT_PROJECT_NOTICE,
+  RATIOS,
+  SEED_TITLES,
+  SHAPES,
+  blankBlock,
+  blankProject,
+  clone,
+  isEdited,
+  normaliseProject,
+  readDraft,
+  recordFor,
+  seedProject,
+  seedSite,
+  siteIsEdited,
+} from '../utils/studioDraft.js';
 import './studio.css';
 
 /**
@@ -43,113 +54,13 @@ import './studio.css';
  * components: this is a tool, and it should look like one.
  */
 
-const BLOCK_TYPES = [
-  { type: 'text', label: 'Text', hint: 'Paragraphs, with an optional pull quote.' },
-  { type: 'assets', label: 'Assets', hint: 'A 12-column grid of captioned media.' },
-  { type: 'moments', label: 'Decisions', hint: 'What was chosen against what was passed on.' },
-  { type: 'impact', label: 'Impact', hint: 'Figures that count up on reveal.' },
-  { type: 'reflection', label: 'Reflection', hint: 'Text, at the end.' },
-];
-
-const RATIOS = ['16 / 10', '4 / 3', '3 / 2', '1 / 1', '9 / 16', 'auto'];
-
 // The rail's groups, in the order the works pane hands them to a reader: the
 // two lists it toggles between, then everything the site is not showing.
-// The three that make the line under a title in the works pane, and the link
-// the project page's `live` control points at. Labelled rather than keyed:
-// they were raw field names, which said nothing about where any of them
-// showed up.
-const ARCHIVE_FIELDS = [
-  { key: 'client', label: 'Client', hint: 'first' },
-  { key: 'role', label: 'Role', hint: 'second' },
-  { key: 'year', label: 'Year', hint: 'third' },
-  { key: 'liveLink', label: 'Live link', hint: 'the ↗ on the project page' },
-];
-
 const LISTS = [
   { key: 'work', label: 'Work', note: 'nothing in this list' },
   { key: 'personal', label: 'Personal', note: 'nothing in this list' },
   { key: 'unlisted', label: 'Not listed', note: 'nothing retired or unlisted' },
 ];
-const SHAPES = ['sphere', 'rings', 'poster'];
-
-const blankBlock = type => {
-  const head = { type, label: '', title: '', note: '', paras: [''], pull: '' };
-  if (type === 'assets') return { ...head, items: [{ caption: '', span: 6, ratio: '16 / 10' }] };
-  if (type === 'moments') {
-    return {
-      ...head,
-      items: [
-        {
-          kind: 'Decision',
-          title: '',
-          body: '',
-          chose: { k: 'Chose', v: '' },
-          passed: { k: 'Passed on', v: '' },
-          call: '',
-        },
-      ],
-    };
-  }
-  if (type === 'impact') return { ...head, items: [{ n: 0, suffix: '', k: '', note: '' }] };
-  return head;
-};
-
-/** Titles the repo itself ships. These can be retired but never deleted. */
-const SEED_TITLES = new Set([
-  ...ProjectsData.map(p => p.title),
-  ...Object.keys(PROJECT_STORIES),
-]);
-
-/** A project that does not exist yet. */
-const blankProject = title => ({
-  title,
-  display: title,
-  tagline: '',
-  cover: `Cover — ${title}`,
-  coverSrc: '',
-  meta: [{ k: '', v: '' }],
-  blocks: [blankBlock('text')],
-  index: {
-    category: 'work',
-    shape: 'sphere',
-    glyphSrc: '',
-    summary: '',
-    comingSoon: false,
-  },
-  archive: { client: '', role: '', year: '', liveLink: '' },
-});
-
-/** Everything the site currently renders, as the editor's starting point. */
-const seedProject = title => {
-  const archive = ProjectsData.find(p => p.title === title) || {};
-  const story = PROJECT_STORIES[title];
-  const row = [...WORKS.work, ...WORKS.personal].find(r => r.title === title);
-  return {
-    title,
-    display: story?.display || title,
-    tagline: story?.tagline || archive.description || '',
-    cover: story?.cover || `Cover — ${title}`,
-    coverSrc: story?.coverSrc || '',
-    meta: story?.meta?.length ? story.meta : [{ k: '', v: '' }],
-    blocks: story?.blocks?.length ? story.blocks : [blankBlock('text')],
-    index: {
-      category: WORKS.personal.some(r => r.title === title) ? 'personal' : 'work',
-      shape: row?.shape || 'sphere',
-      glyphSrc: row?.glyphSrc || '',
-      summary: row?.description || '',
-      comingSoon: Boolean(row?.comingSoon),
-    },
-    archive: {
-      client: archive.client || '',
-      role: archive.role || '',
-      year: archive.year || '',
-      liveLink: archive.liveLink || row?.linkHref || '',
-    },
-  };
-};
-
-const clone = value => JSON.parse(JSON.stringify(value));
 
 // ── small pieces of furniture ───────────────────────────────────────────────
 
@@ -214,19 +125,10 @@ const Studio = () => {
   // works pane should list them in. The order is not a property of any project
   // — it is the relationship between them — so it sits beside them rather than
   // being scattered across ten records as a rank each.
-  const [draft, setDraft] = useState(() => {
-    const saved = loadDraft() || {};
-    return {
-      projects: saved.projects || {},
-      order: saved.order || {},
-      // Seeded from what the site is publishing right now, for the same reason
-      // the lists are: opening the studio should show the site as it stands,
-      // not an empty default that silently switches something off on export.
-      site: saved.site || {
-        projectNotice: { enabled: PROJECT_NOTICE.enabled, text: PROJECT_NOTICE.text },
-      },
-    };
-  });
+  // `readDraft` also drops anything the site has since caught up with, so a
+  // bundle that has been applied and committed stops being a pending edit
+  // without anyone having to remember to clear it.
+  const [draft, setDraft] = useState(readDraft);
   const drafts = draft.projects;
   const commit = useCallback(mutate => {
     setDraft(previous => {
@@ -244,14 +146,15 @@ const Studio = () => {
   );
 
   const [current, setCurrent] = useState(() => [...SEED_TITLES].sort()[0]);
+  // Which of the two things this editor edits is in the column: the site, or
+  // one project. They are not two cards in one scroll — see the rail.
+  const [view, setView] = useState('project');
   const [assetKeys, setAssetKeys] = useState([]);
   const [status, setStatus] = useState('');
   const fileInput = useRef(null);
   const pendingSlot = useRef(null);
 
-  const project =
-    drafts[current] ||
-    (SEED_TITLES.has(current) ? seedProject(current) : blankProject(current));
+  const project = recordFor(drafts, current);
   const retired = Boolean(drafts[current]?.removed);
   // Exactly how the works pane will join them, shown back so the three fields
   // above read as one line rather than three unrelated boxes.
@@ -282,17 +185,15 @@ const Studio = () => {
   }, []);
 
   useEffect(() => {
-    listAssets().then(setAssetKeys).catch(() => setAssetKeys([]));
+    listAssets()
+      .then(setAssetKeys)
+      .catch(() => setAssetKeys([]));
   }, []);
 
   const update = useCallback(
     mutate => {
       commit(previous => {
-        const base =
-          previous.projects[current] ||
-          (SEED_TITLES.has(current)
-            ? seedProject(current)
-            : blankProject(current));
+        const base = recordFor(previous.projects, current);
         return {
           ...previous,
           projects: { ...previous.projects, [current]: mutate(clone(base)) },
@@ -308,6 +209,7 @@ const Studio = () => {
   // the draft rather than through `update`, which is scoped to whichever
   // project is open.
   const notice = draft.site.projectNotice;
+  const siteEdited = siteIsEdited(draft.site);
   const setNotice = patch =>
     commit(previous => ({
       ...previous,
@@ -316,6 +218,10 @@ const Studio = () => {
         projectNotice: { ...previous.site.projectNotice, ...patch },
       },
     }));
+  const resetSite = () => {
+    commit(previous => ({ ...previous, site: seedSite() }));
+    setStatus('Site settings are back to what is published.');
+  };
 
   // ── the two lists, and where each project sits in them ────────────────────
 
@@ -379,6 +285,7 @@ const Studio = () => {
     if (!name) return;
     if (titles.includes(name)) {
       setCurrent(name);
+      setView('project');
       setStatus(`${name} is already in the list.`);
       return;
     }
@@ -387,7 +294,10 @@ const Studio = () => {
       projects: { ...previous.projects, [name]: blankProject(name) },
     }));
     setCurrent(name);
-    setStatus(`Added ${name}. It reaches the site on the next export and apply.`);
+    setView('project');
+    setStatus(
+      `Added ${name}. It reaches the site on the next export and apply.`,
+    );
   };
 
   // Two different things share one button. A project invented here can simply
@@ -464,24 +374,13 @@ const Studio = () => {
 
   const exportBundle = async () => {
     setStatus('Building the bundle…');
+    // The same normalisation the "edited" badge compares against — see
+    // `studioDraft`. If the export and the comparison ever drifted apart, a
+    // project would go on reading as edited after publishing exactly what it
+    // said it would.
     const projects = {};
     for (const [title, data] of Object.entries(drafts)) {
-      const { title: _drop, removed, ...rest } = data;
-      // A retired project publishes nothing but the fact that it is retired;
-      // carrying its old body along would put content in the repo that the
-      // site has been told not to render.
-      if (removed) {
-        projects[title] = { removed: true };
-        continue;
-      }
-      projects[title] = {
-        ...rest,
-        meta: rest.meta.filter(m => m.k || m.v),
-        blocks: rest.blocks.map(block => ({
-          ...block,
-          paras: (block.paras || []).filter(Boolean),
-        })),
-      };
+      projects[title] = normaliseProject(data);
     }
     // The order goes out in full rather than as a delta. It is only titles, it
     // is the one part of this file a human will read top to bottom, and a
@@ -637,7 +536,8 @@ const Studio = () => {
           render={(item, j) => {
             const set = (path, value) =>
               setBlock(i, b => {
-                const target = path.length === 1 ? b.items[j] : b.items[j][path[0]];
+                const target =
+                  path.length === 1 ? b.items[j] : b.items[j][path[0]];
                 target[path[path.length - 1]] = value;
                 return b;
               });
@@ -645,25 +545,44 @@ const Studio = () => {
               <>
                 <div className='studio-inline'>
                   <Field label='Chip'>
-                    <input value={item.kind} onChange={e => set(['kind'], e.target.value)} />
+                    <input
+                      value={item.kind}
+                      onChange={e => set(['kind'], e.target.value)}
+                    />
                   </Field>
                   <Field label='Title'>
-                    <input value={item.title} onChange={e => set(['title'], e.target.value)} />
+                    <input
+                      value={item.title}
+                      onChange={e => set(['title'], e.target.value)}
+                    />
                   </Field>
                 </div>
                 <Field label='Body'>
-                  <textarea rows='3' value={item.body} onChange={e => set(['body'], e.target.value)} />
+                  <textarea
+                    rows='3'
+                    value={item.body}
+                    onChange={e => set(['body'], e.target.value)}
+                  />
                 </Field>
                 <div className='studio-inline'>
                   <Field label='Chose'>
-                    <input value={item.chose.v} onChange={e => set(['chose', 'v'], e.target.value)} />
+                    <input
+                      value={item.chose.v}
+                      onChange={e => set(['chose', 'v'], e.target.value)}
+                    />
                   </Field>
                   <Field label='Passed on'>
-                    <input value={item.passed.v} onChange={e => set(['passed', 'v'], e.target.value)} />
+                    <input
+                      value={item.passed.v}
+                      onChange={e => set(['passed', 'v'], e.target.value)}
+                    />
                   </Field>
                 </div>
                 <Field label='So what'>
-                  <input value={item.call} onChange={e => set(['call'], e.target.value)} />
+                  <input
+                    value={item.call}
+                    onChange={e => set(['call'], e.target.value)}
+                  />
                 </Field>
               </>
             );
@@ -678,7 +597,10 @@ const Studio = () => {
           items={block.items}
           addLabel='figure'
           onAdd={() =>
-            setBlock(i, b => ({ ...b, items: [...b.items, { n: 0, suffix: '', k: '', note: '' }] }))
+            setBlock(i, b => ({
+              ...b,
+              items: [...b.items, { n: 0, suffix: '', k: '', note: '' }],
+            }))
           }
           onChange={items => setBlock(i, b => ({ ...b, items }))}
           render={(item, j) => {
@@ -698,13 +620,22 @@ const Studio = () => {
                   />
                 </Field>
                 <Field label='Suffix'>
-                  <input value={item.suffix} onChange={e => set('suffix', e.target.value)} />
+                  <input
+                    value={item.suffix}
+                    onChange={e => set('suffix', e.target.value)}
+                  />
                 </Field>
                 <Field label='Label'>
-                  <input value={item.k} onChange={e => set('k', e.target.value)} />
+                  <input
+                    value={item.k}
+                    onChange={e => set('k', e.target.value)}
+                  />
                 </Field>
                 <Field label='Note'>
-                  <input value={item.note} onChange={e => set('note', e.target.value)} />
+                  <input
+                    value={item.note}
+                    onChange={e => set('note', e.target.value)}
+                  />
                 </Field>
               </div>
             );
@@ -720,7 +651,10 @@ const Studio = () => {
             rows='6'
             value={(block.paras || []).join('\n\n')}
             onChange={e =>
-              setBlock(i, b => ({ ...b, paras: e.target.value.split(/\n{2,}/) }))
+              setBlock(i, b => ({
+                ...b,
+                paras: e.target.value.split(/\n{2,}/),
+              }))
             }
           />
         </Field>
@@ -743,10 +677,16 @@ const Studio = () => {
         <p>
           Everything here stays in this browser until you export. The bundle is
           a <code>projects.json</code> and the assets it names; apply it with{' '}
-          <code>npm run studio:apply &lt;zip&gt;</code> and commit.
+          <code>npm run studio:apply &lt;zip&gt;</code> and commit. A project
+          page can also be edited on itself — open it with <code>?edit=1</code>{' '}
+          — which writes back into this same draft.
         </p>
         <div className='studio-head__actions'>
-          <button type='button' className='studio-primary' onClick={exportBundle}>
+          <button
+            type='button'
+            className='studio-primary'
+            onClick={exportBundle}
+          >
             Export bundle
           </button>
           <button
@@ -754,17 +694,10 @@ const Studio = () => {
             onClick={() => {
               if (!window.confirm('Discard every local edit?')) return;
               clearDraft();
-              setDraft({
-                projects: {},
-                order: {},
-                site: {
-                  projectNotice: {
-                    enabled: PROJECT_NOTICE.enabled,
-                    text: PROJECT_NOTICE.text,
-                  },
-                },
-              });
-              setStatus('Draft cleared. The site’s current content is showing again.');
+              setDraft({ projects: {}, order: {}, site: seedSite() });
+              setStatus(
+                'Draft cleared. The site’s current content is showing again.',
+              );
             }}
           >
             Discard draft
@@ -780,6 +713,30 @@ const Studio = () => {
               Unlisted comes last and is not orderable: nothing in it appears
               on the site, and it exists so a retired project stays reachable
               to restore. */}
+          {/* Above the lists, and not in any of them, because it is not a
+              project. What is true of the whole site was sitting at the top of
+              the project column, in the same stack of cards as this project's
+              tagline and this project's blocks — so a switch that holds back
+              every page on the site read as a property of whichever one
+              happened to be open. Selecting it here swaps the column entirely:
+              you are editing the site, or you are editing a project, and never
+              both at once in the same scroll. */}
+          <div className='studio-group'>
+            <p className='studio-group__label'>Site</p>
+            <div
+              className={`studio-listrow ${view === 'site' ? 'is-on' : ''}`.trim()}
+            >
+              <button
+                type='button'
+                className='studio-listrow__pick'
+                onClick={() => setView('site')}
+              >
+                <span>Every project page</span>
+                {siteEdited && <em>edited</em>}
+              </button>
+            </div>
+          </div>
+
           {LISTS.map(({ key, label, note }) => (
             <div className='studio-group' key={key}>
               <p className='studio-group__label'>
@@ -795,17 +752,26 @@ const Studio = () => {
                   <div
                     key={title}
                     className={`studio-listrow ${
-                      title === current ? 'is-on' : ''
+                      title === current && view === 'project' ? 'is-on' : ''
                     } ${gone ? 'is-gone' : ''}`.trim()}
                   >
                     <button
                       type='button'
                       className='studio-listrow__pick'
-                      onClick={() => setCurrent(title)}
+                      onClick={() => {
+                        setCurrent(title);
+                        setView('project');
+                      }}
                     >
                       <span>{drafts[title]?.display || title}</span>
                       {gone && <em>retired</em>}
-                      {!gone && drafts[title] && <em>edited</em>}
+                      {/* Against what the site is publishing, not against
+                          whether a record exists. A draft is not cleared by
+                          exporting it, so "has an entry" went on being true
+                          forever and this badge came to mean "you opened
+                          this". Compared this way it clears itself the moment
+                          the bundle is applied and the site rebuilt. */}
+                      {!gone && isEdited(drafts, title) && <em>edited</em>}
                     </button>
                     {key !== 'unlisted' && (
                       <span className='studio-listrow__move'>
@@ -842,309 +808,425 @@ const Studio = () => {
         </nav>
 
         <main className='studio-main'>
-          {/* The one card here that is not about the project on the rail. The
-              case studies ship with draft copy and stand-in captures, so the
-              body of every project page can be held behind a single line until
-              the real ones are written — the cover and the footer stay either
-              way. */}
-          <section className='studio-card'>
-            <h3>Site</h3>
-            <label className='studio-check'>
-              <input
-                type='checkbox'
-                checked={Boolean(notice.enabled)}
-                onChange={e => setNotice({ enabled: e.target.checked })}
-              />
-              <span>
-                Hold every project page
-                <em>
-                  hides the chapter bar, the metadata table and every block, on
-                  every project page
-                </em>
-              </span>
-            </label>
-            <Field label='Notice' hint='shown under the cover instead'>
-              <input
-                value={notice.text}
-                placeholder={DEFAULT_PROJECT_NOTICE}
-                onChange={e => setNotice({ text: e.target.value })}
-              />
-            </Field>
-            <p className='studio-hint'>
-              {notice.enabled
-                ? `Every project page shows “${notice.text || DEFAULT_PROJECT_NOTICE}” in place of its case study.`
-                : 'Project pages are showing their case studies in full.'}
-            </p>
-          </section>
-
-          <section className='studio-card'>
-            <div className='studio-card__head'>
-              <h2>{current}</h2>
-              {retired ? (
-                <button type='button' onClick={() => restoreProject(current)}>
-                  Restore
-                </button>
-              ) : (
-                <button
-                  type='button'
-                  className='studio-danger'
-                  onClick={() => removeProject(current)}
-                >
-                  {SEED_TITLES.has(current) ? 'Retire' : 'Delete'}
-                </button>
-              )}
-            </div>
-            {retired && (
-              <p className='studio-retired'>
-                Retired. It will be dropped from the works pane and its page
-                will stop resolving once this bundle is applied.
-              </p>
-            )}
-            <div className='studio-inline'>
-              <Field label='Display name'>
-                <input
-                  value={project.display}
-                  onChange={e => update(p => ({ ...p, display: e.target.value }))}
-                />
-              </Field>
-              <Field label='Slug' hint='from the title'>
-                <input value={slug} readOnly />
-              </Field>
-            </div>
-            <Field label='Tagline'>
-              <textarea
-                rows='2'
-                value={project.tagline}
-                onChange={e => update(p => ({ ...p, tagline: e.target.value }))}
-              />
-            </Field>
-            <div className='studio-inline'>
-              <Field label='Cover caption'>
-                <input
-                  value={project.cover}
-                  onChange={e => update(p => ({ ...p, cover: e.target.value }))}
-                />
-              </Field>
-              <Field label='Cover file'>
-                <div className='studio-asset'>
-                  <code>{project.coverSrc || 'archive default'}</code>
-                  <button
-                    type='button'
-                    onClick={() =>
-                      pickFile({
-                        name: 'cover',
-                        apply: src => update(p => ({ ...p, coverSrc: src })),
-                      })
-                    }
-                  >
-                    upload
-                  </button>
-                </div>
-              </Field>
-            </div>
-          </section>
-
-          <section className='studio-card'>
-            <h3>Index entry</h3>
-            <div className='studio-inline'>
-              <Field label='List'>
-                <select
-                  value={project.index.category}
-                  onChange={e =>
-                    update(p => ({ ...p, index: { ...p.index, category: e.target.value } }))
-                  }
-                >
-                  <option value='work'>Work</option>
-                  <option value='personal'>Personal</option>
-                </select>
-              </Field>
-              <Field label='Glyph shape' hint='used when there is no loop'>
-                <select
-                  value={project.index.shape}
-                  onChange={e =>
-                    update(p => ({ ...p, index: { ...p.index, shape: e.target.value } }))
-                  }
-                >
-                  {SHAPES.map(s => (
-                    <option key={s}>{s}</option>
-                  ))}
-                </select>
-              </Field>
-            </div>
-            {/* The glyph is rendered as an 88x88 field of dithered type, and
-                a loop dropped here is sampled into that field rather than
-                played on top of it. Two-tone reads best: the field is
-                thresholded, so a clip with real midtones comes out mushy. */}
-            <Field label='Glyph loop' hint='two-tone video, rasterised into the glyph'>
-              <div className='studio-asset'>
-                <code>{project.index.glyphSrc || 'none — generating the shape'}</code>
-                <button
-                  type='button'
-                  onClick={() =>
-                    pickFile({
-                      name: 'glyph',
-                      accept: 'video/mp4,video/webm,video/quicktime',
-                      apply: src =>
-                        update(p => ({ ...p, index: { ...p.index, glyphSrc: src } })),
-                    })
-                  }
-                >
-                  upload
-                </button>
-                {project.index.glyphSrc && (
-                  <button
-                    type='button'
-                    onClick={() => {
-                      dropAsset(project.index.glyphSrc);
-                      update(p => ({ ...p, index: { ...p.index, glyphSrc: '' } }));
-                    }}
-                  >
-                    clear
+          {view === 'site' ? (
+            /* Everything true of the site rather than of any one project. There
+             is one switch in here today; the card exists so the next one has
+             somewhere to go that is not the top of a project's own column. */
+            <section className='studio-card'>
+              <div className='studio-card__head'>
+                <h2>Every project page</h2>
+                {siteEdited && (
+                  <button type='button' onClick={resetSite}>
+                    Reset to published
                   </button>
                 )}
               </div>
-            </Field>
-            <Field label='One-line summary' hint='shown in the works pane'>
-              <textarea
-                rows='2'
-                value={project.index.summary}
-                onChange={e =>
-                  update(p => ({ ...p, index: { ...p.index, summary: e.target.value } }))
-                }
-              />
-            </Field>
-            {/* Listed, but not openable. The row keeps its title, line and
-                summary — the work is real — and the way in is replaced by a
-                note rather than pointed at a page that cannot yet stand
-                behind what it claims. */}
-            <label className='studio-check'>
-              <input
-                type='checkbox'
-                checked={Boolean(project.index.comingSoon)}
-                onChange={e =>
-                  update(p => ({
-                    ...p,
-                    index: { ...p.index, comingSoon: e.target.checked },
-                  }))
-                }
-              />
-              <span>
-                Coming soon
-                <em>
-                  the works pane reads “Coming soon” instead of linking to the
-                  project page
-                </em>
-              </span>
-            </label>
-            <div className='studio-inline'>
-              {ARCHIVE_FIELDS.map(({ key, label, hint }) => (
-                <Field key={key} label={label} hint={hint}>
-                  <input
-                    value={project.archive[key]}
+              <p className='studio-hint'>
+                These apply to every project at once — including ones you have
+                not opened, and ones added later.
+              </p>
+              <label className='studio-check'>
+                <input
+                  type='checkbox'
+                  checked={Boolean(notice.enabled)}
+                  onChange={e => setNotice({ enabled: e.target.checked })}
+                />
+                <span>
+                  Hold every project page
+                  <em>
+                    hides the chapter bar, the metadata table and every block,
+                    on every project page
+                  </em>
+                </span>
+              </label>
+              <Field label='Notice' hint='shown under the cover instead'>
+                <input
+                  value={notice.text}
+                  placeholder={DEFAULT_PROJECT_NOTICE}
+                  onChange={e => setNotice({ text: e.target.value })}
+                />
+              </Field>
+              <p className='studio-hint'>
+                {notice.enabled
+                  ? `Every project page shows “${notice.text || DEFAULT_PROJECT_NOTICE}” in place of its case study.`
+                  : 'Project pages are showing their case studies in full.'}
+              </p>
+            </section>
+          ) : (
+            <>
+              <section className='studio-card'>
+                <div className='studio-card__head'>
+                  <h2>{current}</h2>
+                  {/* The other half of this editor. Everything typed here is
+                      already in the draft the page reads, so this is a change
+                      of window rather than a handover — and the two questions
+                      they answer are different ones: what a case study says,
+                      and how it reads at the size it is set. */}
+                  {!retired && !project.index.liveOnly && (
+                    <a
+                      className='studio-elsewhere'
+                      href={`/projects/${slug}?edit=1`}
+                      target='_blank'
+                      rel='noreferrer'
+                    >
+                      Edit on the page ↗
+                    </a>
+                  )}
+                  {retired ? (
+                    <button
+                      type='button'
+                      onClick={() => restoreProject(current)}
+                    >
+                      Restore
+                    </button>
+                  ) : (
+                    <button
+                      type='button'
+                      className='studio-danger'
+                      onClick={() => removeProject(current)}
+                    >
+                      {SEED_TITLES.has(current) ? 'Retire' : 'Delete'}
+                    </button>
+                  )}
+                </div>
+                {retired && (
+                  <p className='studio-retired'>
+                    Retired. It will be dropped from the works pane and its page
+                    will stop resolving once this bundle is applied.
+                  </p>
+                )}
+                <div className='studio-inline'>
+                  <Field label='Display name'>
+                    <input
+                      value={project.display}
+                      onChange={e =>
+                        update(p => ({ ...p, display: e.target.value }))
+                      }
+                    />
+                  </Field>
+                  <Field label='Slug' hint='from the title'>
+                    <input value={slug} readOnly />
+                  </Field>
+                </div>
+                <Field label='Tagline'>
+                  <textarea
+                    rows='2'
+                    value={project.tagline}
                     onChange={e =>
-                      update(p => ({ ...p, archive: { ...p.archive, [key]: e.target.value } }))
+                      update(p => ({ ...p, tagline: e.target.value }))
                     }
                   />
                 </Field>
-              ))}
-            </div>
-            <p className='studio-hint'>
-              Client, role and year are the line under the title in the works
-              pane, joined with slashes — {metaLine || 'nothing set yet'}
-            </p>
-          </section>
-
-          <section className='studio-card'>
-            <h3>Metadata table</h3>
-            <Rows
-              items={project.meta}
-              addLabel='row'
-              onAdd={() => update(p => ({ ...p, meta: [...p.meta, { k: '', v: '' }] }))}
-              onChange={meta => update(p => ({ ...p, meta }))}
-              render={(row, i) => (
                 <div className='studio-inline'>
-                  <Field label='Key'>
+                  <Field label='Cover caption'>
                     <input
-                      value={row.k}
+                      value={project.cover}
                       onChange={e =>
-                        update(p => {
-                          p.meta[i].k = e.target.value;
-                          return p;
-                        })
+                        update(p => ({ ...p, cover: e.target.value }))
                       }
                     />
                   </Field>
-                  <Field label='Value'>
-                    <input
-                      value={row.v}
-                      onChange={e =>
-                        update(p => {
-                          p.meta[i].v = e.target.value;
-                          return p;
-                        })
-                      }
-                    />
-                  </Field>
-                </div>
-              )}
-            />
-          </section>
-
-          <section className='studio-card'>
-            <h3>Blocks</h3>
-            <Rows
-              items={project.blocks}
-              addLabel='block'
-              onAdd={() => setBlocks([...project.blocks, blankBlock('text')])}
-              onChange={setBlocks}
-              render={(block, i) => (
-                <div className='studio-block'>
-                  <div className='studio-inline'>
-                    <Field label='Type'>
-                      <select
-                        value={block.type}
-                        onChange={e => setBlocks(
-                          project.blocks.map((b, j) =>
-                            j === i
-                              ? { ...blankBlock(e.target.value), label: b.label, title: b.title, note: b.note }
-                              : b,
-                          ),
-                        )}
+                  <Field label='Cover file'>
+                    <div className='studio-asset'>
+                      <code>{project.coverSrc || 'archive default'}</code>
+                      <button
+                        type='button'
+                        onClick={() =>
+                          pickFile({
+                            name: 'cover',
+                            apply: src =>
+                              update(p => ({ ...p, coverSrc: src })),
+                          })
+                        }
                       >
-                        {BLOCK_TYPES.map(t => (
-                          <option key={t.type} value={t.type}>
-                            {t.label}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
-                    <Field label='Eyebrow' hint='Context, Process…'>
-                      <input
-                        value={block.label}
-                        onChange={e => setBlock(i, b => ({ ...b, label: e.target.value }))}
-                      />
-                    </Field>
-                    <Field label='Heading'>
-                      <input
-                        value={block.title}
-                        onChange={e => setBlock(i, b => ({ ...b, title: e.target.value }))}
-                      />
-                    </Field>
-                  </div>
-                  <Field label='Note' hint='small print under the heading'>
-                    <input
-                      value={block.note || ''}
-                      onChange={e => setBlock(i, b => ({ ...b, note: e.target.value }))}
-                    />
+                        upload
+                      </button>
+                    </div>
                   </Field>
-                  <p className='studio-hint'>
-                    {BLOCK_TYPES.find(t => t.type === block.type)?.hint}
-                  </p>
-                  {renderBlockBody(block, i)}
                 </div>
-              )}
-            />
-          </section>
+              </section>
+
+              <section className='studio-card'>
+                <h3>Index entry</h3>
+                <div className='studio-inline'>
+                  <Field label='List'>
+                    <select
+                      value={project.index.category}
+                      onChange={e =>
+                        update(p => ({
+                          ...p,
+                          index: { ...p.index, category: e.target.value },
+                        }))
+                      }
+                    >
+                      <option value='work'>Work</option>
+                      <option value='personal'>Personal</option>
+                    </select>
+                  </Field>
+                  <Field label='Glyph shape' hint='used when there is no loop'>
+                    <select
+                      value={project.index.shape}
+                      onChange={e =>
+                        update(p => ({
+                          ...p,
+                          index: { ...p.index, shape: e.target.value },
+                        }))
+                      }
+                    >
+                      {SHAPES.map(s => (
+                        <option key={s}>{s}</option>
+                      ))}
+                    </select>
+                  </Field>
+                </div>
+                {/* The glyph is rendered as an 88x88 field of dithered type, and
+                a loop dropped here is sampled into that field rather than
+                played on top of it. Two-tone reads best: the field is
+                thresholded, so a clip with real midtones comes out mushy. */}
+                <Field
+                  label='Glyph loop'
+                  hint='two-tone video, rasterised into the glyph'
+                >
+                  <div className='studio-asset'>
+                    <code>
+                      {project.index.glyphSrc || 'none — generating the shape'}
+                    </code>
+                    <button
+                      type='button'
+                      onClick={() =>
+                        pickFile({
+                          name: 'glyph',
+                          accept: 'video/mp4,video/webm,video/quicktime',
+                          apply: src =>
+                            update(p => ({
+                              ...p,
+                              index: { ...p.index, glyphSrc: src },
+                            })),
+                        })
+                      }
+                    >
+                      upload
+                    </button>
+                    {project.index.glyphSrc && (
+                      <button
+                        type='button'
+                        onClick={() => {
+                          dropAsset(project.index.glyphSrc);
+                          update(p => ({
+                            ...p,
+                            index: { ...p.index, glyphSrc: '' },
+                          }));
+                        }}
+                      >
+                        clear
+                      </button>
+                    )}
+                  </div>
+                </Field>
+                <Field label='One-line summary' hint='shown in the works pane'>
+                  <textarea
+                    rows='2'
+                    value={project.index.summary}
+                    onChange={e =>
+                      update(p => ({
+                        ...p,
+                        index: { ...p.index, summary: e.target.value },
+                      }))
+                    }
+                  />
+                </Field>
+                {/* Listed, but not openable. The row keeps its title, line and
+                summary — the work is real — and the way in is replaced by a
+                note rather than pointed at a page that cannot yet stand
+                behind what it claims. */}
+                <label className='studio-check'>
+                  <input
+                    type='checkbox'
+                    checked={Boolean(project.index.comingSoon)}
+                    onChange={e =>
+                      update(p => ({
+                        ...p,
+                        index: { ...p.index, comingSoon: e.target.checked },
+                      }))
+                    }
+                  />
+                  <span>
+                    Coming soon
+                    <em>
+                      the works pane reads “Coming soon” instead of linking to
+                      the project page
+                    </em>
+                  </span>
+                </label>
+                {/* Not every piece of work wants a case study. Some of it is a
+                    live thing that is better looked at than read about, and
+                    writing three chapters in order to have somewhere to put a
+                    link is the wrong shape. The row is unchanged either way —
+                    it is the same work — only where it goes changes. */}
+                <label className='studio-check'>
+                  <input
+                    type='checkbox'
+                    checked={Boolean(project.index.liveOnly)}
+                    onChange={e =>
+                      update(p => ({
+                        ...p,
+                        index: { ...p.index, liveOnly: e.target.checked },
+                      }))
+                    }
+                  />
+                  <span>
+                    No project page
+                    <em>
+                      the works pane links straight to the live site, the
+                      annotation reads “view live project”, and the page stops
+                      resolving
+                    </em>
+                  </span>
+                </label>
+                {project.index.liveOnly && !project.archive.liveLink && (
+                  <p className='studio-hint studio-hint--warn'>
+                    There is no live link set below, so this row would have
+                    nowhere to go. Add one before exporting.
+                  </p>
+                )}
+                <div className='studio-inline'>
+                  {ARCHIVE_FIELDS.map(({ key, label, hint }) => (
+                    <Field key={key} label={label} hint={hint}>
+                      <input
+                        value={project.archive[key]}
+                        onChange={e =>
+                          update(p => ({
+                            ...p,
+                            archive: { ...p.archive, [key]: e.target.value },
+                          }))
+                        }
+                      />
+                    </Field>
+                  ))}
+                </div>
+                <p className='studio-hint'>
+                  Client, role and year are the line under the title in the
+                  works pane, joined with slashes —{' '}
+                  {metaLine || 'nothing set yet'}
+                </p>
+              </section>
+
+              <section className='studio-card'>
+                <h3>Metadata table</h3>
+                <Rows
+                  items={project.meta}
+                  addLabel='row'
+                  onAdd={() =>
+                    update(p => ({ ...p, meta: [...p.meta, { k: '', v: '' }] }))
+                  }
+                  onChange={meta => update(p => ({ ...p, meta }))}
+                  render={(row, i) => (
+                    <div className='studio-inline'>
+                      <Field label='Key'>
+                        <input
+                          value={row.k}
+                          onChange={e =>
+                            update(p => {
+                              p.meta[i].k = e.target.value;
+                              return p;
+                            })
+                          }
+                        />
+                      </Field>
+                      <Field label='Value'>
+                        <input
+                          value={row.v}
+                          onChange={e =>
+                            update(p => {
+                              p.meta[i].v = e.target.value;
+                              return p;
+                            })
+                          }
+                        />
+                      </Field>
+                    </div>
+                  )}
+                />
+              </section>
+
+              <section className='studio-card'>
+                <h3>Blocks</h3>
+                <Rows
+                  items={project.blocks}
+                  addLabel='block'
+                  onAdd={() =>
+                    setBlocks([...project.blocks, blankBlock('text')])
+                  }
+                  onChange={setBlocks}
+                  render={(block, i) => (
+                    <div className='studio-block'>
+                      <div className='studio-inline'>
+                        <Field label='Type'>
+                          <select
+                            value={block.type}
+                            onChange={e =>
+                              setBlocks(
+                                project.blocks.map((b, j) =>
+                                  j === i
+                                    ? {
+                                        ...blankBlock(e.target.value),
+                                        label: b.label,
+                                        title: b.title,
+                                        note: b.note,
+                                      }
+                                    : b,
+                                ),
+                              )
+                            }
+                          >
+                            {BLOCK_TYPES.map(t => (
+                              <option key={t.type} value={t.type}>
+                                {t.label}
+                              </option>
+                            ))}
+                          </select>
+                        </Field>
+                        <Field label='Eyebrow' hint='Context, Process…'>
+                          <input
+                            value={block.label}
+                            onChange={e =>
+                              setBlock(i, b => ({
+                                ...b,
+                                label: e.target.value,
+                              }))
+                            }
+                          />
+                        </Field>
+                        <Field label='Heading'>
+                          <input
+                            value={block.title}
+                            onChange={e =>
+                              setBlock(i, b => ({
+                                ...b,
+                                title: e.target.value,
+                              }))
+                            }
+                          />
+                        </Field>
+                      </div>
+                      <Field label='Note' hint='small print under the heading'>
+                        <input
+                          value={block.note || ''}
+                          onChange={e =>
+                            setBlock(i, b => ({ ...b, note: e.target.value }))
+                          }
+                        />
+                      </Field>
+                      <p className='studio-hint'>
+                        {BLOCK_TYPES.find(t => t.type === block.type)?.hint}
+                      </p>
+                      {renderBlockBody(block, i)}
+                    </div>
+                  )}
+                />
+              </section>
+            </>
+          )}
         </main>
       </div>
     </div>

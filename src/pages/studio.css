@@ -325,10 +325,30 @@
   flex-direction: column;
 }
 
+/* A way out of the studio rather than a control in it, so it is set as a link
+   and not as one more button in a row of them. */
+.studio-elsewhere {
+  margin-left: auto;
+  border-bottom: 1px solid #3e3bf4;
+  padding-bottom: 2px;
+  color: #a9a7ff;
+  text-decoration: none;
+}
+
+.studio-elsewhere:hover {
+  color: #e9e9ec;
+}
+
 .studio-hint {
   margin: 0 0 10px;
   color: #63636e;
   font-size: 11px;
+}
+
+/* A setting that is on but cannot do what it says yet. Stated where it is set
+   rather than discovered at export, which is too late to be useful. */
+.studio-hint--warn {
+  color: #d8b25a;
 }
 
 .studio-asset {
@@ -407,8 +427,18 @@
   cursor: pointer;
 }
 
-.studio-check input {
+/* A checkbox is not a text field, and the blanket rule above — width, border,
+   padding, background — was giving it the whole width of the card and pushing
+   its own label to the far edge. It wants its intrinsic size and nothing
+   else. */
+.studio-check input[type='checkbox'] {
+  flex: none;
+  width: auto;
   margin: 2px 0 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  padding: 0;
   accent-color: var(--acid, #f1f43b);
 }
 

@@ -1,5 +1,6 @@
 import { ProjectsData } from '../../constants.js';
 import {
+  LIVE_ONLY_TITLES,
   PROJECT_STORIES,
   RETIRED_TITLES,
 } from '../Project/projectStories.js';
@@ -156,6 +157,10 @@ const entryFor = title => {
     // glyph samples it instead of generating a shape — see workGlyph.
     glyphSrc: meta.glyphSrc || '',
     linkHref: firstLink(project),
+    // A project published without a page. The row is unchanged — it is the
+    // same work either way — but the way in is the live site rather than a
+    // case study, and `hasStory` already carries that everywhere it matters.
+    liveOnly: LIVE_ONLY_TITLES.has(title),
     hasStory: Boolean(PROJECT_STORIES[title]),
     // A project that is listed but not ready to be opened. The row keeps its
     // title, line and summary — it is real work, and saying so is the point —

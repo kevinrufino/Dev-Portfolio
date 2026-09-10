@@ -2,10 +2,12 @@ import { useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Reveal from './Reveal.js';
 import PixelTrail from './PixelTrail.js';
+import EmailCta from './common/EmailCta.js';
 import { goToSection } from '../utils/navigateToSection.js';
 
+// The address is not in here: it is a control rather than a destination now,
+// and it copies itself — see EmailCta, which leads the row.
 const footerLinks = [
-  { href: 'mailto:kevinrufino97@gmail.com', label: 'Email' },
   { href: "./Kevin Rufino's Resume.pdf", label: 'Resume', isExternal: true },
   {
     href: 'https://www.linkedin.com/in/kevinrufino/',
@@ -112,6 +114,10 @@ export const Footer = ({ setCursor }) => {
               aria-label='Contact links'
               className='grid w-max grid-cols-2 gap-x-[38px] gap-y-[14px]'
             >
+              <EmailCta
+                className='type-body text-[19px] text-[#dedbd0] transition-colors hover:text-charcoal-ink focus-visible:text-charcoal-ink'
+                style={{ '--line-cta-ink': 'var(--acid)' }}
+              />
               {footerLinks.map(link => (
                 <a
                   className='line-cta type-body text-[19px] text-[#dedbd0] transition-colors hover:text-charcoal-ink focus-visible:text-charcoal-ink'

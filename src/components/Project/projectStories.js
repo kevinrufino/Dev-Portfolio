@@ -825,12 +825,37 @@ export const RETIRED_TITLES = new Set(
     .map(([title]) => title),
 );
 
+/**
+ * Projects the studio has published without a page.
+ *
+ * Not every piece of work wants a case study. Some of it is a live thing that
+ * is better looked at than read about, and writing three chapters about it in
+ * order to have somewhere to put a link is the wrong shape. Marked this way, a
+ * project keeps its row in the works index — title, line, summary, glyph — and
+ * that row goes straight to the site itself.
+ *
+ * Exported here, beside the tombstones, because it is honoured in the same two
+ * places for the same reason: the index has to send readers outward, and the
+ * router has to stop resolving a page that is not meant to exist. If those two
+ * ever disagreed, the index would link to a page the router would 404, or the
+ * router would serve a case study nothing links to.
+ */
+export const LIVE_ONLY_TITLES = new Set(
+  Object.entries(GENERATED)
+    .filter(([, data]) => data.index?.liveOnly && !data.removed)
+    .map(([title]) => title),
+);
+
 export const PROJECT_STORIES = Object.fromEntries(
   [...new Set([...Object.keys(SEED), ...Object.keys(GENERATED)])]
     .map(title => {
       const generated = GENERATED[title];
       if (!generated) return [title, SEED[title]];
       if (generated.removed) return null;
+      // Marked as having no page. The body may still be sitting in the seed
+      // below, or in the export, and it stays there — this is a decision about
+      // what the site shows, and it is one export away from being undone.
+      if (generated.index?.liveOnly) return null;
       // `index` and `archive` belong to the works pane, not to the case study.
       const { index, archive, ...story } = generated;
       // An entry that carries NO story at all is not a story of nothing.
