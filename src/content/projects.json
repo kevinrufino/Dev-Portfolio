@@ -787,10 +787,11 @@
         "shape": "rings",
         "glyphSrc": "",
         "summary": "A folder collection of my toolcraft explorations",
-        "comingSoon": false
+        "comingSoon": false,
+        "liveOnly": true
       },
       "archive": {
-        "client": "",
+        "client": "AI Tool Editor Explorations",
         "role": "Creator",
         "year": "2026",
         "liveLink": "https://toolcraft-gallery.vercel.app/"
@@ -817,7 +818,8 @@
         "shape": "sphere",
         "glyphSrc": "/projects/warcraft-3-book-rts/glyph.webm",
         "summary": "Interactive E-Book exploration. What if the stories we read came out an brought us into an immersive world.",
-        "comingSoon": false
+        "comingSoon": false,
+        "liveOnly": true
       },
       "archive": {
         "client": "",
@@ -966,13 +968,14 @@
         "shape": "poster",
         "glyphSrc": "",
         "summary": "An infinite discovery canvas for collecting and exploring visual inspiration.",
-        "comingSoon": false
+        "comingSoon": false,
+        "liveOnly": true
       },
       "archive": {
-        "client": "Passion Project",
+        "client": "Visual Data Recommendation Algo",
         "role": "Creator",
         "year": "2026",
-        "liveLink": "moodi.me"
+        "liveLink": "https://moodi.me/"
       }
     },
     "Minecraft Clone": {
@@ -1029,9 +1032,7 @@
           "type": "reflection",
           "label": "Reflection",
           "title": "End note",
-          "paras": [
-            "The physics took four times longer than the rendering, which is the lesson."
-          ]
+          "paras": ["The physics took four times longer than the rendering, which is the lesson."]
         }
       ],
       "index": {
@@ -1039,10 +1040,11 @@
         "shape": "sphere",
         "glyphSrc": "/projects/minecraft-clone/glyph.webm",
         "summary": "A multiplayer voxel world with procedural terrain and custom physics, built in React. Pre AI :)",
-        "comingSoon": false
+        "comingSoon": false,
+        "liveOnly": true
       },
       "archive": {
-        "client": "Passion Project",
+        "client": "Web Rendering",
         "role": "Creator",
         "year": "2022",
         "liveLink": "https://minecraft-clone-react-chi.vercel.app/"
@@ -1058,16 +1060,11 @@
       "TINAJ Collection Listing Page",
       "Our Force 1 Poster Content Display Page"
     ],
-    "personal": [
-      "Moodie",
-      "Toolcraft Explorations",
-      "Warcraft 3 Book RTS",
-      "Minecraft Clone"
-    ]
+    "personal": ["Moodie", "Toolcraft Explorations", "Warcraft 3 Book RTS", "Minecraft Clone"]
   },
   "site": {
     "projectNotice": {
-      "enabled": false,
+      "enabled": true,
       "text": "More coming soon."
     }
   }
