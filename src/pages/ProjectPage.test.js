@@ -8,6 +8,7 @@ jest.mock('../constants.js', () => ({
 }));
 jest.mock('../components/Works/worksData.js', () => ({
   archiveFor: title => ({ title, client: 'Client' }),
+  ARCHIVE_TITLES: ['Alpha', 'Beta'],
   WORKS: { work: [{ title: 'Alpha' }, { title: 'Beta' }], personal: [] },
 }));
 jest.mock('../components/common/EmailCta.js', () => () => null);

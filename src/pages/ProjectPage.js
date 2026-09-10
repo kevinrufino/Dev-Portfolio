@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { goToSection } from '../utils/navigateToSection.js';
-import { ProjectsData } from '../constants.js';
 import { toSlug } from '../utils/helpers.js';
 import {
   LIVE_ONLY_TITLES,
   PROJECT_STORIES,
   RETIRED_TITLES,
 } from '../components/Project/projectStories.js';
-import { WORKS, archiveFor } from '../components/Works/worksData.js';
+import {
+  ARCHIVE_TITLES,
+  WORKS,
+  archiveFor,
+} from '../components/Works/worksData.js';
 import { PROJECT_NOTICE } from '../content/siteSettings.js';
 import useGooFollower from '../hooks/useGooFollower.js';
 import useCursorFx from '../hooks/useCursorFx.js';
@@ -110,15 +113,24 @@ const ProjectPageBody = () => {
   // The published archive is static for this mount. archiveFor returns a new
   // object, so rebuilding it on chapter/hover updates would retrigger the
   // project-entry effects, including the scroll reset and cover reveal.
-  // A project published without a page is dropped here for the same reason a
-  // retired one is: the index sends readers to the live site instead, and a
-  // page still answering on the slug would be a second, worse copy of it that
-  // nothing links to.
+  // Every project that still resolves, in archive order.
+  //
+  // Read through `ARCHIVE_TITLES` rather than `ProjectsData`, because the
+  // archive is not the whole list — a project the studio invented lives only in
+  // `projects.json`, and reading the constants directly meant such a project was
+  // listed in the works index and then 404'd when you pressed it.
+  //
+  // A project published without a page is dropped for the same reason a retired
+  // one is: the index sends readers to the live site instead, and a page still
+  // answering on the slug would be a second, worse copy of it that nothing
+  // links to.
   const live = useMemo(
     () =>
-      ProjectsData.filter(
-        p => !RETIRED_TITLES.has(p.title) && !LIVE_ONLY_TITLES.has(p.title),
-      ).map(p => archiveFor(p.title)),
+      ARCHIVE_TITLES.filter(
+        title => !RETIRED_TITLES.has(title) && !LIVE_ONLY_TITLES.has(title),
+      )
+        .map(archiveFor)
+        .filter(Boolean),
     [],
   );
   const index = live.findIndex(p => toSlug(p.title) === slug);

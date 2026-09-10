@@ -3,8 +3,8 @@
     ".Swoosh 404": {
       "display": ".Swoosh 404",
       "tagline": "A 404 route turned into the way in to a product drop.",
-      "cover": "The takeover on desktop",
-      "coverSrc": "/projects/swoosh-404/takeover-desktop.mp4",
+      "cover": "Cover — 6s of gameplay, wave two",
+      "coverSrc": "",
       "meta": [
         {
           "k": "Scope",
@@ -143,7 +143,8 @@
             {
               "caption": "Navigation pathfinding — nav mesh on, first-person keyboard camera",
               "span": 12,
-              "ratio": "21 / 9"
+              "ratio": "21 / 9",
+              "src": "/projects/max-s-lab/storybook-pathfinding.mp4"
             }
           ]
         },
@@ -196,7 +197,8 @@
             {
               "caption": "The world on desktop",
               "span": 12,
-              "ratio": "16 / 9"
+              "ratio": "16 / 9",
+              "src": "/projects/max-s-lab/world-desktop.mp4"
             },
             {
               "caption": "Mobile — moving through the room",
@@ -242,8 +244,8 @@
     "Candid Chat Agent": {
       "display": "Candid Chat Agent",
       "tagline": "An agentic chat surface for the public sector, and the work of deciding what it should look like while it is thinking.",
-      "cover": "Ask Candid — the entry state",
-      "coverSrc": "/projects/candid-chat-agent/chat-bar-journey.mp4",
+      "cover": "Cover — Candid Chat Agent",
+      "coverSrc": "",
       "meta": [
         {
           "k": "Timeline",
@@ -286,16 +288,16 @@
           "pull": "",
           "items": [
             {
-              "caption": "Walking the chat surface in development",
+              "caption": "The chat bar, from empty to submitted",
               "span": 7,
               "ratio": "16 / 10",
-              "src": "/projects/candid-chat-agent/dev-walkthrough.mp4"
+              "src": "/projects/candid-chat-agent/chat-bar-journey.mp4"
             },
             {
-              "caption": "The chat bar, from empty to submitted",
+              "caption": "Walking the chat surface in development",
               "span": 5,
               "ratio": "16 / 10",
-              "src": "/projects/candid-chat-agent/chat-bar-journey.mp4"
+              "src": "/projects/candid-chat-agent/dev-walkthrough.mp4"
             }
           ]
         },
@@ -365,8 +367,8 @@
     "EA Sports FC Partner Page": {
       "display": "EA Sports FC",
       "tagline": "A partnership launch page, and the shared viewer that showed players what Nike gear they had in game.",
-      "cover": "The shared cross-game viewer",
-      "coverSrc": "/projects/ea-sports-fc-partner-page/shared-viewer.mp4",
+      "cover": "Cover — viewer orbit, kit swap",
+      "coverSrc": "",
       "meta": [
         {
           "k": "Timeline",
@@ -442,8 +444,8 @@
     "TINAJ Collection Listing Page": {
       "display": "TINAJ",
       "tagline": "One 3D product viewer, rebuilt across two and a half years until it could carry anything marketing put in front of it.",
-      "cover": "The viewer on a product page",
-      "coverSrc": "/projects/tinaj-collection-listing-page/product-detail.mp4",
+      "cover": "Cover — customization loop, three colourways",
+      "coverSrc": "",
       "meta": [
         {
           "k": "Timeline",
@@ -489,12 +491,14 @@
             {
               "caption": "The collection listing",
               "span": 7,
-              "ratio": "16 / 10"
+              "ratio": "16 / 10",
+              "src": "/projects/tinaj-collection-listing-page/collection-listing.mp4"
             },
             {
               "caption": "The whole collection at once — thousands of tokens",
               "span": 5,
-              "ratio": "1 / 1"
+              "ratio": "1 / 1",
+              "src": "/projects/tinaj-collection-listing-page/collection-all.mp4"
             }
           ]
         },
@@ -902,7 +906,7 @@
   },
   "site": {
     "projectNotice": {
-      "enabled": true,
+      "enabled": false,
       "text": "More coming soon."
     }
   }

@@ -47,6 +47,19 @@ jest.mock('../content/projects.json', () => ({
       },
     },
     Gamma: { removed: true },
+    // Invented in the studio: no entry in constants.js at all.
+    Delta: {
+      display: 'Delta',
+      blocks: [{ type: 'text', title: 'Context', paras: ['Invented here.'] }],
+      index: {
+        category: 'work',
+        shape: 'sphere',
+        glyphSrc: '',
+        summary: 'Exists only in the studio',
+        comingSoon: false,
+      },
+      archive: { client: 'D client', role: 'Lead', year: '2026', liveLink: '' },
+    },
   },
   order: {},
   site: {},
@@ -90,6 +103,20 @@ describe('a project published without a page', () => {
     expect(stories.RETIRED_TITLES.has('Gamma')).toBe(true);
     expect(stories.LIVE_ONLY_TITLES.has('Gamma')).toBe(false);
     expect(works.WORKS.work.find(r => r.title === 'Gamma')).toBeUndefined();
+  });
+});
+
+describe('a project the studio invented', () => {
+  test('is reachable, not just listed', () => {
+    const { works } = load();
+    // Delta exists only in projects.json — there is no archive record for it.
+    // The works pane has always listed such a project; the router built its
+    // list straight off ProjectsData, so pressing the row 404'd. Anything that
+    // needs "all the projects" asks for ARCHIVE_TITLES instead.
+    expect(works.WORKS.work.some(r => r.title === 'Delta')).toBe(true);
+    expect(works.ARCHIVE_TITLES).toContain('Delta');
+    // …and the archive titles still lead with the archive, in its own order.
+    expect(works.ARCHIVE_TITLES.slice(0, 3)).toEqual(['Alpha', 'Beta', 'Gamma']);
   });
 });
 

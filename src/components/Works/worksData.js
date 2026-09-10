@@ -123,6 +123,23 @@ const studioEntries = Object.entries(STUDIO_PROJECTS)
  * does not manage at all — the link groups, the archive gif — are carried
  * through from the code record untouched.
  */
+/**
+ * Every project that has an archive record at all, in archive order.
+ *
+ * `ProjectsData` is the archive, but it is not the whole list: a project the
+ * studio invented exists only in `projects.json`, and it is a first-class row
+ * in the works pane from the moment it is published. Anything that needs "all
+ * the projects" has to ask here rather than read `ProjectsData` directly —
+ * the router did the latter, so a studio-added project was listed in the index
+ * and then 404'd when you pressed it.
+ */
+export const ARCHIVE_TITLES = [
+  ...ProjectsData.map(p => p.title),
+  ...studioEntries
+    .map(e => e.title)
+    .filter(title => !ProjectsData.some(p => p.title === title)),
+];
+
 export const archiveFor = title => {
   const found = ProjectsData.find(p => p.title === title);
   const studio = studioEntries.find(e => e.title === title);
@@ -150,7 +167,9 @@ const entryFor = title => {
   return {
     title,
     display: meta.display || title,
-    meta: [project.client, project.role, project.year].filter(Boolean).join(' / '),
+    meta: [project.client, project.role, project.year]
+      .filter(Boolean)
+      .join(' / '),
     description: meta.summary,
     shape: meta.shape,
     // A loop the studio published for this project. When it is present the
@@ -201,13 +220,17 @@ const inCategory = key => {
   const seeded = ProjectsData.map(p => p.title).filter(
     t =>
       !RETIRED_TITLES.has(t) &&
-      (studioEntries.find(e => e.title === t)?.index || OVERRIDES[t])?.category ===
-        key,
+      (studioEntries.find(e => e.title === t)?.index || OVERRIDES[t])
+        ?.category === key,
   );
   const added = studioEntries
     .map(e => e.title)
-    .filter(t => !seeded.includes(t) && STUDIO_PROJECTS[t].index.category === key);
-  return asPublished(key, [...seeded, ...added]).map(entryFor).filter(Boolean);
+    .filter(
+      t => !seeded.includes(t) && STUDIO_PROJECTS[t].index.category === key,
+    );
+  return asPublished(key, [...seeded, ...added])
+    .map(entryFor)
+    .filter(Boolean);
 };
 
 export const WORKS = {
