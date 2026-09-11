@@ -2,17 +2,21 @@
   "projects": {
     ".Swoosh 404": {
       "display": ".Swoosh 404",
-      "tagline": "A 404 route turned into the way in to a product drop.",
+      "tagline": "Gating product behind marketing moments",
       "cover": "Cover — 6s of gameplay, wave two",
       "coverSrc": "",
       "meta": [
+        {
+          "k": "Timeline",
+          "v": "3 months"
+        },
         {
           "k": "Scope",
           "v": "Engineer · site takeover, movement system and gameplay tweaks"
         },
         {
           "k": "Worked with",
-          "v": "2 engineers"
+          "v": "2 engineers, 1 designer, 2 marketing analysts"
         }
       ],
       "blocks": [
@@ -23,7 +27,7 @@
           "note": "",
           "paras": [
             "A 404 is traffic you already have and almost always waste. This one was replaced: land on a missing page and you land in Glitch Galaxy instead, and getting through it is how you reached the physical product.",
-            "I built the takeover. On the game itself I built the movement system and the gameplay tweaks — the rest of the game, and the commerce gate it opened, belonged to the other engineer. My part of that was the seam: making the game’s ending line up with a real entitlement to buy something."
+            "I designed the takeover. On the game itself I built the movement system and the gameplay tweaks — the rest of the game, and the commerce gate it opened, belonged to the team. My part of that was the seam: making the game’s ending line up with a real entitlement to buy something."
           ],
           "pull": ""
         },
@@ -81,8 +85,10 @@
       "index": {
         "category": "work",
         "shape": "rings",
+        "glyphSrc": "/projects/swoosh-404/glyph.webm",
         "summary": "A site takeover that made a 404 the way in to a product drop.",
-        "glyphSrc": "/projects/swoosh-404/glyph.webm"
+        "comingSoon": false,
+        "liveOnly": false
       },
       "archive": {
         "client": "Nike .Swoosh",
@@ -102,7 +108,7 @@
       "meta": [
         {
           "k": "Timeline",
-          "v": "~2 months · 2025"
+          "v": "2 months · 2025"
         },
         {
           "k": "Scope",
@@ -135,7 +141,7 @@
           "title": "Prototyping in the open",
           "note": "",
           "paras": [
-            "The explorations lived in a Storybook rather than in somebody’s branch. Camera controls, loaders, colour and polygon studies, pathfinding — each one a story with its own controls, so design could open any of them and change the parameters without booking an engineer.",
+            "The explorations lived in a Storybook rather than in somebody’s branch. Camera controls, loaders, color and polygon studies, pathfinding — each one a story with its own controls, so design could open any of them and change the parameters without booking an engineer.",
             "The pathfinding studies are the ones worth showing: a demo map, a nav mesh you can switch on to see what the movement is actually solving, and the same level under first-person, third-person and keyboard cameras."
           ],
           "pull": "",
@@ -161,7 +167,7 @@
               "title": "Control options, not one control scheme",
               "body": "A 3D world on the web is reached from a phone, a trackpad and a keyboard, and each of those wants something different. The tempting move is to tune one scheme until it is good enough everywhere.",
               "chose": {
-                "k": "We shipped",
+                "k": "shipped",
                 "v": "Several schemes, offered together — tap to move, drag to rotate, and a d-pad you hold to steer — so the world was reachable however somebody arrived at it."
               },
               "passed": {
@@ -175,14 +181,28 @@
               "title": "Polygon budgets set with design, during",
               "body": "Web 3D fails late. Assets get made, the scene gets assembled, and the performance problem shows up when there is no time left to change what caused it.",
               "chose": {
-                "k": "We shipped",
-                "v": "Budgets agreed with design while the assets were still being built — redefining GLTF polygon counts as part of the modelling conversation, not after it."
+                "k": "shipped",
+                "v": "Budgets agreed with design while the assets were still being built — redefining GLTF polygon counts and texture sizes as part of the modelling conversation, not after it."
               },
               "passed": {
                 "k": "We passed on",
                 "v": "Building for fidelity and optimising at the end, which is the normal way and puts the whole cost on the last week."
               },
               "call": "It made the pipeline the deliverable rather than the scene. That is also why there was something left to build on."
+            },
+            {
+              "kind": "Decision",
+              "title": "Exploration Controls",
+              "body": "When a user is explore a 3D world movement has to feel fun and engaging, otherwise the entire moment's foundation could taint the overall experience.",
+              "chose": {
+                "k": "Shipped",
+                "v": "Navigation map based exploration with a deliverable navigation bounding the player to a specified space."
+              },
+              "passed": {
+                "k": "Passed on",
+                "v": "Physics based exploration where users can experience items pushing against each other and realistic gravity."
+              },
+              "call": "Nav mesh was chosen for device accessibility as we had the data to see what kinds of devices are users are on. A considerable amount of users could potentially see a performance hit if we went with the physics approach."
             }
           ]
         },
@@ -215,6 +235,28 @@
           ]
         },
         {
+          "type": "impact",
+          "label": "Numbers",
+          "title": "Data",
+          "note": "",
+          "paras": [],
+          "pull": "",
+          "items": [
+            {
+              "n": 225,
+              "suffix": "",
+              "k": "Increase in user interactions and sessions duration",
+              "note": "compared to other marketing experiences"
+            },
+            {
+              "n": 7,
+              "suffix": "Figures",
+              "k": "in revenue in pre-order sales",
+              "note": "first pre-order in the company's history"
+            }
+          ]
+        },
+        {
           "type": "text",
           "label": "Outcome",
           "title": "It earned a second chapter",
@@ -223,13 +265,25 @@
             "The room was built composably enough that marketing bought a part two on it — a second story told in the same world, to sell more product through the same lens. That is the outcome I would point at: not that the experience shipped, but that the thing underneath it was worth extending."
           ],
           "pull": ""
+        },
+        {
+          "type": "reflection",
+          "label": "Reflection",
+          "title": "Improving Further",
+          "note": "",
+          "paras": [
+            "If I had the ability to keep working on this project I'd add alot more device telemetry such as temp, frames, etc to get more experience performance data on their range of devices.I'd also use a lot of my new 3D skills to provide more help on the modeling and styling side of this experience."
+          ],
+          "pull": ""
         }
       ],
       "index": {
         "category": "work",
         "shape": "sphere",
         "glyphSrc": "/projects/max-s-lab/glyph.webm",
-        "summary": "An explorable 3D world built to gamify a product release."
+        "summary": "An explorable 3D world built to gamify a product release.",
+        "comingSoon": false,
+        "liveOnly": false
       },
       "archive": {
         "client": "Nike .Swoosh",
@@ -249,7 +303,7 @@
       "meta": [
         {
           "k": "Timeline",
-          "v": "~2 months · 2026"
+          "v": "3 months · 2026"
         },
         {
           "k": "Scope",
@@ -257,18 +311,18 @@
         },
         {
           "k": "Worked with",
-          "v": "Design, data and backend"
+          "v": "1 designer, 2 engineers"
         },
         {
           "k": "Stack",
-          "v": "React, LangChain, IndexedDB"
+          "v": "React, Zustand, IndexedDB, SSE"
         }
       ],
       "blocks": [
         {
           "type": "text",
           "label": "Context",
-          "title": "What it had to answer",
+          "title": "Solving problems for the public sector",
           "note": "",
           "paras": [
             "Candid serves the public sector. The people who open this are after the same two things — who might fund them, and which RFPs are open — and the agent’s job was to go and find both rather than hand back another search page.",
@@ -279,11 +333,11 @@
         {
           "type": "assets",
           "label": "Process",
-          "title": "Every state a chat can be in",
-          "note": "A chat agent is only ambiguous until somebody writes the states down.",
+          "title": "Discovering chat states",
+          "note": "A user journey is only ambiguous until the states are written down.",
           "paras": [
-            "An open text box promises anything, which is another way of saying it explains nothing. The design problem was never the conversation — it was the moment before it and the moments during: what the bar looks like before you have typed, while it submits, while an answer is still arriving, and when the agent is busy doing something other than talking.",
-            "So we enumerated them. Every state the surface could be in got named and given a treatment, and the chat bar became one component that had to hold all of them without becoming a different thing in each."
+            "The initial states of the chat app felt empty and confusing due and I recognized it was due to a lack of chat bar states. An open text box promises anything, which is another way of saying it explains nothing. The design problem was never the conversation — it was the moment before it, during, and after the conversation: what the bar looks like before you have typed, while it submits, while an answer is still arriving, and when the agent is busy doing something other than talking.",
+            "So I chose to enumerate them. Every state the surface could be in got named and given a treatment, and the chat bar became one component that had to hold all of them without becoming a different thing in each."
           ],
           "pull": "",
           "items": [
@@ -294,7 +348,7 @@
               "src": "/projects/candid-chat-agent/chat-bar-journey.mp4"
             },
             {
-              "caption": "Walking the chat surface in development",
+              "caption": "Walking the chat surface in early development",
               "span": 5,
               "ratio": "16 / 10",
               "src": "/projects/candid-chat-agent/dev-walkthrough.mp4"
@@ -312,7 +366,7 @@
             {
               "kind": "Tradeoff",
               "title": "Show the answer forming",
-              "body": "A model takes seconds to answer. Something has to happen in those seconds, and there are only two honest options: a loader, or the answer itself arriving in pieces.",
+              "body": "A model takes seconds to answer. Something has to happen in those seconds, and there are only two honest options: a loading state, or the answer itself arriving in pieces.",
               "chose": {
                 "k": "We shipped",
                 "v": "Streaming. Tokens render as they arrive, so the wait is spent reading rather than watching a spinner."
@@ -321,7 +375,7 @@
                 "k": "We passed on",
                 "v": "Holding the response back and revealing it complete — steadier to build, but every question costs the same silent pause."
               },
-              "call": "The cost is real: a half-formed answer can read as a wrong one before it finishes. That is an argument for designing the streaming state carefully, not for hiding it."
+              "call": "The cost is real: a half-formed answer can read as a wrong one before it finishes. That is an argument for designing the streaming state carefully, not for hiding it. This added a lot of technical collaboration with the data team to define the tool call structure for the streaming states."
             }
           ]
         },
@@ -336,18 +390,28 @@
           "pull": "",
           "items": [
             {
-              "caption": "Responses, one through four",
+              "caption": "Responses come in many shapes",
               "span": 6,
               "ratio": "16 / 10",
               "src": "/projects/candid-chat-agent/chat-response-a.mp4"
             },
             {
-              "caption": "Responses, five through nine",
+              "caption": "So we have to build around the variability and define what we can while data is settling",
               "span": 6,
               "ratio": "16 / 10",
               "src": "/projects/candid-chat-agent/chat-response-b.mp4"
             }
           ]
+        },
+        {
+          "type": "reflection",
+          "label": "REFLECTION",
+          "title": "Continue Building",
+          "note": "",
+          "paras": [
+            "Development continues and products are ever evolving using new AI tools.One thing I'd love to think further through next is the longer term product vision. This product opened up a lot of opportunity to upgrade the users workflow further and spending the time to think through the longer term vision should allow for quicker integration between distinct systems."
+          ],
+          "pull": ""
         }
       ],
       "index": {
@@ -355,13 +419,14 @@
         "shape": "rings",
         "glyphSrc": "/projects/candid-chat-agent/glyph.webm",
         "summary": "Agentic chat experience that exposes automatic workflows for the public sector.",
-        "comingSoon": false
+        "comingSoon": false,
+        "liveOnly": false
       },
       "archive": {
         "client": "Candid",
         "role": "Front-End Lead",
         "year": "2026",
-        "liveLink": ""
+        "liveLink": "#"
       }
     },
     "EA Sports FC Partner Page": {
@@ -380,7 +445,7 @@
         },
         {
           "k": "Worked with",
-          "v": "3 engineers, 1 designer, 1 3D artist"
+          "v": "2 engineers, 1 designer, 1 3D artist"
         }
       ],
       "blocks": [
@@ -390,8 +455,8 @@
           "title": "What it was",
           "note": "",
           "paras": [
-            "A marketing partnership page for the EA Sports FC launch. I built components for the page and worked on the viewer that let players see the Nike gear available to them in game.",
-            "The viewer was not built for this campaign, and the capture below gives that away — it is running Fortnite, with Air Force 1 Skeleton on the avatar. It is a shared, cross-game component, and EA Sports FC was one of the games it served."
+            "A marketing partnership page for the EA Sports FC launch. I built a number of composable design system components for the page and worked on the viewer that let players see the Nike gear available to them in game.",
+            "The viewer was not built exclusively for this campaign. The project evolved over time. It is a shared, cross-game component, and EA Sports FC was one of the games it served.The marketing page was built to support an evolution of our design system and bring in components to breathe new life into the site."
           ],
           "pull": ""
         },
@@ -404,13 +469,13 @@
           "pull": "",
           "items": [
             {
-              "caption": "The shared viewer — apparel by category, here running Fortnite",
+              "caption": "The shared viewer — started as dress POC",
               "span": 7,
               "ratio": "16 / 10",
               "src": "/projects/ea-sports-fc-partner-page/shared-viewer.mp4"
             },
             {
-              "caption": "The share output",
+              "caption": "The component supported Social Media Optimization (SMO) using SEO tools",
               "span": 3,
               "ratio": "9 / 16",
               "src": "/projects/ea-sports-fc-partner-page/share-output.mp4"
@@ -432,7 +497,9 @@
         "category": "work",
         "shape": "sphere",
         "glyphSrc": "/cursors/levels/eafc-L6.webm",
-        "summary": "A partnership launch page, and the shared cross-game viewer behind it."
+        "summary": "A partnership launch page, and the shared cross-game viewer behind it.",
+        "comingSoon": false,
+        "liveOnly": false
       },
       "archive": {
         "client": "Nike x EA Sports",
@@ -449,7 +516,7 @@
       "meta": [
         {
           "k": "Timeline",
-          "v": "6+ months of work across 2.5 years"
+          "v": "6+ months, >10 major iterations, across 2.5 years"
         },
         {
           "k": "Scope",
@@ -481,25 +548,25 @@
           "pull": "",
           "items": [
             {
-              "caption": "A product page — the viewer in its ordinary job",
+              "caption": "A product page with >10,000 iterations of a product — the showing is just one iteration of the collection ",
               "span": 7,
               "ratio": "16 / 10",
               "src": "/projects/tinaj-collection-listing-page/product-detail.mp4"
             },
             {
-              "caption": "A single colourway, rendered out for social",
+              "caption": "A single colorway's baked in GLTF animation rending  in full screen on a mobile device",
               "span": 3,
               "ratio": "9 / 16",
               "src": "/projects/tinaj-collection-listing-page/colourway.mp4"
             },
             {
-              "caption": "The collection listing",
+              "caption": "The collection listing shows just how many different products this component had to support from it's inception.",
               "span": 7,
               "ratio": "16 / 10",
               "src": "/projects/tinaj-collection-listing-page/collection-listing.mp4"
             },
             {
-              "caption": "The whole collection at once — thousands of tokens",
+              "caption": "The whole collection at once — tens of thousands of tokens",
               "span": 5,
               "ratio": "1 / 1",
               "src": "/projects/tinaj-collection-listing-page/collection-all.mp4"
@@ -515,7 +582,7 @@
           "pull": "",
           "items": [
             {
-              "n": 10,
+              "n": 20000,
               "suffix": "+",
               "k": "Products it shipped on",
               "note": "and thousands of product pages"
@@ -523,7 +590,7 @@
             {
               "n": 2.5,
               "suffix": " yrs",
-              "k": "Span of the rebuilds",
+              "k": "Span of the rebuilds and support",
               "note": "6+ months of work inside it"
             }
           ]
@@ -533,7 +600,9 @@
         "category": "work",
         "shape": "rings",
         "glyphSrc": "/cursors/levels/tinaj-gimbal-L6.webm",
-        "summary": "A 3D product viewer rebuilt across 2.5 years until it could carry any product."
+        "summary": "A 3D product viewer rebuilt across 2.5 years until it could carry any product.",
+        "comingSoon": false,
+        "liveOnly": false
       },
       "archive": {
         "client": "Nike .Swoosh",
@@ -547,7 +616,7 @@
     },
     "Our Force 1 Poster Content Display Page": {
       "display": "Our Force 1",
-      "tagline": "A collection page, and the first content pipeline I set up — Contentful wired to design-system components.",
+      "tagline": "A collection page, and the first content pipeline set up for the team — CMS wired to design-system components.",
       "cover": "Cover — poster rotating through three collection panels",
       "coverSrc": "",
       "meta": [
@@ -561,11 +630,11 @@
         },
         {
           "k": "Worked with",
-          "v": "1 designer"
+          "v": "1 designer, 1 engineer"
         },
         {
           "k": "Stack",
-          "v": "React, Next.js, Contentful"
+          "v": "React, Next.js, Contentful, Three.js, GLSL"
         }
       ],
       "blocks": [
@@ -573,20 +642,20 @@
           "type": "text",
           "label": "Context",
           "title": "What it was",
-          "note": "",
+          "note": "Setting the workflow for marketing website",
           "paras": [
             "A marketing page for the Our Force 1 collection. It is on this list for what sat behind it rather than for what it looked like.",
-            "This was the first project where we set up the content management system, and more to the point the workflow around it: Contentful, wired to a set of design-system components I built, so the people writing the collection’s story could assemble a page out of them instead of filing a ticket for one."
+            "This was the first project where we set up the content management system (CMS), and more to the point the workflow around it: Contentful, wired to a set of design-system components I built, and the guidelines to support different kinds of marketing components; so the people writing the collection’s story could assemble a page out of them instead of filing a ticket for one."
           ],
           "pull": ""
         },
         {
           "type": "text",
           "label": "End note",
-          "title": "Nothing to show",
+          "title": "Missing assets",
           "note": "",
           "paras": [
-            "There are no captures of this one. The part worth showing was a workflow, and workflows do not screenshot well — so this page says what it was and stops."
+            "There are no other captures of this one. The part worth showing was a workflow, and workflows do not screenshot well — so this page says what it was and stops."
           ],
           "pull": ""
         }
@@ -596,7 +665,8 @@
         "shape": "poster",
         "glyphSrc": "/cursors/levels/our-force-1-L6.webm",
         "summary": "A collection page, and the CMS workflow and design-system components behind it.",
-        "comingSoon": false
+        "comingSoon": false,
+        "liveOnly": false
       },
       "archive": {
         "client": "Nike .Swoosh",
