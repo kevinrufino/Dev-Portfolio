@@ -1,20 +1,33 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { goToSection } from '../utils/navigateToSection.js';
-import { ProjectsData } from '../constants.js';
 import { toSlug } from '../utils/helpers.js';
 import {
+  LIVE_ONLY_TITLES,
   PROJECT_STORIES,
   RETIRED_TITLES,
 } from '../components/Project/projectStories.js';
-import { WORKS, archiveFor } from '../components/Works/worksData.js';
+import {
+  ARCHIVE_TITLES,
+  WORKS,
+  archiveFor,
+} from '../components/Works/worksData.js';
 import { PROJECT_NOTICE } from '../content/siteSettings.js';
 import useGooFollower from '../hooks/useGooFollower.js';
 import useCursorFx from '../hooks/useCursorFx.js';
 import GooPills from '../components/common/GooPills.js';
 import ProjectBlock from '../components/Project/ProjectBlocks.js';
 import AssetSlot from '../components/Project/AssetSlot.js';
+import EmailCta from '../components/common/EmailCta.js';
 import { MediaLightboxProvider } from '../components/Project/MediaLightbox.js';
+import useProjectEditor from '../hooks/useProjectEditor.js';
+import {
+  EditProvider,
+  Editable,
+  EditRail,
+} from '../components/Project/edit/EditContext.js';
+import EditBar from '../components/Project/edit/EditBar.js';
+import '../components/Project/edit/edit.css';
 
 const COVER_CELL = 12;
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
@@ -78,7 +91,10 @@ const ProjectPageBody = () => {
     name: 'project / selected work',
     gravity: NAV_GRAVITY_PX,
   });
-  const liveFx = useCursorFx({ name: 'project / live', gravity: NAV_GRAVITY_PX });
+  const liveFx = useCursorFx({
+    name: 'project / live',
+    gravity: NAV_GRAVITY_PX,
+  });
   // On the arrow rather than on the whole line. The name beside it is a
   // display heading the width of the page, and a field the size of that box
   // aimed the cursor at the middle of a word from halfway across the footer —
@@ -97,14 +113,34 @@ const ProjectPageBody = () => {
   // The published archive is static for this mount. archiveFor returns a new
   // object, so rebuilding it on chapter/hover updates would retrigger the
   // project-entry effects, including the scroll reset and cover reveal.
+  // Every project that still resolves, in archive order.
+  //
+  // Read through `ARCHIVE_TITLES` rather than `ProjectsData`, because the
+  // archive is not the whole list — a project the studio invented lives only in
+  // `projects.json`, and reading the constants directly meant such a project was
+  // listed in the works index and then 404'd when you pressed it.
+  //
+  // A project published without a page is dropped for the same reason a retired
+  // one is: the index sends readers to the live site instead, and a page still
+  // answering on the slug would be a second, worse copy of it that nothing
+  // links to.
   const live = useMemo(
-    () => ProjectsData.filter(p => !RETIRED_TITLES.has(p.title)).map(p =>
-      archiveFor(p.title),
-    ),
+    () =>
+      ARCHIVE_TITLES.filter(
+        title => !RETIRED_TITLES.has(title) && !LIVE_ONLY_TITLES.has(title),
+      )
+        .map(archiveFor)
+        .filter(Boolean),
     [],
   );
   const index = live.findIndex(p => toSlug(p.title) === slug);
   const project = index !== -1 ? live[index] : null;
+
+  // `?edit=1`. Off — which is every visit that is not the author's — this
+  // returns a null record and every `Editable` below renders the same element
+  // it always did, so nothing about a reader's page depends on it.
+  const edit = useProjectEditor(project?.title);
+  const editing = edit.editing && Boolean(edit.record);
 
   // Where this project sits in the index the reader came from, which is the
   // sequence the footer walks. It used to walk `constants.js` in file order —
@@ -123,13 +159,27 @@ const ProjectPageBody = () => {
   // The next one along, or the first of the OTHER list once this one is spent.
   // A project in neither list — none today, but nothing prevents one — falls
   // back to the archive walk this used to do.
+  //
+  // Rows published without a page are stepped over rather than offered: this
+  // control is the way deeper into the site, and the slug it would point at no
+  // longer resolves. The index is where those are reached, and it sends the
+  // reader outward on purpose.
   const next = useMemo(() => {
+    const openable = row => row && !LIVE_ONLY_TITLES.has(row.title);
     if (!place) return live[(index + 1) % live.length];
-    if (place.at + 1 < place.list.length) return place.list[place.at + 1];
-    const other = WORKS[place.key === 'work' ? 'personal' : 'work'];
-    return other.length ? other[0] : place.list[0];
+    const after = place.list.slice(place.at + 1).find(openable);
+    if (after) return after;
+    const other =
+      WORKS[place.key === 'work' ? 'personal' : 'work'].filter(openable);
+    if (other.length) return other[0];
+    return place.list.find(openable) || live[(index + 1) % live.length];
   }, [place, live, index]);
-  const story = project ? PROJECT_STORIES[project.title] : null;
+  // What the site publishes for this project, and what the page is currently
+  // showing. They are the same thing unless it is being edited, in which case
+  // the page shows the working copy — you cannot judge a heading you are not
+  // looking at.
+  const published = project ? PROJECT_STORIES[project.title] : null;
+  const story = editing ? edit.record : published;
   const nextStory = next ? PROJECT_STORIES[next.title] : null;
   // A works row already carries the short display name; an archive record does
   // not, so the fallback path reads the title instead.
@@ -137,12 +187,16 @@ const ProjectPageBody = () => {
 
   const blocks = useMemo(() => story?.blocks ?? [], [story]);
 
+  // Keyed on the PUBLISHED record. While editing, `story` is a working copy
+  // that changes on every keystroke, and this effect scrolls the document to
+  // the top — which would make typing into a heading halfway down the page
+  // impossible.
   useEffect(() => {
     if (!project) return;
-    const display = story?.display || project.title;
+    const display = published?.display || project.title;
     document.title = `${display} — Kevin Rufino`;
     window.scrollTo({ top: 0, behavior: 'instant' });
-  }, [project, story]);
+  }, [project, published]);
 
   // The cat belongs to the homepage. It is spawned by a global script, so it
   // is hidden here rather than removed — removing it would mean it never came
@@ -165,18 +219,14 @@ const ProjectPageBody = () => {
     const write = () => {
       raf = 0;
       const bar = progressRef.current;
-      const max =
-        document.documentElement.scrollHeight - window.innerHeight;
+      const max = document.documentElement.scrollHeight - window.innerHeight;
       if (bar) {
         const pct = max > 0 ? Math.min(100, (window.scrollY / max) * 100) : 0;
         bar.style.width = `${pct}%`;
       }
       const cover = coverScaleRef.current;
       if (cover) {
-        const p = Math.min(
-          1,
-          window.scrollY / Math.max(1, window.innerHeight),
-        );
+        const p = Math.min(1, window.scrollY / Math.max(1, window.innerHeight));
         cover.style.transform = `scale(${1 + p * 0.09}) translate3d(0, ${p * 4}%, 0)`;
       }
     };
@@ -201,7 +251,9 @@ const ProjectPageBody = () => {
     let raf = 0;
     const measure = () => {
       raf = 0;
-      const sections = [...(rootRef.current?.querySelectorAll('[data-sec]') || [])];
+      const sections = [
+        ...(rootRef.current?.querySelectorAll('[data-sec]') || []),
+      ];
       if (!sections.length) return;
       const line = window.innerHeight * READING_LINE;
       let idx = 0;
@@ -304,7 +356,10 @@ const ProjectPageBody = () => {
   // captures. Until the real ones are written, the studio can hold the body of
   // every project page behind a single line — the cover above it and the way
   // onward below it are real, so both stay.
-  const held = PROJECT_NOTICE.enabled;
+  // Editing ignores the site-wide hold: it is a decision about what readers
+  // see, and there is nothing to edit on a page showing one line. The bar says
+  // the hold is on, and publishing still honours it.
+  const held = PROJECT_NOTICE.enabled && !editing;
   const display = story?.display || project.title;
   const liveLink = firstLink(project);
   // Counted within its own list, so the number means the same thing here as it
@@ -313,287 +368,419 @@ const ProjectPageBody = () => {
   const total = place ? place.list.length : live.length;
 
   return (
-    <div ref={rootRef} className='relative bg-charcoal [overflow-x:clip]'>
-      <div
-        ref={progressRef}
-        aria-hidden='true'
-        className='fixed left-0 top-0 z-[60] h-[2px] w-0 bg-acid [will-change:width]'
-      />
+    <EditProvider value={editing ? edit : null}>
+      <div ref={rootRef} className='relative bg-charcoal [overflow-x:clip]'>
+        {editing && <EditBar edit={edit} title={project.title} slug={slug} />}
+        <div
+          ref={progressRef}
+          aria-hidden='true'
+          className='fixed left-0 top-0 z-[60] h-[2px] w-0 bg-acid [will-change:width]'
+        />
 
-      {/* Same liquid group as the homepage nav: white pills and a follower
+        {/* Same liquid group as the homepage nav: white pills and a follower
           under mix-blend-difference, so both read against a cover image and a
           charcoal page alike. Both items pull the cursor from the same
           distance the homepage uses. */}
-      <nav
-        ref={navGroupRef}
-        aria-label='Project navigation'
-        className='pointer-events-none fixed left-0 right-0 top-0 z-50 flex items-center justify-between gap-4 px-[clamp(16px,4vw,40px)] py-[14px] mix-blend-difference'
-      >
-        <GooPills
-          rects={navRects}
-          activeIndex={-1}
-          hotIndex={navHot}
-          followerRef={navFollowerRef}
-          pillColor='#ffffff'
-          hoverColor='#d9e6ff'
-          followerColor='#ffd9f2'
-        />
-        <button
-          type='button'
-          ref={el => {
-            setNavRef(0)(el);
-            backFx(el);
-          }}
-          onClick={() =>
-            goToSection(navigate, '/projects', 'work', project.title)
-          }
-          onMouseEnter={() => setNavHot(0)}
-          onMouseLeave={() => setNavHot(-1)}
-          className='pointer-events-auto relative border-0 bg-transparent px-[10px] py-2 font-offbit101Bold text-xl transition-colors duration-200'
-          style={{ color: navHot === 0 ? '#1e1e1e' : '#ffffff' }}
+        <nav
+          ref={navGroupRef}
+          aria-label='Project navigation'
+          className='pointer-events-none fixed left-0 right-0 top-0 z-50 flex items-center justify-between gap-4 px-[clamp(16px,4vw,40px)] py-[14px] mix-blend-difference'
         >
-          ← selected work
-        </button>
-        {liveLink && (
-          <a
-            href={liveLink}
-            target='_blank'
-            rel='noreferrer'
+          <GooPills
+            rects={navRects}
+            activeIndex={-1}
+            hotIndex={navHot}
+            followerRef={navFollowerRef}
+            pillColor='#ffffff'
+            hoverColor='#d9e6ff'
+            followerColor='#ffd9f2'
+          />
+          <button
+            type='button'
             ref={el => {
-              setNavRef(1)(el);
-              liveFx(el);
+              setNavRef(0)(el);
+              backFx(el);
             }}
-            onMouseEnter={() => setNavHot(1)}
+            onClick={() =>
+              goToSection(navigate, '/projects', 'work', project.title)
+            }
+            onMouseEnter={() => setNavHot(0)}
             onMouseLeave={() => setNavHot(-1)}
-            className='pointer-events-auto relative px-[10px] py-2 font-offbit101Bold text-xl transition-colors duration-200'
-            style={{ color: navHot === 1 ? '#1e1e1e' : '#ffffff' }}
+            className='pointer-events-auto relative border-0 bg-transparent px-[10px] py-2 font-offbit101Bold text-xl transition-colors duration-200'
+            style={{ color: navHot === 0 ? '#1e1e1e' : '#ffffff' }}
           >
-            live ↗
-          </a>
-        )}
-      </nav>
+            ← selected work
+          </button>
+          {liveLink && (
+            <a
+              href={liveLink}
+              target='_blank'
+              rel='noreferrer'
+              ref={el => {
+                setNavRef(1)(el);
+                liveFx(el);
+              }}
+              onMouseEnter={() => setNavHot(1)}
+              onMouseLeave={() => setNavHot(-1)}
+              className='pointer-events-auto relative px-[10px] py-2 font-offbit101Bold text-xl transition-colors duration-200'
+              style={{ color: navHot === 1 ? '#1e1e1e' : '#ffffff' }}
+            >
+              live ↗
+            </a>
+          )}
+        </nav>
 
-      <header className='relative h-[100svh] min-h-[560px] overflow-hidden bg-[#101014]'>
-        <div ref={coverScaleRef} className='absolute inset-0 [will-change:transform]'>
-          {/* The cover is the only capture on most of these pages that is
+        <header className='relative h-[100svh] min-h-[560px] overflow-hidden bg-[#101014]'>
+          <div
+            ref={coverScaleRef}
+            className='absolute inset-0 [will-change:transform]'
+          >
+            {/* The cover is the only capture on most of these pages that is
               real rather than a placeholder, and it is the one a reader most
               wants a closer look at — it is cropped to the screen here, and
               the inspector is where it is whole. Its mark goes top-right: the
               bottom of this frame belongs to the title. */}
-          <AssetSlot
-            src={story?.coverSrc || project.scrapeGif}
-            caption={story?.cover || `${display} — cover`}
-            ratio='auto'
-            className='h-full'
-            markCorner='tr'
+            <div className={editing ? 'pedit-slot h-full' : 'h-full'}>
+              {editing && (
+                <EditRail
+                  label='Cover'
+                  actions={[
+                    {
+                      label: story.coverSrc ? 'replace' : 'upload',
+                      run: () => edit.chooseAsset(['coverSrc'], 'cover'),
+                    },
+                    ...(story.coverSrc
+                      ? [
+                          {
+                            label: 'clear',
+                            run: () => edit.clearAsset(['coverSrc']),
+                          },
+                        ]
+                      : []),
+                  ]}
+                />
+              )}
+              <AssetSlot
+                src={story?.coverSrc || project.scrapeGif}
+                caption={story?.cover || `${display} — cover`}
+                ratio='auto'
+                className='h-full'
+                markCorner='tr'
+              />
+            </div>
+          </div>
+          <canvas
+            ref={ditherRef}
+            aria-hidden='true'
+            className='pointer-events-none absolute inset-0 h-full w-full [image-rendering:pixelated]'
           />
-        </div>
-        <canvas
-          ref={ditherRef}
-          aria-hidden='true'
-          className='pointer-events-none absolute inset-0 h-full w-full [image-rendering:pixelated]'
-        />
-        {/* The scrim and the title sit over the cover, and the cover is
+          {/* The scrim and the title sit over the cover, and the cover is
             pressable now, so neither of them may swallow the press. Nothing in
             either is interactive, so nothing is lost by letting it through. */}
-        <div
-          aria-hidden='true'
-          className='pointer-events-none absolute inset-0'
-          style={{
-            background:
-              'linear-gradient(to top,rgba(16,16,20,.94) 0%,rgba(16,16,20,.72) 34%,rgba(16,16,20,.12) 72%,rgba(16,16,20,.28) 100%)',
-          }}
-        />
-        <div className='pointer-events-none absolute inset-x-0 bottom-0 flex flex-wrap items-end justify-between gap-8 px-[clamp(24px,6vw,88px)] pb-[clamp(34px,6vh,64px)]'>
-          <div className='min-w-0'>
-            <p className='type-label m-0 mb-[18px] text-acid'>
-              {project.client === 'Passion Project'
-                ? 'Personal project'
-                : 'Selected work'}
-            </p>
-            <h1 className='m-0 mb-5 font-offbit101Bold text-[clamp(52px,10vw,168px)] leading-[.86] tracking-[-.02em] text-white [text-wrap:balance]'>
-              {display}
-            </h1>
-            <p className='type-body m-0 max-w-[46ch] text-[clamp(17px,1.5vw,21px)] leading-[1.6] text-[#dcddd7]'>
-              {story?.tagline || project.description}
+          <div
+            aria-hidden='true'
+            className='pointer-events-none absolute inset-0'
+            style={{
+              background:
+                'linear-gradient(to top,rgba(16,16,20,.94) 0%,rgba(16,16,20,.72) 34%,rgba(16,16,20,.12) 72%,rgba(16,16,20,.28) 100%)',
+            }}
+          />
+          {/* The title sits on the bottom of the hero and the bar is fixed to the
+            bottom of the screen, so while editing the two want the same line.
+            The title moves. */}
+          <div
+            className={`${
+              // The title block lets presses through to the cover underneath,
+              // which is what makes the cover pressable at all. While editing
+              // it has to catch them instead: the words in it are the thing
+              // being clicked, and the cover has a control of its own.
+              editing ? 'pedit-above-bar' : 'pointer-events-none'
+            } absolute inset-x-0 bottom-0 flex flex-wrap items-end justify-between gap-8 px-[clamp(24px,6vw,88px)] pb-[clamp(34px,6vh,64px)]`}
+          >
+            {/* Remounted with every structural change, like the metadata table
+                and the block list below. Every editable field is uncontrolled
+                once it exists — the DOM is the truth for a node being typed
+                into — so a change that comes from outside the field, such as
+                resetting the page to what is published, only lands if the
+                field is rebuilt. Without this key the title and tagline kept
+                the old draft's words after a reset. */}
+            <div className='min-w-0' key={edit.rev}>
+              <p className='type-label m-0 mb-[18px] text-acid'>
+                {project.client === 'Passion Project'
+                  ? 'Personal project'
+                  : 'Selected work'}
+              </p>
+              <Editable
+                as='h1'
+                path={['display']}
+                placeholder='Project name'
+                className='m-0 mb-5 font-offbit101Bold text-[clamp(52px,10vw,168px)] leading-[.86] tracking-[-.02em] text-white [text-wrap:balance]'
+              >
+                {display}
+              </Editable>
+              <Editable
+                as='p'
+                path={['tagline']}
+                placeholder='One line on what this was'
+                className='type-body m-0 max-w-[46ch] text-[clamp(17px,1.5vw,21px)] leading-[1.6] text-[#dcddd7]'
+              >
+                {story?.tagline || project.description}
+              </Editable>
+              {/* The caption belongs to the cover but has nowhere over it to be
+                edited — it only shows in the inspector — so it is written here,
+                under the line it reads with, and only while editing. */}
+              {editing && (
+                <Editable
+                  as='p'
+                  path={['cover']}
+                  placeholder='Cover caption'
+                  className='type-label m-0 mt-4 text-[#8f9089]'
+                >
+                  {story.cover}
+                </Editable>
+              )}
+            </div>
+            <p className='type-label m-0 whitespace-nowrap text-[#c8c9c3]'>
+              {String(position).padStart(2, '0')} /{' '}
+              {String(total).padStart(2, '0')}
             </p>
           </div>
-          <p className='type-label m-0 whitespace-nowrap text-[#c8c9c3]'>
-            {String(position).padStart(2, '0')} /{' '}
-            {String(total).padStart(2, '0')}
-          </p>
-        </div>
-      </header>
+        </header>
 
-      {/* The top padding keeps the chapter links clear of the fixed nav, which
+        {/* The top padding keeps the chapter links clear of the fixed nav, which
           floats over this bar once it sticks. The bar's charcoal ground runs up
           behind the nav so the two read as one header rather than as two things
           fighting over the same line. */}
-      {blocks.length > 0 && !held && (
-        <div
-          ref={railRef}
-          data-chapters=''
-          className='sticky top-0 z-40 overflow-x-auto overflow-y-hidden border-b border-[#3a3a36] bg-charcoal pt-[76px]'
-        >
-          <div className='flex min-w-max items-stretch px-[clamp(24px,6vw,88px)]'>
-            {blocks.map((b, i) => (
-              <a
-                key={b.title}
-                href={`#sec-${i}`}
-                className='mr-[22px] flex items-center gap-[9px] whitespace-nowrap border-b-2 py-[14px] pr-[22px] transition-colors duration-200'
-                style={{
-                  borderColor: i === active ? '#F1F43B' : 'transparent',
-                }}
-              >
-                <span
-                  className='type-label text-[11px] tracking-[.24em]'
-                  style={{ color: i === active ? '#F1F43B' : '#6e6f69' }}
-                >
-                  {String(i + 1).padStart(2, '0')}
-                </span>
-                <span
-                  className='type-label text-[11px] tracking-[.24em]'
-                  style={{ color: i === active ? '#F1F43B' : '#a8a9a3' }}
-                >
-                  {b.title}
-                </span>
-              </a>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {story?.meta && !held && (
-        <section
-          aria-label='Project metadata'
-          className='border-b border-[#3a3a36] bg-charcoal'
-        >
-          <div className='grid gap-px bg-[#3a3a36] [grid-template-columns:repeat(auto-fit,minmax(200px,1fr))]'>
-            {story.meta.map(m => (
-              <div
-                key={m.k}
-                className='bg-charcoal px-[clamp(20px,2.6vw,34px)] py-[clamp(24px,3.4vw,42px)]'
-              >
-                <p className='type-label m-0 mb-[14px] text-acid'>{m.k}</p>
-                <p className='type-body m-0 text-base leading-[1.6] text-[#e2e3dd]'>
-                  {m.v}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      <main className='bg-charcoal text-[#e2e3dd]'>
-        {held ? (
-          // The whole case study, held behind one line. Set in the same type
-          // and at the same weight as the page a bad slug lands on, because it
-          // is the same kind of statement: this page has nothing to tell you
-          // yet, and saying so is more honest than the draft copy and
-          // placeholder captures underneath.
-          <section
-            aria-label='Case study status'
-            className='flex min-h-[46svh] flex-col items-center justify-center gap-6 px-6 py-[clamp(64px,14vh,150px)] text-center'
+        {blocks.length > 0 && !held && (
+          <div
+            ref={railRef}
+            data-chapters=''
+            className='sticky top-0 z-40 overflow-x-auto overflow-y-hidden border-b border-[#3a3a36] bg-charcoal pt-[76px]'
           >
-            <h2 className='m-0 font-offbit101Bold text-[clamp(36px,6vw,72px)] leading-[.94] text-charcoal-ink'>
-              {PROJECT_NOTICE.text}
-            </h2>
-          </section>
-        ) : (
-          blocks.map((block, i) => (
-            <ProjectBlock
-              key={block.title}
-              block={block}
-              num={String(i + 1).padStart(2, '0')}
-              id={`sec-${i}`}
-            />
-          ))
+            <div className='flex min-w-max items-stretch px-[clamp(24px,6vw,88px)]'>
+              {blocks.map((b, i) => (
+                <a
+                  // The title while reading, the position while editing: a
+                  // heading being typed into changes on every keystroke, and a
+                  // page with two untitled blocks would collide on the empty
+                  // string.
+                  key={editing ? i : b.title}
+                  href={`#sec-${i}`}
+                  className='mr-[22px] flex items-center gap-[9px] whitespace-nowrap border-b-2 py-[14px] pr-[22px] transition-colors duration-200'
+                  style={{
+                    borderColor: i === active ? '#F1F43B' : 'transparent',
+                  }}
+                >
+                  <span
+                    className='type-label text-[11px] tracking-[.24em]'
+                    style={{ color: i === active ? '#F1F43B' : '#6e6f69' }}
+                  >
+                    {String(i + 1).padStart(2, '0')}
+                  </span>
+                  <span
+                    className='type-label text-[11px] tracking-[.24em]'
+                    style={{ color: i === active ? '#F1F43B' : '#a8a9a3' }}
+                  >
+                    {b.title}
+                  </span>
+                </a>
+              ))}
+            </div>
+          </div>
         )}
-      </main>
 
-      <footer className='relative overflow-hidden bg-acid text-charcoal'>
-        <div className='relative z-[1] px-[clamp(24px,6vw,88px)] pb-[clamp(28px,4vh,44px)] pt-[clamp(56px,10vh,120px)]'>
-          <p className='type-label m-0 mb-6 text-[#4c4d16]'>Next project</p>
-          {/* The arrow takes the ultra sweep rather than the whole line: the
+        {story?.meta && !held && (
+          <section
+            aria-label='Project metadata'
+            className='border-b border-[#3a3a36] bg-charcoal'
+          >
+            <div
+              // Remounted whenever a row is added, removed or moved: every
+              // editable field on this page is uncontrolled once it exists, so
+              // a change of address has to be a change of element.
+              key={edit.rev}
+              className='grid gap-px bg-[#3a3a36] [grid-template-columns:repeat(auto-fit,minmax(200px,1fr))]'
+            >
+              {story.meta.map((m, i) => (
+                <div
+                  key={editing ? i : m.k}
+                  className={`bg-charcoal px-[clamp(20px,2.6vw,34px)] py-[clamp(24px,3.4vw,42px)] ${editing ? 'pedit-host' : ''}`.trim()}
+                >
+                  <Editable
+                    as='p'
+                    path={['meta', i, 'k']}
+                    placeholder='Label'
+                    className='type-label m-0 mb-[14px] text-acid'
+                  >
+                    {m.k}
+                  </Editable>
+                  <Editable
+                    as='p'
+                    path={['meta', i, 'v']}
+                    placeholder='Value'
+                    className='type-body m-0 text-base leading-[1.6] text-[#e2e3dd]'
+                  >
+                    {m.v}
+                  </Editable>
+                  {editing && (
+                    <EditRail
+                      className='pedit-rail--inline'
+                      actions={[
+                        {
+                          label: '←',
+                          disabled: i === 0,
+                          run: () => edit.metaOps.move(i, -1),
+                        },
+                        {
+                          label: '→',
+                          disabled: i === story.meta.length - 1,
+                          run: () => edit.metaOps.move(i, 1),
+                        },
+                        {
+                          label: '✕',
+                          danger: true,
+                          run: () => edit.metaOps.remove(i),
+                        },
+                      ]}
+                    />
+                  )}
+                </div>
+              ))}
+              {editing && (
+                <div className='bg-charcoal p-[clamp(20px,2.6vw,34px)]'>
+                  <button
+                    type='button'
+                    className='pedit-add'
+                    onClick={edit.metaOps.add}
+                  >
+                    + row
+                  </button>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        <main className='bg-charcoal text-[#e2e3dd]'>
+          {held ? (
+            // The whole case study, held behind one line. Set in the same type
+            // and at the same weight as the page a bad slug lands on, because it
+            // is the same kind of statement: this page has nothing to tell you
+            // yet, and saying so is more honest than the draft copy and
+            // placeholder captures underneath.
+            <section
+              aria-label='Case study status'
+              className='flex min-h-[46svh] flex-col items-center justify-center gap-6 px-6 py-[clamp(64px,14vh,150px)] text-center'
+            >
+              <h2 className='m-0 font-offbit101Bold text-[clamp(36px,6vw,72px)] leading-[.94] text-charcoal-ink'>
+                {PROJECT_NOTICE.text}
+              </h2>
+            </section>
+          ) : (
+            <div key={edit.rev}>
+              {blocks.map((block, i) => (
+                <ProjectBlock
+                  key={editing ? i : block.title}
+                  block={block}
+                  num={String(i + 1).padStart(2, '0')}
+                  id={`sec-${i}`}
+                  i={i}
+                  count={blocks.length}
+                />
+              ))}
+              {editing && (
+                <div className='px-[clamp(24px,6vw,88px)] py-8'>
+                  <button
+                    type='button'
+                    className='pedit-add'
+                    onClick={() => edit.blockOps.add(blocks.length)}
+                  >
+                    + block at the end
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </main>
+
+        <footer className='relative overflow-hidden bg-acid text-charcoal'>
+          <div className='relative z-[1] px-[clamp(24px,6vw,88px)] pb-[clamp(28px,4vh,44px)] pt-[clamp(56px,10vh,120px)]'>
+            <p className='type-label m-0 mb-6 text-[#4c4d16]'>Next project</p>
+            {/* The arrow takes the ultra sweep rather than the whole line: the
               name is the label, the arrow is the direction, and only the
               direction needs to answer. Two stacked copies, the upper one
               clipped to how far the sweep has come, so nothing moves. */}
-          <Link
-            to={`/projects/${toSlug(next.title)}`}
-            className='sweep-cta m-0 mb-5 inline-block font-offbit101Bold text-[clamp(38px,7vw,110px)] leading-[.9] tracking-[-.02em] text-charcoal'
-          >
-            {nextName}{' '}
-            <span ref={nextFx} className='sweep-cta__mark'>
-              <span aria-hidden='true'>→</span>
-              <span aria-hidden='true' className='sweep-cta__over'>
-                →
+            <Link
+              to={`/projects/${toSlug(next.title)}`}
+              className='sweep-cta m-0 mb-5 inline-block font-offbit101Bold text-[clamp(38px,7vw,110px)] leading-[.9] tracking-[-.02em] text-charcoal'
+            >
+              {nextName}{' '}
+              <span ref={nextFx} className='sweep-cta__mark'>
+                <span aria-hidden='true'>→</span>
+                <span aria-hidden='true' className='sweep-cta__over'>
+                  →
+                </span>
               </span>
-            </span>
-          </Link>
-          <p className='type-body m-0 max-w-[44ch] text-[17px] leading-[1.65] text-[#3a3b10]'>
-            {nextStory?.tagline || next.description}
-          </p>
-          <nav
-            aria-label='Elsewhere'
-            className='mt-[clamp(38px,5vh,58px)] flex flex-wrap gap-x-[34px] gap-y-[14px]'
-          >
+            </Link>
+            <p className='type-body m-0 max-w-[44ch] text-[17px] leading-[1.65] text-[#3a3b10]'>
+              {nextStory?.tagline || next.description}
+            </p>
+            <nav
+              aria-label='Elsewhere'
+              className='mt-[clamp(38px,5vh,58px)] flex flex-wrap gap-x-[34px] gap-y-[14px]'
+            >
+              <button
+                type='button'
+                onClick={() =>
+                  goToSection(navigate, '/projects', 'work', project.title)
+                }
+                className='line-cta type-body text-lg text-charcoal'
+                style={{ '--line-cta-ink': 'var(--ultra)' }}
+              >
+                <span aria-hidden='true' className='line-cta__arrow--back'>
+                  ←
+                </span>
+                All work
+              </button>
+              <EmailCta
+                className='type-body text-lg text-charcoal'
+                style={{ '--line-cta-ink': 'var(--ultra)' }}
+              />
+              <a
+                href='https://www.linkedin.com/in/kevinrufino/'
+                target='_blank'
+                rel='noreferrer'
+                className='line-cta type-body text-lg text-charcoal'
+                style={{ '--line-cta-ink': 'var(--ultra)' }}
+              >
+                LinkedIn
+                <span aria-hidden='true' className='line-cta__arrow--diagonal'>
+                  ↗
+                </span>
+              </a>
+            </nav>
+          </div>
+          <div
+            aria-hidden='true'
+            className='mx-[clamp(24px,6vw,88px)] h-px bg-[#adaf3d]'
+          />
+          <div className='type-label flex items-center justify-between gap-4 px-[clamp(24px,6vw,88px)] py-[18px] tracking-[.2em] text-[#4c4d16]'>
+            <span>Designed and developed by Kevin Rufino</span>
             <button
               type='button'
-              onClick={() =>
-            goToSection(navigate, '/projects', 'work', project.title)
-          }
-              className='line-cta type-body text-lg text-charcoal'
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className='line-cta text-[#4c4d16]'
               style={{ '--line-cta-ink': 'var(--ultra)' }}
             >
-              <span aria-hidden='true' className='line-cta__arrow--back'>
-                ←
+              Back to top
+              <span aria-hidden='true' className='line-cta__arrow--up'>
+                ↑
               </span>
-              All work
             </button>
-            <a
-              href='mailto:kevinrufino97@gmail.com'
-              className='line-cta type-body text-lg text-charcoal'
-              style={{ '--line-cta-ink': 'var(--ultra)' }}
-            >
-              Email
-              <span aria-hidden='true' className='line-cta__arrow--diagonal'>
-                ↗
-              </span>
-            </a>
-            <a
-              href='https://www.linkedin.com/in/kevinrufino/'
-              target='_blank'
-              rel='noreferrer'
-              className='line-cta type-body text-lg text-charcoal'
-              style={{ '--line-cta-ink': 'var(--ultra)' }}
-            >
-              LinkedIn
-              <span aria-hidden='true' className='line-cta__arrow--diagonal'>
-                ↗
-              </span>
-            </a>
-          </nav>
-        </div>
-        <div
-          aria-hidden='true'
-          className='mx-[clamp(24px,6vw,88px)] h-px bg-[#adaf3d]'
-        />
-        <div className='type-label flex items-center justify-between gap-4 px-[clamp(24px,6vw,88px)] py-[18px] tracking-[.2em] text-[#4c4d16]'>
-          <span>Designed and developed by Kevin Rufino</span>
-          <button
-            type='button'
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className='line-cta text-[#4c4d16]'
-            style={{ '--line-cta-ink': 'var(--ultra)' }}
-          >
-            Back to top
-            <span aria-hidden='true' className='line-cta__arrow--up'>
-              ↑
-            </span>
-          </button>
-        </div>
-      </footer>
-    </div>
+          </div>
+        </footer>
+      </div>
+    </EditProvider>
   );
 };
 

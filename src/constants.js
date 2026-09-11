@@ -1,10 +1,10 @@
-// Project asset gifs (bundled from src/assets)
-import maxsLabAsset from "./assets/maxs-lab-gif.gif";
-import mcBlockAsset from "./assets/mc-spinning-block.gif";
-import spinning404Asset from "./assets/404spinning-asset.gif";
-import dogewoodAsset from "./assets/dogewood-gif.gif";
-import battlebotAsset from "./assets/battlebot_run.gif";
-import miceAsset from "./assets/mice-gif.gif";
+// Moodie has no scrape video, so its screenshot stands in as the cover.
+//
+// The six gifs that used to be imported here fed an `assets` array on every
+// project record that no component ever read. Webpack emitted all of them into
+// the build regardless — 6.4MB, most of it one 5.3MB gif — so the field and its
+// imports are gone. Five were byte-identical to the copies in public/cursors,
+// which the posterize script still uses; those stayed.
 import moodieAsset from "./assets/moodie-screenshot.png";
 
 // Project Links
@@ -62,7 +62,6 @@ export const ProjectsData = [
       "Try Out Max's Lab!": MaxsLabLink
     }],
     scrapeGif: MaxsLabScrapeGif,
-    assets: [maxsLabAsset],
   },
   {
     title: "Moodie",
@@ -77,7 +76,6 @@ export const ProjectsData = [
     }],
     liveLink: MoodieLink,
     scrapeGif: moodieAsset,
-    assets: [moodieAsset],
   },
   {
     title: "Minecraft Clone",
@@ -98,7 +96,6 @@ export const ProjectsData = [
     ],
     liveLink: MCLiveLink,
     scrapeGif: MCScrapeGif,
-    assets: [mcBlockAsset],
   },
   {
     title: "Our Force 1 Poster Content Display Page",
@@ -113,7 +110,6 @@ export const ProjectsData = [
       "Check Out the CDP!": OurForce1CDPLink
     }],
     scrapeGif: OF1PosterCDPGif,
-    assets: [],
   },
   {
     title: ".Swoosh 404",
@@ -128,7 +124,6 @@ export const ProjectsData = [
       "Check out the .Swoosh Platform!": swoosh404Link
     }],
     scrapeGif: swoosh404ScrapeGif,
-    assets: [spinning404Asset],
   },
   {
     title: "EA Sports FC Partner Page",
@@ -142,7 +137,6 @@ export const ProjectsData = [
       "Check out the EA Partner Page!": EAFCPartnerPageLink
     }],
     scrapeGif: EAFCPartnerPageGif,
-    assets: [],
   },
   {
     title: "TINAJ Collection Listing Page",
@@ -156,7 +150,6 @@ export const ProjectsData = [
       "Check out the CLP!": TINAJCLPLink
     }],
     scrapeGif: TINAJCLPGif,
-    assets: [],
   },
   {
     title: "Defenders of Dogewood",
@@ -171,7 +164,6 @@ export const ProjectsData = [
       "The website is down but check it out on the way back machine!": dogewoodLink
     }],
     scrapeGif: dogewoodScrapeGif,
-    assets: [dogewoodAsset, battlebotAsset],
   },
   {
     title: "Anonymice",
@@ -186,7 +178,6 @@ export const ProjectsData = [
       "Check out their new site!": anonymiceLink
     }],
     scrapeGif: anonymiceScrapeGif,
-    assets: [miceAsset],
   },
   {
     title: "SNK-Y Bot",
@@ -200,6 +191,5 @@ export const ProjectsData = [
       "Check out the GH!": snkybotLink
     }],
     scrapeGif: snkybotScrapeGif,
-    assets: [],
   },
 ];

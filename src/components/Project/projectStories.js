@@ -825,7 +825,41 @@ export const RETIRED_TITLES = new Set(
     .map(([title]) => title),
 );
 
-export const PROJECT_STORIES = Object.fromEntries(
+/**
+ * Projects the studio has published without a page.
+ *
+ * Not every piece of work wants a case study. Some of it is a live thing that
+ * is better looked at than read about, and writing three chapters about it in
+ * order to have somewhere to put a link is the wrong shape. Marked this way, a
+ * project keeps its row in the works index — title, line, summary, glyph — and
+ * that row goes straight to the site itself.
+ *
+ * Exported here, beside the tombstones, because it is honoured in the same two
+ * places for the same reason: the index has to send readers outward, and the
+ * router has to stop resolving a page that is not meant to exist. If those two
+ * ever disagreed, the index would link to a page the router would 404, or the
+ * router would serve a case study nothing links to.
+ */
+export const LIVE_ONLY_TITLES = new Set(
+  Object.entries(GENERATED)
+    .filter(([, data]) => data.index?.liveOnly && !data.removed)
+    .map(([title]) => title),
+);
+
+/**
+ * Every story the file holds, INCLUDING projects published without a page.
+ *
+ * Two different questions get asked about a project, and conflating them cost
+ * real data. "What does the site render?" is `PROJECT_STORIES` below, which
+ * drops anything marked `liveOnly`. "What is written down for this project?" is
+ * this — and it is the one the studio has to ask, because the studio edits the
+ * file rather than the page.
+ *
+ * Reading the rendered map instead meant a page-less project seeded as a blank
+ * one: Moodie opened in the studio showing a single empty block where six are
+ * stored, and exporting would have written that emptiness back over them.
+ */
+export const STORED_STORIES = Object.fromEntries(
   [...new Set([...Object.keys(SEED), ...Object.keys(GENERATED)])]
     .map(title => {
       const generated = GENERATED[title];
@@ -844,4 +878,17 @@ export const PROJECT_STORIES = Object.fromEntries(
       return [title, story];
     })
     .filter(Boolean),
+);
+
+/**
+ * The stories the site renders.
+ *
+ * A project published without a page keeps its body — this is a decision about
+ * what the site shows, and it is one export away from being undone — it just
+ * does not reach the router or the case-study template.
+ */
+export const PROJECT_STORIES = Object.fromEntries(
+  Object.entries(STORED_STORIES).filter(
+    ([title]) => !LIVE_ONLY_TITLES.has(title),
+  ),
 );

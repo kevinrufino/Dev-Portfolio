@@ -1,5 +1,6 @@
 import PropTypes from 'prop-types';
 import { HeroName } from './Hero/components/HeroName.js';
+import RollingNumber from './common/RollingNumber.js';
 import PixelWaterFill from './PixelWaterFill.js';
 import { HERO_SHRINK_PX } from '../utils/heroRunway.js';
 
@@ -74,7 +75,7 @@ export const HeaderSequence = ({
               filling ? 'opacity-0' : 'opacity-100'
             }`}
           >
-            Loading... {Math.round(pct)}%
+            Loading... <RollingNumber value={pct} suffix='%' />
           </div>
         </div>
       )}

@@ -11,7 +11,7 @@
  * @returns {JSX.Element} The rendered application
  */
 
-import React, { useEffect, useRef, Suspense } from 'react';
+import React, { useEffect, useRef, Suspense, lazy } from 'react';
 import {
   BrowserRouter,
   Routes,
@@ -37,10 +37,6 @@ import { HeaderSequence } from './components/HeaderSequence.js';
 import PixelTrail from './components/PixelTrail.js';
 import { preloadImages } from './services/AssetService.js';
 import FillPhysicsCanvas from './components/FillPhysicsCanvas.js';
-import ProjectPage from './pages/ProjectPage.js';
-import ProjectPreview from './pages/ProjectPreview.js';
-import ProjectsLab from './pages/ProjectsLab.js';
-import Studio from './pages/Studio.js';
 import PageTransition from './components/PageTransition.js';
 import PageCurtain from './components/PageCurtain.js';
 import Reveal from './components/Reveal.js';
@@ -53,6 +49,34 @@ import { ENABLE_SHADER_BACKGROUND } from './featureFlags.js';
 // while the background is disabled.
 const MikaShaderEffect = React.lazy(
   () => import('./components/ShaderBackground/index.js'),
+);
+
+/**
+ * Everything that is not the landing page, split out of the main bundle.
+ *
+ * The homepage stays eager — it is what someone arriving at the site is waiting
+ * for, and deferring it would only move its cost later. Everything else was
+ * riding along with it: a project page brings the whole block renderer, the
+ * media inspector and the in-page editor; /studio brings a second editor that
+ * almost nobody will ever open. All of it was in the first 218KB a visitor
+ * downloaded before the loader could paint, which mattered because LCP on this
+ * site is render delay rather than network — 3.4s of a 3.48s LCP on throttled
+ * mobile was the main thread, not the wire.
+ */
+const ProjectPage = lazy(() => import('./pages/ProjectPage.js'));
+const ProjectPreview = lazy(() => import('./pages/ProjectPreview.js'));
+const Studio = lazy(() => import('./pages/Studio.js'));
+
+/**
+ * What a route shows while its chunk arrives.
+ *
+ * A ground of the right colour and nothing else. The chunks are small and local
+ * so this is usually a frame or two, and anything with content in it would
+ * flash — the page transition already covers the change, and a spinner
+ * underneath it would be a second thing happening for no reason.
+ */
+const RouteGround = ({ tone = 'bg-charcoal' }) => (
+  <div className={`min-h-screen w-full ${tone}`} aria-hidden='true' />
 );
 
 /**
@@ -265,27 +289,35 @@ const AnimatedRoutes = () => {
             </PageTransition>
           }
         />
+        {/* Suspense sits inside each element rather than around <Routes>: a
+            boundary outside would suspend the tree AnimatePresence is holding
+            for its exit animation, and the wipe between pages would drop. */}
         <Route
           path="/projects/:slug"
           element={
             <PageTransition>
-              <ProjectPage />
+              <Suspense fallback={<RouteGround />}>
+                <ProjectPage />
+              </Suspense>
             </PageTransition>
           }
         />
         <Route
           path="/projects/:slug/preview"
-          element={<ProjectPreview />}
+          element={
+            <Suspense fallback={<RouteGround tone='bg-ultra' />}>
+              <ProjectPreview />
+            </Suspense>
+          }
         />
         {/* Unlinked on purpose: the content editor, which writes nothing on
             its own and hands over a bundle to be committed. */}
-        <Route path="/studio" element={<Studio />} />
         <Route
-          path="/lab"
+          path="/studio"
           element={
-            <PageTransition>
-              <ProjectsLab />
-            </PageTransition>
+            <Suspense fallback={<RouteGround tone='bg-[#131318]' />}>
+              <Studio />
+            </Suspense>
           }
         />
       </Routes>
@@ -309,8 +341,9 @@ const AppRefactored = () => {
             and it must survive the page transition rather than unmounting
             mid-navigation. */}
         <CursorAnnotation />
-        {/* Draws every gravity field. Off unless `?gravity` is in the URL or
-            shift+G has been pressed. */}
+        {/* Draws every gravity field. Only reachable in edit mode — it is a
+            tool for arguing with the design rather than part of it, and both of
+            its ways in were reachable by accident. */}
         <CursorFxDebug />
         {/* The blind sweep between routes. Outside <Routes> because it has to
             outlive the page it covers: it goes up over the outgoing route and

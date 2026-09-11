@@ -119,12 +119,16 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
   // the glyph keeps its pull and says why, but the hold does nothing — a chip
   // that fills and then lands on a page of placeholder facts is the thing
   // being avoided.
+  // Three destinations, three sentences. A project with a page is a case study
+  // to read; one published without a page — or one that never had one — is a
+  // live thing to go and look at, and the annotation says so rather than
+  // promising a page that turns out to be somebody else's website.
   const glyphFxRef = useCursorFx({
     label: active.comingSoon
       ? 'coming soon'
       : active.hasStory
         ? 'view case study'
-        : 'view project',
+        : 'view live project',
     icon: 'eye',
     name: 'works / glyph',
     tone: chipTone,

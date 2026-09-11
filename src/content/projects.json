@@ -2,161 +2,93 @@
   "projects": {
     ".Swoosh 404": {
       "display": ".Swoosh 404",
-      "tagline": "Site Takeover | Gamified Product Release | more",
+      "tagline": "Gating product behind marketing moments",
       "cover": "Cover — 6s of gameplay, wave two",
       "coverSrc": "",
       "meta": [
         {
-          "k": "Scope",
-          "v": "Engineer · site takeover, game loop, rendering, leaderboard integration"
+          "k": "Timeline",
+          "v": "3 months"
         },
         {
-          "k": "Timeline",
-          "v": "6 weeks · 2024"
+          "k": "Scope",
+          "v": "Engineer · site takeover, movement system and gameplay tweaks"
         },
         {
           "k": "Worked with",
-          "v": "2 designers, 1 engineer"
-        },
-        {
-          "k": "Stack",
-          "v": "TypeScript, CSS, HTML Canvas, Howler.JS"
+          "v": "2 engineers, 1 designer, 2 marketing analysts"
         }
       ],
       "blocks": [
         {
           "type": "text",
           "label": "Context",
-          "title": "Why it exists",
+          "title": "A dead route as the front door",
+          "note": "",
           "paras": [
-            "A 404 page was the last surface anyone was going to fight over, which made it the right place to put a game. The shoe releasing was named 404 — the joke wrote itself, and the error page became campaign real estate."
-          ]
-        },
-        {
-          "type": "text",
-          "label": "Context",
-          "title": "Why it matters",
-          "paras": [
-            "It proved a small thing internally: play could ship on the same timeline as a product page. Six weeks, two people, no new platform. That argument opened doors for later work."
-          ]
+            "A 404 is traffic you already have and almost always waste. This one was replaced: land on a missing page and you land in Glitch Galaxy instead, and getting through it is how you reached the physical product.",
+            "I designed the takeover. On the game itself I built the movement system and the gameplay tweaks — the rest of the game, and the commerce gate it opened, belonged to the team. My part of that was the seam: making the game’s ending line up with a real entitlement to buy something."
+          ],
+          "pull": ""
         },
         {
           "type": "assets",
           "label": "Process",
-          "title": "Getting it to feel right",
-          "note": "Most of the six weeks went into feel, not features.",
+          "title": "Built in pieces",
+          "note": "",
+          "paras": [],
+          "pull": "",
           "items": [
             {
-              "caption": "Hit feedback — three tuning passes",
+              "caption": "The game’s pieces as Storybook stories",
               "span": 6,
-              "ratio": "16 / 10"
+              "ratio": "16 / 10",
+              "src": "/projects/swoosh-404/storybook-games-bot.png"
             },
             {
-              "caption": "Sprite sheet and palette",
+              "caption": "The takeover on desktop",
               "span": 6,
-              "ratio": "16 / 10"
-            },
-            {
-              "caption": "Difficulty curve instrumentation",
-              "span": 12,
-              "ratio": "21 / 9"
+              "ratio": "16 / 10",
+              "src": "/projects/swoosh-404/takeover-desktop.mp4"
             }
-          ],
-          "paras": []
-        },
-        {
-          "type": "moments",
-          "label": "Decisions",
-          "title": "Key design moments",
-          "items": [
-            {
-              "kind": "Tradeoff",
-              "title": "Keyboard-first or touch-first",
-              "body": "Traffic was 80% mobile, but the genre is a keyboard genre. Twin-stick controls on a phone felt terrible in the first build.",
-              "chose": {
-                "k": "We shipped",
-                "v": "One-axis drag with auto-fire. Your thumb only decides where, never when."
-              },
-              "passed": {
-                "k": "We passed on",
-                "v": "A virtual joystick plus a fire button."
-              },
-              "call": "Removing the fire button removed the only thing testers complained about."
-            },
-            {
-              "kind": "Decision",
-              "title": "No score wall",
-              "body": "A leaderboard was scoped, then cut two weeks in.",
-              "chose": {
-                "k": "We shipped",
-                "v": "A personal best held locally, surfaced only after your second run."
-              },
-              "passed": {
-                "k": "We passed on",
-                "v": "A global leaderboard with member accounts."
-              },
-              "call": "The auth flow was longer than the game. Cutting it kept the whole thing a two-tap experience."
-            }
-          ],
-          "paras": []
+          ]
         },
         {
           "type": "assets",
           "label": "Payoff",
           "title": "Final artifacts",
+          "note": "",
+          "paras": [],
+          "pull": "",
           "items": [
             {
-              "caption": "Launch build",
+              "caption": "Case study cut",
               "span": 12,
-              "ratio": "16 / 9"
+              "ratio": "16 / 9",
+              "src": "/projects/swoosh-404/case-study-cut.mp4"
             },
             {
-              "caption": "Wave transitions",
-              "span": 6,
-              "ratio": "3 / 2"
+              "caption": "Game over",
+              "span": 3,
+              "ratio": "9 / 16",
+              "src": "/projects/swoosh-404/game-over.mp4"
             },
             {
-              "caption": "Game over card",
-              "span": 6,
-              "ratio": "3 / 2"
+              "caption": "Launch teaser",
+              "span": 3,
+              "ratio": "9 / 16",
+              "src": "/projects/swoosh-404/teaser.mp4"
             }
-          ],
-          "paras": []
-        },
-        {
-          "type": "impact",
-          "label": "Impact",
-          "title": "What it moved",
-          "items": [
-            {
-              "n": 3.1,
-              "suffix": "m",
-              "k": "Average time on a 404",
-              "note": "previously under 10 seconds"
-            },
-            {
-              "n": 22,
-              "suffix": "%",
-              "k": "Clicked through to the release",
-              "note": "from the game-over card"
-            }
-          ],
-          "paras": []
-        },
-        {
-          "type": "reflection",
-          "label": "Reflection",
-          "title": "End note",
-          "paras": [
-            "The best decision was scoping it as a toy, not a product. Nothing in it needed to be maintained, so nothing in it needed to be negotiated."
           ]
         }
       ],
       "index": {
         "category": "work",
         "shape": "rings",
-        "summary": "Marketing Event - Site takeover + gamified product release",
-        "glyphSrc": "/projects/swoosh-404/glyph.webm"
+        "glyphSrc": "/projects/swoosh-404/glyph.webm",
+        "summary": "A site takeover that made a 404 the way in to a product drop.",
+        "comingSoon": false,
+        "liveOnly": false
       },
       "archive": {
         "client": "Nike .Swoosh",
@@ -168,222 +100,122 @@
     "Anonymice": {
       "removed": true
     },
-    "Max's Lab": {
-      "display": "Max's Lab",
-      "tagline": "An explorable 3D world built around Max, with hidden details and live events.",
-      "cover": "Cover — 8s loop of the world at first load, camera settling",
-      "coverSrc": "",
+    "Candid Chat Agent": {
+      "display": "Candid Chat Agent",
+      "tagline": "An agentic chat surface for the public sector, and the work of deciding what it should look like while it is thinking.",
+      "cover": "Cover — Ask Candid at rest, and a prompt going in",
+      "coverSrc": "/projects/candid-chat-agent/chat-bar-journey.mp4",
       "meta": [
         {
           "k": "Timeline",
-          "v": "5 months · 2025"
+          "v": "3 months · 2026"
         },
         {
           "k": "Scope",
-          "v": "Lead Front End engineer · 3D world, event system, performance budget"
+          "v": "Front-end lead · client-side chat architecture, UI states"
         },
         {
           "k": "Worked with",
-          "v": "2 designers, 1 3D artist, 3 engineers, brand + product marketing"
+          "v": "1 designer, 2 engineers"
         },
         {
           "k": "Stack",
-          "v": "React, Three.js, GLSL, WebGL"
+          "v": "React, Zustand, IndexedDB, SSE"
         }
       ],
       "blocks": [
         {
           "type": "text",
           "label": "Context",
-          "title": "Why it exists",
+          "title": "Solving problems for the public sector",
+          "note": "",
           "paras": [
-            "Air Max Day is an annual moment with a lot of noise around it. The brief was a destination that could hold a month of drops, unlocks, and live moments without becoming a landing page that gets rebuilt every week.",
-            "We built a room instead of a page: a single navigable 3D space where each object is a slot the marketing team can fill. New drop, new object. No redeploy, no new route."
+            "Candid serves the public sector. The people who open this are after the same two things — who might fund them, and which RFPs are open — and the agent’s job was to go and find both rather than hand back another search page.",
+            "I led the front end: architecting how the chat behaved on the client, and working with design to turn the workflows running underneath it into something a person could read while they ran."
           ],
-          "pull": "A page expires. A room gets furniture."
-        },
-        {
-          "type": "text",
-          "label": "Context",
-          "title": "Why it matters",
-          "paras": [
-            "Members were arriving from social with no context and bouncing in under twenty seconds. A destination that rewards a second look changes the shape of that session — we needed exploration to be the thing that retains, not copy.",
-            "It also gave the team an authoring surface. Anything placed in the room could be scheduled, so a live event became a state change rather than a build."
-          ]
+          "pull": ""
         },
         {
           "type": "assets",
           "label": "Process",
-          "title": "Building the room",
-          "note": "Component-level captures from the middle of the build.",
+          "title": "Discovering chat states",
+          "note": "A user journey is only ambiguous until the states are written down.",
+          "paras": [
+            "The initial states of the chat app felt empty and confusing due and I recognized it was due to a lack of chat bar states. An open text box promises anything, which is another way of saying it explains nothing. The design problem was never the conversation — it was the moment before it, during, and after the conversation: what the bar looks like before you have typed, while it submits, while an answer is still arriving, and when the agent is busy doing something other than talking.",
+            "So I chose to enumerate them. Every state the surface could be in got named and given a treatment, and the chat bar became one component that had to hold all of them without becoming a different thing in each."
+          ],
+          "pull": "",
           "items": [
             {
-              "caption": "Navigation prototype — camera rails vs. free orbit",
+              "caption": "The chat bar, from empty to submitted",
               "span": 7,
-              "ratio": "16 / 10"
+              "ratio": "16 / 10",
+              "src": "/projects/candid-chat-agent/chat-bar-journey.mp4"
             },
             {
-              "caption": "Hotspot states: idle, near, focused",
+              "caption": "Walking the chat surface in early development",
               "span": 5,
-              "ratio": "16 / 10"
-            },
-            {
-              "caption": "Draw-call budget instrumentation on a mid-tier Android",
-              "span": 4,
-              "ratio": "4 / 3"
-            },
-            {
-              "caption": "Material study — dithered shadow catcher",
-              "span": 4,
-              "ratio": "4 / 3"
-            },
-            {
-              "caption": "Event scheduler preview in the CMS",
-              "span": 4,
-              "ratio": "4 / 3"
+              "ratio": "16 / 10",
+              "src": "/projects/candid-chat-agent/dev-walkthrough.mp4"
             }
-          ],
-          "paras": []
+          ]
         },
         {
           "type": "moments",
           "label": "Decisions",
-          "title": "Key design moments",
+          "title": "Stream, or wait",
+          "note": "",
+          "paras": [],
+          "pull": "",
           "items": [
             {
               "kind": "Tradeoff",
-              "title": "Free orbit or camera rails",
-              "body": "Free orbit tested as more fun for the first minute and worse for everything after — people got lost behind geometry and never found the drop.",
+              "title": "Show the answer forming",
+              "body": "A model takes seconds to answer. Something has to happen in those seconds, and there are only two honest options: a loading state, or the answer itself arriving in pieces.",
               "chose": {
                 "k": "We shipped",
-                "v": "Rails with local look-around. Movement is constrained to authored paths; the camera can still pan inside each stop."
+                "v": "Streaming. Tokens render as they arrive, so the wait is spent reading rather than watching a spinner."
               },
               "passed": {
                 "k": "We passed on",
-                "v": "Full orbit. It made every object a potential dead end and doubled the collision work."
+                "v": "Holding the response back and revealing it complete — steadier to build, but every question costs the same silent pause."
               },
-              "call": "Exploration only reads as exploration if you can always find your way back. Rails cost novelty and bought comprehension."
-            },
-            {
-              "kind": "Controversial",
-              "title": "Hiding the drop behind interaction",
-              "body": "Product marketing wanted the release visible on load. We wanted it earned — two taps in, behind a door.",
-              "chose": {
-                "k": "We shipped",
-                "v": "Earned placement, with a persistent pill that jumps you straight to the drop if you want the shortcut."
-              },
-              "passed": {
-                "k": "We passed on",
-                "v": "A hero card on load. It answered the whole page in one glance."
-              },
-              "call": "The compromise held: the shortcut protected conversion, and the room still had a secret in it."
-            },
-            {
-              "kind": "Decision",
-              "title": "A hard 60fps floor on mid-tier Android",
-              "body": "Frame rate was treated as a design constraint, not a QA pass. Everything past the budget had to justify itself against something already in the scene.",
-              "chose": {
-                "k": "We shipped",
-                "v": "One dynamic light, baked ambient occlusion, instanced props, and a dithered shadow catcher instead of real-time shadows."
-              },
-              "passed": {
-                "k": "We passed on",
-                "v": "Real-time shadows and post-processing bloom."
-              },
-              "call": "The dither ended up defining the look of the whole thing. The constraint became the style."
+              "call": "The cost is real: a half-formed answer can read as a wrong one before it finishes. That is an argument for designing the streaming state carefully, not for hiding it. This added a lot of technical collaboration with the data team to define the tool call structure for the streaming states."
             }
-          ],
-          "paras": []
+          ]
         },
         {
           "type": "assets",
           "label": "Payoff",
-          "title": "Final artifacts",
+          "title": "In use",
+          "note": "",
+          "paras": [
+            "The hard part was not the streaming — it was keeping the page still while it happened. Content grows underneath the reader, and a surface that reflows or jumps each time a token lands is harder to read than the spinner would have been."
+          ],
+          "pull": "",
           "items": [
             {
-              "caption": "The room at launch",
-              "span": 12,
-              "ratio": "16 / 9"
-            },
-            {
-              "caption": "Live event state — 40k concurrent",
+              "caption": "Responses come in many shapes",
               "span": 6,
-              "ratio": "3 / 2"
+              "ratio": "16 / 10",
+              "src": "/projects/candid-chat-agent/chat-response-a.mp4"
             },
             {
-              "caption": "Unlock sequence",
+              "caption": "So we have to build around the variability and define what we can while data is settling",
               "span": 6,
-              "ratio": "3 / 2"
+              "ratio": "16 / 10",
+              "src": "/projects/candid-chat-agent/chat-response-b.mp4"
             }
-          ],
-          "paras": []
-        },
-        {
-          "type": "impact",
-          "label": "Impact",
-          "title": "What it moved",
-          "note": "Measured over the 30-day campaign window against the prior year’s equivalent page.",
-          "items": [
-            {
-              "n": 4.7,
-              "suffix": "×",
-              "k": "Session length",
-              "note": "vs. the previous Air Max Day page"
-            },
-            {
-              "n": 61,
-              "suffix": "%",
-              "k": "Returned within the month",
-              "note": "driven by scheduled events"
-            },
-            {
-              "n": 60,
-              "suffix": "fps",
-              "k": "Held on mid-tier Android",
-              "note": "p95 across the launch window"
-            }
-          ],
-          "paras": []
+          ]
         },
         {
           "type": "reflection",
-          "label": "Reflection",
-          "title": "What I’d do differently",
-          "paras": [
-            "The authoring layer arrived late, so the first two events were hand-placed by engineers. If I ran it again the CMS schema would come before the geometry — the room only pays off if the team can furnish it without us.",
-            "I’d also cut a third of the props. The scene was legible at forty objects and busy at sixty, and we found that out after the shadow work."
-          ]
-        }
-      ],
-      "index": {
-        "category": "work",
-        "shape": "sphere",
-        "glyphSrc": "/projects/max-s-lab/glyph.webm",
-        "summary": "An explorable 3D world built around Max, with hidden details and live events."
-      },
-      "archive": {
-        "client": "Nike .Swoosh",
-        "role": "Front-End Lead",
-        "year": "2025",
-        "liveLink": "https://www.swoosh.nike/m/maxs-lab"
-      }
-    },
-    "Defenders of Dogewood": {
-      "removed": true
-    },
-    "Candid Chat Agent": {
-      "display": "Candid Chat Agent",
-      "tagline": "",
-      "cover": "Cover — Candid Chat Agent",
-      "coverSrc": "",
-      "meta": [],
-      "blocks": [
-        {
-          "type": "text",
-          "label": "",
-          "title": "",
+          "label": "REFLECTION",
+          "title": "Continue Building",
           "note": "",
-          "paras": [],
+          "paras": [
+            "Development continues and products are ever evolving using new AI tools.One thing I'd love to think further through next is the longer term product vision. This product opened up a lot of opportunity to upgrade the users workflow further and spending the time to think through the longer term vision should allow for quicker integration between distinct systems."
+          ],
           "pull": ""
         }
       ],
@@ -392,124 +224,90 @@
         "shape": "rings",
         "glyphSrc": "/projects/candid-chat-agent/glyph.webm",
         "summary": "Agentic chat experience that exposes automatic workflows for the public sector.",
-        "comingSoon": true
+        "comingSoon": false,
+        "liveOnly": false
       },
       "archive": {
         "client": "Candid",
         "role": "Front-End Lead",
         "year": "2026",
-        "liveLink": ""
+        "liveLink": "#"
       }
+    },
+    "Defenders of Dogewood": {
+      "removed": true
     },
     "EA Sports FC Partner Page": {
       "display": "EA Sports FC",
-      "tagline": "An interactive player viewer and reusable components for the EA Sports FC launch.",
-      "cover": "Cover — player viewer orbit, kit swap",
+      "tagline": "A partnership launch page, and the shared viewer that showed players what Nike gear they had in game.",
+      "cover": "Cover — viewer orbit, kit swap",
       "coverSrc": "",
       "meta": [
         {
           "k": "Timeline",
-          "v": "7 weeks · 2023"
+          "v": "~2 months · 2024"
         },
         {
           "k": "Scope",
-          "v": "Engineer · player viewer, shared component work"
+          "v": "Engineer · launch page components, viewer integration"
         },
         {
           "k": "Worked with",
-          "v": "2 designers, 3 engineers, EA partner team"
-        },
-        {
-          "k": "Stack",
-          "v": "React, Three.js"
+          "v": "2 engineers, 1 designer, 1 3D artist"
         }
       ],
       "blocks": [
         {
           "type": "text",
           "label": "Context",
-          "title": "Why it exists",
+          "title": "What it was",
+          "note": "",
           "paras": [
-            "A co-branded launch with a partner’s asset pipeline, a partner’s review cycle, and a fixed date. The interesting engineering problem was not the viewer — it was making the viewer out of parts that already existed."
-          ]
+            "A marketing partnership page for the EA Sports FC launch. I built a number of composable design system components for the page and worked on the viewer that let players see the Nike gear available to them in game.",
+            "The viewer was not built exclusively for this campaign. The project evolved over time. It is a shared, cross-game component, and EA Sports FC was one of the games it served.The marketing page was built to support an evolution of our design system and bring in components to breathe new life into the site."
+          ],
+          "pull": ""
         },
         {
           "type": "assets",
-          "label": "Process",
-          "title": "Process assets",
+          "label": "Assets",
+          "title": "Selected captures",
+          "note": "",
+          "paras": [],
+          "pull": "",
           "items": [
             {
-              "caption": "Kit-swap material pipeline",
-              "span": 6,
-              "ratio": "4 / 3"
+              "caption": "The shared viewer — started as dress POC",
+              "span": 7,
+              "ratio": "16 / 10",
+              "src": "/projects/ea-sports-fc-partner-page/shared-viewer.mp4"
             },
             {
-              "caption": "Viewer controls — reach test",
-              "span": 6,
-              "ratio": "4 / 3"
+              "caption": "The component supported Social Media Optimization (SMO) using SEO tools",
+              "span": 3,
+              "ratio": "9 / 16",
+              "src": "/projects/ea-sports-fc-partner-page/share-output.mp4"
             }
-          ],
-          "paras": []
-        },
-        {
-          "type": "moments",
-          "label": "Decisions",
-          "title": "One decision worth framing",
-          "items": [
-            {
-              "kind": "Tradeoff",
-              "title": "Fork the viewer or extend the shared one",
-              "body": "The shared 3D viewer did 80% of this. Extending it meant negotiating with two other teams’ roadmaps; forking meant shipping on time and owning a duplicate.",
-              "chose": {
-                "k": "We shipped",
-                "v": "Extended the shared viewer behind a feature flag, with the partner-specific material work isolated in an adapter."
-              },
-              "passed": {
-                "k": "We passed on",
-                "v": "A fork. Faster that week, a tax every week after."
-              },
-              "call": "Two other launches used the adapter within a quarter. The negotiation paid for itself."
-            }
-          ],
-          "paras": []
-        },
-        {
-          "type": "assets",
-          "label": "Payoff",
-          "title": "Final artifacts",
-          "items": [
-            {
-              "caption": "Launch page",
-              "span": 12,
-              "ratio": "16 / 9"
-            },
-            {
-              "caption": "Player viewer",
-              "span": 6,
-              "ratio": "3 / 2"
-            },
-            {
-              "caption": "Component set in use elsewhere",
-              "span": 6,
-              "ratio": "3 / 2"
-            }
-          ],
-          "paras": []
-        },
-        {
-          "type": "reflection",
-          "label": "Reflection",
-          "title": "End note",
-          "paras": [
-            "Partner work is mostly interface design between organisations. The adapter boundary was the actual deliverable."
           ]
+        },
+        {
+          "type": "text",
+          "label": "End note",
+          "title": "A short entry",
+          "note": "",
+          "paras": [
+            "This one is on the list for range rather than depth. It was a well-scoped build against a fixed launch date, and the more interesting object in it — the viewer — belongs to more projects than this one."
+          ],
+          "pull": ""
         }
       ],
       "index": {
         "category": "work",
         "shape": "sphere",
         "glyphSrc": "/cursors/levels/eafc-L6.webm",
-        "summary": "An interactive player viewer and reusable components for the EA Sports FC launch."
+        "summary": "A partnership launch page, and the shared cross-game viewer behind it.",
+        "comingSoon": false,
+        "liveOnly": false
       },
       "archive": {
         "client": "Nike x EA Sports",
@@ -518,27 +316,219 @@
         "liveLink": "https://www.swoosh.nike/p/ea-sports-fc"
       }
     },
-    "TINAJ Collection Listing Page": {
-      "display": "TINAJ",
-      "tagline": "A customizable 3D product viewer for virtual collectibles.",
-      "cover": "Cover — customization loop, three colourways",
+    "Max's Lab": {
+      "display": "Max's Lab",
+      "tagline": "A 3D world built to gamify a product release, and the architecture that let marketing keep building on it afterwards.",
+      "cover": "Cover — 8s loop of the world at first load, camera settling",
       "coverSrc": "",
       "meta": [
         {
           "k": "Timeline",
-          "v": "5 weeks · 2023"
+          "v": "2 months · 2025"
         },
         {
           "k": "Scope",
-          "v": "Engineer · viewer, customization state, share images"
+          "v": "Lead front end · architecture, asset pipeline, controls"
         },
         {
           "k": "Worked with",
-          "v": "1 designer, 2 engineers"
+          "v": "2 designers, 1 3D artist, 2 engineers"
         },
         {
           "k": "Stack",
-          "v": "React, Three.js"
+          "v": "React, WebGL, Zustand, Blender"
+        }
+      ],
+      "blocks": [
+        {
+          "type": "text",
+          "label": "Context",
+          "title": "How do you gamify a product release?",
+          "note": "",
+          "paras": [
+            "That was the brief, and it arrived as a question rather than a design. Nobody knew what the answer looked like, so the project opened with a round of fast prototyping alongside design — building the options quickly enough that we could look at them instead of argue about them.",
+            "A navigable 3D world won. Everything after that was the work of making one run properly on the web, which is mostly a series of decisions about what the assets are allowed to cost."
+          ],
+          "pull": ""
+        },
+        {
+          "type": "assets",
+          "label": "Process",
+          "title": "Prototyping in the open",
+          "note": "",
+          "paras": [
+            "The explorations lived in a Storybook rather than in somebody’s branch. Camera controls, loaders, color and polygon studies, pathfinding — each one a story with its own controls, so design could open any of them and change the parameters without booking an engineer.",
+            "The pathfinding studies are the ones worth showing: a demo map, a nav mesh you can switch on to see what the movement is actually solving, and the same level under first-person, third-person and keyboard cameras."
+          ],
+          "pull": "",
+          "items": [
+            {
+              "caption": "Navigation pathfinding — nav mesh on, first-person keyboard camera",
+              "span": 12,
+              "ratio": "21 / 9",
+              "src": "/projects/max-s-lab/storybook-pathfinding.mp4"
+            }
+          ]
+        },
+        {
+          "type": "moments",
+          "label": "Decisions",
+          "title": "Two arguments worth having",
+          "note": "",
+          "paras": [],
+          "pull": "",
+          "items": [
+            {
+              "kind": "Tradeoff",
+              "title": "Control options, not one control scheme",
+              "body": "A 3D world on the web is reached from a phone, a trackpad and a keyboard, and each of those wants something different. The tempting move is to tune one scheme until it is good enough everywhere.",
+              "chose": {
+                "k": "shipped",
+                "v": "Several schemes, offered together — tap to move, drag to rotate, and a d-pad you hold to steer — so the world was reachable however somebody arrived at it."
+              },
+              "passed": {
+                "k": "We passed on",
+                "v": "A single scheme, tuned for the input we expected most. Cheaper to build and cheaper to explain."
+              },
+              "call": "Controls are the part of a 3D experience that decides who can use it at all. Treating them as an accessibility question rather than a taste question is what made the room reachable for the whole audience."
+            },
+            {
+              "kind": "Tradeoff",
+              "title": "Polygon budgets set with design, during",
+              "body": "Web 3D fails late. Assets get made, the scene gets assembled, and the performance problem shows up when there is no time left to change what caused it.",
+              "chose": {
+                "k": "shipped",
+                "v": "Budgets agreed with design while the assets were still being built — redefining GLTF polygon counts and texture sizes as part of the modelling conversation, not after it."
+              },
+              "passed": {
+                "k": "We passed on",
+                "v": "Building for fidelity and optimising at the end, which is the normal way and puts the whole cost on the last week."
+              },
+              "call": "It made the pipeline the deliverable rather than the scene. That is also why there was something left to build on."
+            },
+            {
+              "kind": "Decision",
+              "title": "Exploration Controls",
+              "body": "When a user is explore a 3D world movement has to feel fun and engaging, otherwise the entire moment's foundation could taint the overall experience.",
+              "chose": {
+                "k": "Shipped",
+                "v": "Navigation map based exploration with a deliverable navigation bounding the player to a specified space."
+              },
+              "passed": {
+                "k": "Passed on",
+                "v": "Physics based exploration where users can experience items pushing against each other and realistic gravity."
+              },
+              "call": "Nav mesh was chosen for device accessibility as we had the data to see what kinds of devices are users are on. A considerable amount of users could potentially see a performance hit if we went with the physics approach."
+            }
+          ]
+        },
+        {
+          "type": "assets",
+          "label": "Payoff",
+          "title": "The room",
+          "note": "",
+          "paras": [],
+          "pull": "",
+          "items": [
+            {
+              "caption": "The world on desktop",
+              "span": 12,
+              "ratio": "16 / 9",
+              "src": "/projects/max-s-lab/world-desktop.mp4"
+            },
+            {
+              "caption": "Mobile — moving through the room",
+              "span": 3,
+              "ratio": "9 / 16",
+              "src": "/projects/max-s-lab/world-mobile.mp4"
+            },
+            {
+              "caption": "Mobile — detail and interaction",
+              "span": 3,
+              "ratio": "9 / 16",
+              "src": "/projects/max-s-lab/world-mobile-detail.mp4"
+            }
+          ]
+        },
+        {
+          "type": "impact",
+          "label": "Numbers",
+          "title": "Data",
+          "note": "",
+          "paras": [],
+          "pull": "",
+          "items": [
+            {
+              "n": 225,
+              "suffix": "%",
+              "k": "Increase in user interactions and sessions duration",
+              "note": "compared to other marketing experiences"
+            },
+            {
+              "n": 7,
+              "suffix": "+figures",
+              "k": "in revenue in pre-order sales",
+              "note": "first pre-order in the company's history"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "label": "Outcome",
+          "title": "It earned a second chapter",
+          "note": "",
+          "paras": [
+            "The room was built composably enough that marketing bought a part two on it — a second story told in the same world, to sell more product through the same lens. That is the outcome I would point at: not that the experience shipped, but that the thing underneath it was worth extending."
+          ],
+          "pull": ""
+        },
+        {
+          "type": "reflection",
+          "label": "Reflection",
+          "title": "Improving Further",
+          "note": "",
+          "paras": [
+            "If I had the ability to keep working on this project I'd add alot more device telemetry such as temp, frames, etc to get more experience performance data on their range of devices.I'd also use a lot of my new 3D skills to provide more help on the modeling and styling side of this experience."
+          ],
+          "pull": ""
+        }
+      ],
+      "index": {
+        "category": "work",
+        "shape": "sphere",
+        "glyphSrc": "/projects/max-s-lab/glyph.webm",
+        "summary": "An explorable 3D world built to gamify a product release.",
+        "comingSoon": false,
+        "liveOnly": false
+      },
+      "archive": {
+        "client": "Nike .Swoosh",
+        "role": "Front-End Lead",
+        "year": "2025",
+        "liveLink": "https://www.swoosh.nike/m/maxs-lab"
+      }
+    },
+    "Minecraft Clone": {
+      "display": "Minecraft Clone",
+      "tagline": "A multiplayer voxel world with procedural terrain and custom physics, built in React.",
+      "cover": "Cover — terrain generation, first-person walk",
+      "coverSrc": "",
+      "meta": [
+        {
+          "k": "Timeline",
+          "v": "2 months · 2022"
+        },
+        {
+          "k": "Scope",
+          "v": "Solo — terrain, physics, netcode"
+        },
+        {
+          "k": "Worked with",
+          "v": "Solo"
+        },
+        {
+          "k": "Stack",
+          "v": "React, Three.js, WebSockets"
         }
       ],
       "blocks": [
@@ -547,7 +537,7 @@
           "label": "Context",
           "title": "Why it exists",
           "paras": [
-            "Members owned a virtual product they couldn’t really look at. The viewer existed to make ownership feel like something — turn it over, change it, screenshot it."
+            "I wanted to understand chunked meshing and collision from the ground up rather than from a tutorial. Voxels are the cheapest way to be forced to learn both."
           ]
         },
         {
@@ -556,19 +546,14 @@
           "title": "Selected captures",
           "items": [
             {
-              "caption": "Customization panel",
+              "caption": "Chunk meshing — greedy vs. naive",
               "span": 6,
               "ratio": "4 / 3"
             },
             {
-              "caption": "Share-image render",
+              "caption": "Terrain noise passes",
               "span": 6,
               "ratio": "4 / 3"
-            },
-            {
-              "caption": "Viewer in context",
-              "span": 12,
-              "ratio": "16 / 9"
             }
           ],
           "paras": []
@@ -578,252 +563,23 @@
           "label": "Reflection",
           "title": "End note",
           "paras": [
-            "Share images did more work than the viewer. The thing people wanted was proof, and proof is a picture."
+            "The physics took four times longer than the rendering, which is the lesson."
           ]
-        }
-      ],
-      "index": {
-        "category": "work",
-        "shape": "rings",
-        "glyphSrc": "/cursors/levels/tinaj-gimbal-L6.webm",
-        "summary": "A customizable 3D product viewer for virtual collectibles."
-      },
-      "archive": {
-        "client": "Nike .Swoosh",
-        "role": "Front-End Engineer",
-        "year": "2023",
-        "liveLink": "https://www.swoosh.nike/collections/our-force-1-tinaj/products/air-force-1-tinaj/tokens/301?tab=story"
-      }
-    },
-    "SNK-Y Bot": {
-      "removed": true
-    },
-    "Our Force 1 Poster Content Display Page": {
-      "display": "Our Force 1",
-      "tagline": "A collection story told through an authorable page, parallax, and animated 3D posters.",
-      "cover": "Cover — poster rotating through three collection panels",
-      "coverSrc": "",
-      "meta": [
-        {
-          "k": "Timeline",
-          "v": "4 months · 2023"
-        },
-        {
-          "k": "Scope",
-          "v": "Lead engineer · authoring model, scroll system, 3D poster pipeline"
-        },
-        {
-          "k": "Worked with",
-          "v": "3 designers, 2 engineers, editorial team"
-        },
-        {
-          "k": "Stack",
-          "v": "React, Three.js, GSAP, headless CMS"
-        }
-      ],
-      "blocks": [
-        {
-          "type": "text",
-          "label": "Context",
-          "title": "Why it exists",
-          "paras": [
-            "The collection had eleven chapters and no fixed length — chapters were still being written while we built. A hand-laid page would have been obsolete before launch.",
-            "So the deliverable was a grammar, not a layout: nine section types the editorial team could stack in any order, each with a defined scroll behaviour and a defined failure mode."
-          ],
-          "pull": "The deliverable was a grammar, not a layout."
-        },
-        {
-          "type": "text",
-          "label": "Context",
-          "title": "Why it matters",
-          "paras": [
-            "It shifted who owns the page. Editorial published three chapters after launch with no engineering involvement, which is the only real test of an authoring system."
-          ]
-        },
-        {
-          "type": "assets",
-          "label": "Process",
-          "title": "The section grammar",
-          "note": "Each type had to survive being placed next to any other type.",
-          "items": [
-            {
-              "caption": "Nine section types, adjacency matrix",
-              "span": 12,
-              "ratio": "21 / 9"
-            },
-            {
-              "caption": "3D poster — animation states",
-              "span": 6,
-              "ratio": "4 / 3"
-            },
-            {
-              "caption": "Scroll-linked parallax depth study",
-              "span": 6,
-              "ratio": "4 / 3"
-            }
-          ],
-          "paras": []
-        },
-        {
-          "type": "moments",
-          "label": "Decisions",
-          "title": "Key design moments",
-          "items": [
-            {
-              "kind": "Controversial",
-              "title": "Capping parallax depth",
-              "body": "Design wanted more separation between layers. At the depth they wanted, text became unreadable mid-scroll on a trackpad.",
-              "chose": {
-                "k": "We shipped",
-                "v": "A depth ceiling per section type, with text layers pinned to zero parallax."
-              },
-              "passed": {
-                "k": "We passed on",
-                "v": "Per-layer freehand depth in the CMS."
-              },
-              "call": "Type that moves while you read it is a bug wearing a costume. The ceiling was the compromise that let everything else stay loose."
-            },
-            {
-              "kind": "Tradeoff",
-              "title": "Real 3D posters or pre-rendered loops",
-              "body": "Eleven chapters × three posters is thirty-three assets. Live 3D meant a real engine on the page; pre-rendering meant a render farm and no interactivity.",
-              "chose": {
-                "k": "We shipped",
-                "v": "Live 3D for the hero poster, pre-rendered loops for the rest — one engine instance, thirty-two video textures."
-              },
-              "passed": {
-                "k": "We passed on",
-                "v": "Live 3D everywhere."
-              },
-              "call": "One interactive poster per chapter was enough to sell the idea. The rest just had to move."
-            }
-          ],
-          "paras": []
-        },
-        {
-          "type": "assets",
-          "label": "Payoff",
-          "title": "Final artifacts",
-          "items": [
-            {
-              "caption": "Chapter opening",
-              "span": 7,
-              "ratio": "16 / 10"
-            },
-            {
-              "caption": "Interactive poster",
-              "span": 5,
-              "ratio": "16 / 10"
-            },
-            {
-              "caption": "Full-page scroll capture",
-              "span": 12,
-              "ratio": "21 / 9"
-            }
-          ],
-          "paras": []
-        },
-        {
-          "type": "impact",
-          "label": "Impact",
-          "title": "What it moved",
-          "items": [
-            {
-              "n": 3,
-              "suffix": "",
-              "k": "Chapters shipped without engineering",
-              "note": "after launch, by editorial"
-            },
-            {
-              "n": 11,
-              "suffix": "",
-              "k": "Chapters on one system",
-              "note": "nine reusable section types"
-            }
-          ],
-          "paras": []
-        },
-        {
-          "type": "reflection",
-          "label": "Reflection",
-          "title": "End note",
-          "paras": [
-            "The adjacency matrix was the highest-leverage artifact of the project and it was a spreadsheet. Constraints documented early are cheaper than constraints discovered in review."
-          ]
-        }
-      ],
-      "index": {
-        "category": "work",
-        "shape": "poster",
-        "glyphSrc": "/cursors/levels/our-force-1-L6.webm",
-        "summary": "A collection story told through an authorable page, parallax, and animated 3D posters.",
-        "comingSoon": false
-      },
-      "archive": {
-        "client": "Nike .Swoosh",
-        "role": "Front-End Lead",
-        "year": "2023",
-        "liveLink": "https://www.swoosh.nike/collections/our-force-1-poster"
-      }
-    },
-    "Toolcraft Explorations": {
-      "display": "Toolcraft Explorations",
-      "tagline": "",
-      "cover": "Cover — Toolcraft Explorations",
-      "coverSrc": "",
-      "meta": [],
-      "blocks": [
-        {
-          "type": "text",
-          "label": "",
-          "title": "",
-          "note": "",
-          "paras": [],
-          "pull": ""
-        }
-      ],
-      "index": {
-        "category": "personal",
-        "shape": "rings",
-        "glyphSrc": "",
-        "summary": "A folder collection of my toolcraft explorations",
-        "comingSoon": true
-      },
-      "archive": {
-        "client": "",
-        "role": "Creator",
-        "year": "2026",
-        "liveLink": "https://toolcraft-gallery.vercel.app/"
-      }
-    },
-    "Warcraft 3 Book RTS": {
-      "display": "Warcraft 3 Book RTS",
-      "tagline": "",
-      "cover": "Cover — Warcraft 3 Book RTS",
-      "coverSrc": "",
-      "meta": [],
-      "blocks": [
-        {
-          "type": "text",
-          "label": "",
-          "title": "",
-          "note": "",
-          "paras": [],
-          "pull": ""
         }
       ],
       "index": {
         "category": "personal",
         "shape": "sphere",
-        "glyphSrc": "/projects/warcraft-3-book-rts/glyph.webm",
-        "summary": "Interactive E-Book exploration. What if the stories we read came out an brought us into an immersive world.",
-        "comingSoon": true
+        "glyphSrc": "/projects/minecraft-clone/glyph.webm",
+        "summary": "A multiplayer voxel world with procedural terrain and custom physics, built in React. Pre AI :)",
+        "comingSoon": false,
+        "liveOnly": true
       },
       "archive": {
-        "client": "",
+        "client": "Web Rendering",
         "role": "Creator",
-        "year": "2026",
-        "liveLink": "https://third-war-chronicle.vercel.app/"
+        "year": "2022",
+        "liveLink": "https://minecraft-clone-react-chi.vercel.app/"
       }
     },
     "Moodie": {
@@ -966,86 +722,243 @@
         "shape": "poster",
         "glyphSrc": "",
         "summary": "An infinite discovery canvas for collecting and exploring visual inspiration.",
-        "comingSoon": false
+        "comingSoon": false,
+        "liveOnly": true
       },
       "archive": {
-        "client": "Passion Project",
+        "client": "Visual Data Recommendation Algo",
         "role": "Creator",
         "year": "2026",
-        "liveLink": "moodi.me"
+        "liveLink": "https://moodi.me/"
       }
     },
-    "Minecraft Clone": {
-      "display": "Minecraft Clone",
-      "tagline": "A multiplayer voxel world with procedural terrain and custom physics, built in React.",
-      "cover": "Cover — terrain generation, first-person walk",
+    "Our Force 1 Poster Content Display Page": {
+      "display": "Our Force 1",
+      "tagline": "A collection page, and the first content pipeline set up for the team — CMS wired to design-system components.",
+      "cover": "Cover — poster rotating through three collection panels",
       "coverSrc": "",
       "meta": [
         {
           "k": "Timeline",
-          "v": "2 months · 2022"
+          "v": "4 months · 2023"
         },
         {
           "k": "Scope",
-          "v": "Solo — terrain, physics, netcode"
+          "v": "Lead engineer · CMS setup and workflow, design system components"
         },
         {
           "k": "Worked with",
-          "v": "Solo"
+          "v": "1 designer, 1 engineer"
         },
         {
           "k": "Stack",
-          "v": "React, Three.js, WebSockets"
+          "v": "React, Next.js, Contentful, Three.js, GLSL"
         }
       ],
       "blocks": [
         {
           "type": "text",
           "label": "Context",
-          "title": "Why it exists",
+          "title": "What it was",
+          "note": "Setting the workflow for marketing website",
           "paras": [
-            "I wanted to understand chunked meshing and collision from the ground up rather than from a tutorial. Voxels are the cheapest way to be forced to learn both."
-          ]
+            "A marketing page for the Our Force 1 collection. It is on this list for what sat behind it rather than for what it looked like.",
+            "This was the first project where we set up the content management system (CMS), and more to the point the workflow around it: Contentful, wired to a set of design-system components I built, and the guidelines to support different kinds of marketing components; so the people writing the collection’s story could assemble a page out of them instead of filing a ticket for one."
+          ],
+          "pull": ""
+        },
+        {
+          "type": "text",
+          "label": "End note",
+          "title": "Missing assets",
+          "note": "",
+          "paras": [
+            "There are no other captures of this one. The part worth showing was a workflow, and workflows do not screenshot well — so this page says what it was and stops."
+          ],
+          "pull": ""
+        }
+      ],
+      "index": {
+        "category": "work",
+        "shape": "poster",
+        "glyphSrc": "/cursors/levels/our-force-1-L6.webm",
+        "summary": "A collection page, and the CMS workflow and design-system components behind it.",
+        "comingSoon": false,
+        "liveOnly": false
+      },
+      "archive": {
+        "client": "Nike .Swoosh",
+        "role": "Front-End Lead",
+        "year": "2023",
+        "liveLink": "https://www.swoosh.nike/collections/our-force-1-poster"
+      }
+    },
+    "SNK-Y Bot": {
+      "removed": true
+    },
+    "TINAJ Collection Listing Page": {
+      "display": "TINAJ",
+      "tagline": "One 3D product viewer, rebuilt across two and a half years until it could carry anything marketing put in front of it.",
+      "cover": "Cover — customization loop, three colourways",
+      "coverSrc": "",
+      "meta": [
+        {
+          "k": "Timeline",
+          "v": "6+ months, >10 major iterations, across 2.5 years"
+        },
+        {
+          "k": "Scope",
+          "v": "Engineer · the viewer component"
+        },
+        {
+          "k": "Worked with",
+          "v": "2 engineers, 1 designer"
+        }
+      ],
+      "blocks": [
+        {
+          "type": "text",
+          "label": "Context",
+          "title": "One component, many placements",
+          "note": "",
+          "paras": [
+            "TINAJ is the name at the top of this page, but the work is a component. The same 3D product viewer was built, rebuilt and extended over two and a half years until it could serve whatever marketing needed next — a different product, a different animation, a different job on a different page.",
+            "What follows is that one component doing different work. The repetition is the argument."
+          ],
+          "pull": ""
         },
         {
           "type": "assets",
-          "label": "Assets",
-          "title": "Selected captures",
+          "label": "Placements",
+          "title": "Where it ran",
+          "note": "",
+          "paras": [],
+          "pull": "",
           "items": [
             {
-              "caption": "Chunk meshing — greedy vs. naive",
-              "span": 6,
-              "ratio": "4 / 3"
+              "caption": "A product page with >10,000 iterations of a product — the showing is just one iteration of the collection ",
+              "span": 7,
+              "ratio": "16 / 10",
+              "src": "/projects/tinaj-collection-listing-page/product-detail.mp4"
             },
             {
-              "caption": "Terrain noise passes",
-              "span": 6,
-              "ratio": "4 / 3"
+              "caption": "A single colorway's baked in GLTF animation rending  in full screen on a mobile device",
+              "span": 3,
+              "ratio": "9 / 16",
+              "src": "/projects/tinaj-collection-listing-page/colourway.mp4"
+            },
+            {
+              "caption": "The collection listing shows just how many different products this component had to support from it's inception.",
+              "span": 7,
+              "ratio": "16 / 10",
+              "src": "/projects/tinaj-collection-listing-page/collection-listing.mp4"
+            },
+            {
+              "caption": "The whole collection at once — tens of thousands of tokens",
+              "span": 5,
+              "ratio": "1 / 1",
+              "src": "/projects/tinaj-collection-listing-page/collection-all.mp4"
             }
-          ],
-          "paras": []
+          ]
         },
         {
-          "type": "reflection",
-          "label": "Reflection",
-          "title": "End note",
-          "paras": [
-            "The physics took four times longer than the rendering, which is the lesson."
+          "type": "impact",
+          "label": "Reach",
+          "title": "What one component covered",
+          "note": "",
+          "paras": [],
+          "pull": "",
+          "items": [
+            {
+              "n": 20000,
+              "suffix": "+",
+              "k": "Products it shipped on",
+              "note": "and thousands of product pages"
+            },
+            {
+              "n": 2.5,
+              "suffix": " yrs",
+              "k": "Span of the rebuilds and support",
+              "note": "6+ months of work inside it"
+            }
           ]
+        }
+      ],
+      "index": {
+        "category": "work",
+        "shape": "rings",
+        "glyphSrc": "/cursors/levels/tinaj-gimbal-L6.webm",
+        "summary": "A 3D product viewer rebuilt across 2.5 years until it could carry any product.",
+        "comingSoon": false,
+        "liveOnly": false
+      },
+      "archive": {
+        "client": "Nike .Swoosh",
+        "role": "Front-End Engineer",
+        "year": "2023",
+        "liveLink": "https://www.swoosh.nike/collections/our-force-1-tinaj/products/air-force-1-tinaj/tokens/301?tab=story"
+      }
+    },
+    "Toolcraft Explorations": {
+      "display": "Toolcraft Explorations",
+      "tagline": "",
+      "cover": "Cover — Toolcraft Explorations",
+      "coverSrc": "",
+      "meta": [],
+      "blocks": [
+        {
+          "type": "text",
+          "label": "",
+          "title": "",
+          "note": "",
+          "paras": [],
+          "pull": ""
+        }
+      ],
+      "index": {
+        "category": "personal",
+        "shape": "rings",
+        "glyphSrc": "",
+        "summary": "A folder collection of my toolcraft explorations",
+        "comingSoon": false,
+        "liveOnly": true
+      },
+      "archive": {
+        "client": "AI Tool Editor Explorations",
+        "role": "Creator",
+        "year": "2026",
+        "liveLink": "https://toolcraft-gallery.vercel.app/"
+      }
+    },
+    "Warcraft 3 Book RTS": {
+      "display": "Warcraft 3 Book RTS",
+      "tagline": "",
+      "cover": "Cover — Warcraft 3 Book RTS",
+      "coverSrc": "",
+      "meta": [],
+      "blocks": [
+        {
+          "type": "text",
+          "label": "",
+          "title": "",
+          "note": "",
+          "paras": [],
+          "pull": ""
         }
       ],
       "index": {
         "category": "personal",
         "shape": "sphere",
-        "glyphSrc": "/projects/minecraft-clone/glyph.webm",
-        "summary": "A multiplayer voxel world with procedural terrain and custom physics, built in React. Pre AI :)",
-        "comingSoon": false
+        "glyphSrc": "/projects/warcraft-3-book-rts/glyph.webm",
+        "summary": "Interactive E-Book exploration. What if the stories we read came out an brought us into an immersive world.",
+        "comingSoon": false,
+        "liveOnly": true
       },
       "archive": {
-        "client": "Passion Project",
+        "client": "",
         "role": "Creator",
-        "year": "2022",
-        "liveLink": "https://minecraft-clone-react-chi.vercel.app/"
+        "year": "2026",
+        "liveLink": "https://third-war-chronicle.vercel.app/"
       }
     }
   },
@@ -1067,7 +980,7 @@
   },
   "site": {
     "projectNotice": {
-      "enabled": true,
+      "enabled": false,
       "text": "More coming soon."
     }
   }

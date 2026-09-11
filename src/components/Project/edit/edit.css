@@ -1,0 +1,367 @@
+/* The editing chrome.
+   Loaded only by the project page, and every rule in here is scoped to a
+   `pedit` class or to `body.is-editing`, so nothing a reader loads is styled
+   by this file.
+
+   The tool looks like a tool — the studio's palette, the studio's type — and
+   sits at the bottom of the screen rather than the top, because the page it is
+   editing already has a fixed header of its own and the two would stack into a
+   band you have to read past to see the work. */
+
+body.is-editing {
+  /* Room for the bar, so the end of the footer is still reachable. */
+  padding-bottom: 132px;
+}
+
+.pedit-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 70;
+  max-height: 62vh;
+  overflow-y: auto;
+  border-top: 1px solid #2b2b30;
+  background: #131318f2;
+  backdrop-filter: blur(10px);
+  color: #e9e9ec;
+  font:
+    12px/1.5 ui-sans-serif,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+}
+
+.pedit-bar__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px 0;
+}
+
+.pedit-bar__tag {
+  border: 1px solid #3e3bf4;
+  padding: 2px 7px;
+  color: #a9a7ff;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 10px;
+}
+
+.pedit-bar__line strong {
+  font-size: 13px;
+}
+
+.pedit-bar__line code {
+  color: #7e7e8a;
+}
+
+.pedit-bar__count {
+  margin-right: auto;
+  color: #7e7e8a;
+}
+
+.pedit-bar__count[data-dirty] {
+  color: #f1f43b;
+}
+
+.pedit-bar__note {
+  margin: 6px 16px 10px;
+  max-width: 96ch;
+  color: #7e7e8a;
+}
+
+.pedit-bar button,
+.pedit-rail button {
+  border: 1px solid #2b2b30;
+  background: #1c1c22;
+  padding: 5px 10px;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.pedit-bar button:hover:not(:disabled),
+.pedit-rail button:hover:not(:disabled) {
+  border-color: #4a4a55;
+  background: #24242c;
+}
+
+.pedit-bar button:disabled,
+.pedit-rail button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.pedit-bar button.is-on {
+  border-color: #3e3bf4;
+  background: #23234a;
+}
+
+.pedit-primary:not(:disabled) {
+  border-color: #f1f43b !important;
+  background: #f1f43b !important;
+  color: #131318 !important;
+  font-weight: 600;
+}
+
+/* ── the drawers ──────────────────────────────────────────────────────────── */
+
+.pedit-panel {
+  border-top: 1px solid #2b2b30;
+  padding: 14px 16px 18px;
+}
+
+.pedit-panel__head {
+  margin: 0 0 12px;
+  color: #9a9aa4;
+}
+
+.pedit-panel__grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  margin-bottom: 12px;
+}
+
+.pedit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 12px;
+}
+
+.pedit-field > span {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  color: #9a9aa4;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.pedit-field em {
+  color: #63636e;
+  font-style: normal;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.pedit-panel input[type='text'],
+.pedit-panel input:not([type]),
+.pedit-panel textarea,
+.pedit-panel select {
+  border: 1px solid #2b2b30;
+  background: #0e0e12;
+  padding: 7px 9px;
+  color: #e9e9ec;
+  font: inherit;
+  width: 100%;
+}
+
+.pedit-panel input:focus,
+.pedit-panel textarea:focus,
+.pedit-panel select:focus {
+  outline: 1px solid #3e3bf4;
+  outline-offset: -1px;
+}
+
+.pedit-check {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+
+.pedit-check span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pedit-check em {
+  color: #63636e;
+  font-style: normal;
+}
+
+.pedit-file {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.pedit-file code {
+  overflow: hidden;
+  max-width: 190px;
+  color: #9a9aa4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pedit-warn {
+  margin: 4px 0 0;
+  color: #d8b25a;
+}
+
+/* ── editing on the page ──────────────────────────────────────────────────── */
+
+/* At rest an editable string is exactly the string. The affordance arrives on
+   approach, because a page covered in dashed boxes is no longer a page you can
+   judge the design of — which is the only reason to be editing on it. */
+.pedit {
+  outline: 1px dashed transparent;
+  outline-offset: 4px;
+  transition: outline-color 120ms linear;
+  cursor: text;
+}
+
+.pedit:hover {
+  outline-color: #6b6bff88;
+}
+
+.pedit:focus {
+  outline: 1px solid #f1f43b;
+  outline-offset: 4px;
+}
+
+/* An empty field is invisible without this, and an invisible field cannot be
+   clicked into. */
+.pedit:empty::before {
+  content: attr(data-placeholder);
+  /* Enough to find and click, not enough to be mistaken for copy — a pull
+     quote's placeholder is set at 38px in acid, and at any more than this it
+     reads as something the page says. */
+  opacity: 0.22;
+}
+
+.pedit-rail {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  font:
+    11px/1.4 ui-sans-serif,
+    -apple-system,
+    sans-serif;
+  opacity: 0;
+  transition: opacity 140ms linear;
+}
+
+.pedit-rail__label {
+  margin-right: 2px;
+  color: #7e7e8a;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.pedit-rail button.is-danger:hover {
+  border-color: #b4483f;
+  background: #3a1c19;
+}
+
+.pedit-rail select {
+  border: 1px solid #2b2b30;
+  background: #1c1c22;
+  padding: 4px 6px;
+  color: #e9e9ec;
+  font: inherit;
+}
+
+/* The rail belongs to the thing it edits, so it appears when the pointer is
+   anywhere in that thing — not only over the four pixels the buttons occupy. */
+.pedit-host {
+  position: relative;
+}
+
+.pedit-host:hover > .pedit-rail,
+.pedit-host:focus-within > .pedit-rail,
+.pedit-rail:focus-within {
+  opacity: 1;
+}
+
+/* A block's rail sits in the gutter above it, out of the reading column. */
+.pedit-rail--block {
+  position: absolute;
+  top: 8px;
+  right: clamp(24px, 6vw, 88px);
+  z-index: 2;
+}
+
+.pedit-rail--inline {
+  margin-top: 8px;
+}
+
+/* Anything the page pins to the bottom of the viewport has to clear the bar,
+   which is pinned to the same edge and wins. */
+.pedit-above-bar {
+  padding-bottom: calc(clamp(34px, 6vh, 64px) + 148px) !important;
+}
+
+.pedit-slot {
+  position: relative;
+}
+
+.pedit-slot > .pedit-rail {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 3;
+}
+
+.pedit-add {
+  display: block;
+  width: 100%;
+  border: 1px dashed #4a4a55;
+  background: transparent;
+  padding: 10px;
+  color: #7e7e8a;
+  font:
+    11px/1.4 ui-sans-serif,
+    -apple-system,
+    sans-serif;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.pedit-add:hover {
+  border-color: #f1f43b;
+  color: #f1f43b;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pedit,
+  .pedit-rail {
+    transition: none;
+  }
+}
+
+/* A draft that disagrees with the published page. Amber rather than red: it is
+   not an error, it is a fact about which of two versions you are looking at —
+   and the answer is often "the right one", just not always. */
+.pedit-bar__stale {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 8px 16px 0;
+  border: 1px solid #6b5a1f;
+  background: #2a2413;
+  padding: 8px 12px;
+  color: #e8cf85;
+}
+
+.pedit-bar__stale strong {
+  font-weight: 600;
+}
+
+.pedit-bar__stale button {
+  margin-left: auto;
+  border-color: #6b5a1f !important;
+  background: #3a3118 !important;
+  color: #f0dca0 !important;
+}

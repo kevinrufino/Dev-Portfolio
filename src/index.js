@@ -3,6 +3,10 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App.js';
 import reportWebVitals from './reportWebVitals.js';
+import silenceResizeObserverNoise from './utils/devOverlayNoise.js';
+
+// Before anything renders, so it is listening before the first layout pass.
+silenceResizeObserverNoise();
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(

@@ -4,42 +4,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@font-face {
-  font-family: "OffBit-101";
-  src: url("../public/fonts/OffBit-101.otf") format("opentype");
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "OffBit-101-Bold";
-  src: url("../public/fonts/OffBit-101Bold.otf") format("openType");
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "OffBit-Regular";
-  src: url("../public/fonts/OffBit-Regular.otf") format("openType");
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "OffBit-Bold";
-  src: url("../public/fonts/OffBit-Bold.otf") format("openType");
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "OffBit-Dot";
-  src: url("../public/fonts/OffBit-Dot.otf") format("openType");
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Plumpelo";
-  src: url("../public/fonts/Plumpelo-Pixelated-2.otf") format("openType");
-  font-display: swap;
-}
-
 :root {
   --acid: #f1f43b;
   --ultra: #3e3bf4;
@@ -79,7 +43,10 @@ html {
 
 body {
   margin: 0;
-  font-family: "OffBit-Regular", -apple-system, BlinkMacSystemFont, "Segoe UI",
+  /* "OffBit Punctuation" draws the marks OffBit has no glyphs for — declared
+     in public/index.html. */
+  font-family: "OffBit-Regular", "OffBit Punctuation", -apple-system, BlinkMacSystemFont,
+    "Segoe UI",
     "Roboto", "Helvetica Neue", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -423,7 +390,7 @@ code {
    the pixel faces were never drawn for paragraph text and lose legibility
    below ~20px. */
 .type-label {
-  font-family: "OffBit-Dot", monospace;
+  font-family: "OffBit-Dot", "OffBit Punctuation", monospace;
   font-size: 11px;
   letter-spacing: 0.3em;
   text-transform: uppercase;
@@ -986,6 +953,161 @@ html {
   }
 
   .media-zoom__mark {
+    transform: none;
+  }
+}
+
+/* ── a number that rolls ────────────────────────────────────────────────────
+   One column per digit, clipped to a single line, holding a strip of 0–9 (and
+   a second 0, so nine wraps forward into zero rather than snapping back). The
+   strip is moved by transform alone and its position is a function of the
+   value — see RollingNumber — so there is no transition here to fight the
+   sixty positions a second the loader hands it.
+
+   `--roll-line` is the height of one digit and therefore the distance of one
+   turn. A shade over 1em: exactly 1em clips the tops of a display face set
+   this tight, and any more opens a gap between the digit leaving and the one
+   arriving. */
+.roll {
+  --roll-line: 1.06em;
+  position: relative;
+  display: inline-block;
+  /* Every digit has to be the width of the ghost that reserves its column. */
+  font-variant-numeric: tabular-nums;
+}
+
+
+.roll__field {
+  display: inline-flex;
+  align-items: flex-start;
+}
+
+/* Each place is a wrapper only so the decimal point can be emitted beside its
+   column; it should not become a box of its own between the two. */
+.roll__place {
+  display: contents;
+}
+
+/* The clipping is one level in, on the window. The column itself keeps its
+   overflow visible so it still has a real baseline — see the ghost — and
+   everything that moves is laid over that. */
+.roll__col {
+  position: relative;
+  display: inline-block;
+  line-height: var(--roll-line);
+  /* Leading zeros are drawn and hidden rather than dropped, so a field stays
+     the width of the largest number it will hold and nothing beside it moves
+     while it counts. */
+  transition: opacity 200ms linear;
+}
+
+.roll__ghost {
+  display: inline-block;
+  height: var(--roll-line);
+  visibility: hidden;
+}
+
+.roll__window {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.roll__strip {
+  position: absolute;
+  inset: 0 0 auto 0;
+  display: block;
+  will-change: transform;
+}
+
+.roll__d,
+.roll__sep {
+  display: block;
+  height: var(--roll-line);
+  line-height: var(--roll-line);
+  text-align: center;
+}
+
+.roll__sep {
+  display: inline-block;
+}
+
+/* ── email, copied ──────────────────────────────────────────────────────────
+   The two states occupy the same box and swap through it in the direction the
+   numbers turn: the label leaves through the top, the confirmation arrives
+   from below. One box means the line beneath it never changes length, so
+   nothing in the row it sits in reflows at the moment of the press. */
+/* Both states share one grid cell, so the box is the size of whichever is
+   showing and the two swap through the same space. The width is set from
+   JavaScript once they have both been measured — see EmailCta — and animated
+   between them on the same curve as the swap. */
+.copy-cta__states {
+  position: relative;
+  display: inline-grid;
+  transition: width 420ms cubic-bezier(0.62, 0.05, 0.2, 1);
+}
+
+.copy-cta__state {
+  grid-area: 1 / 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  /* Its own natural width whatever the box is set to, which is what keeps the
+     measurement above honest. */
+  width: max-content;
+  white-space: nowrap;
+  transition:
+    transform 420ms cubic-bezier(0.62, 0.05, 0.2, 1),
+    opacity 260ms linear;
+}
+
+.copy-cta__state--idle {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.copy-cta__state--done {
+  transform: translateY(100%);
+  opacity: 0;
+}
+
+.copy-cta.is-copied .copy-cta__state--idle {
+  transform: translateY(-100%);
+  opacity: 0;
+}
+
+.copy-cta.is-copied .copy-cta__state--done {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* The confirmation is not a link and should not offer itself as one: the
+   underline stops drawing while it is showing. */
+.copy-cta.is-copied::after {
+  transform: scaleX(1);
+}
+
+/* The address, shown when it could not be put on the clipboard. Selectable in
+   one gesture, because selecting it by hand is now the only way to have it. */
+.copy-cta__address {
+  user-select: all;
+}
+
+.copy-cta__icon {
+  display: inline-block;
+  flex: none;
+  width: 1em;
+  height: 1em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .copy-cta__state {
+    transition: opacity 140ms linear;
+    transform: none;
+  }
+
+  .copy-cta.is-copied .copy-cta__state--idle,
+  .copy-cta .copy-cta__state--done {
     transform: none;
   }
 }

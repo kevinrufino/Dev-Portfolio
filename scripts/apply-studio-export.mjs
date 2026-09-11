@@ -71,6 +71,12 @@ const lists = ['work', 'personal'].filter(k => Array.isArray(order[k]) && order[
 // project page leaves no trace in any project's own record, and applying a
 // bundle should never be the first time you find out it is on.
 const notice = parsed.site?.projectNotice;
+// And for the third: a project published without a page keeps its row in the
+// index but stops resolving as a route, which is not visible anywhere in its
+// own record except as one boolean among five.
+const pageless = Object.entries(parsed.projects || {})
+  .filter(([, data]) => data.index?.liveOnly && !data.removed)
+  .map(([title]) => title);
 // The previous content, kept beside the file it replaces.
 //
 // This write is a REPLACEMENT, not a merge — the bundle is the whole of what
@@ -79,6 +85,35 @@ const notice = parsed.site?.projectNotice;
 // apart, and the file is routinely uncommitted (it is generated), so `git
 // checkout` is not always a way back. One copy costs nothing and is.
 mkdirSync(path.dirname(CONTENT), { recursive: true });
+
+// A bundle that carries fewer projects than the file it replaces is deleting
+// them, because this write is a replacement. That has happened: an export built
+// only from the studio's draft contained the six projects that had been edited,
+// and applying it dropped four personal projects out of the index and brought
+// three retired ones back to life, since their tombstones lived in the file it
+// overwrote. The export is fixed, but the file it writes is the site's content
+// and a truncated one should never land without someone saying so out loud.
+if (existsSync(CONTENT)) {
+  try {
+    const current = JSON.parse(readFileSync(CONTENT, 'utf8')).projects || {};
+    const missing = Object.keys(current).filter(t => !(t in (parsed.projects || {})));
+    if (missing.length) {
+      console.error(`
+  ⚠  This bundle is missing ${missing.length} project(s) that the site has now:
+
+${missing.map(t => `       · ${t}${current[t]?.removed ? '  (retired — applying would un-retire it)' : ''}`).join('\n')}
+
+  Applying it would delete them. If that is what you meant, re-run with --force.
+  If it is not, re-export from /studio — an export should carry every project,
+  not only the ones you edited.
+`);
+      if (!process.argv.includes('--force')) process.exit(1);
+    }
+  } catch {
+    // An unreadable current file is not a reason to block a good bundle.
+  }
+}
+
 if (existsSync(CONTENT)) {
   const previous = readFileSync(CONTENT, 'utf8');
   if (previous.trim() && previous.trim() !== '{\n  "projects": {}\n}') {
@@ -106,7 +141,7 @@ console.log(`
     public/projects/
 
   ${titles.map(t => `  · ${t}`).join('\n')}
-${lists.length ? `\n  Works pane order:\n${lists.map(k => `      ${k}: ${order[k].join(' · ')}`).join('\n')}\n` : ''}${notice?.enabled ? `\n  Project pages are held: every one shows “${notice.text}” instead of its case study.\n` : ''}
+${lists.length ? `\n  Works pane order:\n${lists.map(k => `      ${k}: ${order[k].join(' · ')}`).join('\n')}\n` : ''}${pageless.length ? `\n  No project page — the index links these straight to the live site:\n${pageless.map(t => `      · ${t}`).join('\n')}\n` : ''}${notice?.enabled ? `\n  Project pages are held: every one shows “${notice.text}” instead of its case study.\n` : ''}
 ${kept ? `  The content this replaced was saved to projects.json.bak\n` : ''}
   Review with \`git status\` and \`git diff\`, then commit. Everything under
   public/ is served from Vercel's CDN once it is deployed — there is nothing
