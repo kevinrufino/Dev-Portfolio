@@ -454,6 +454,10 @@
         {
           "k": "Scope",
           "v": "Engineer · the viewer component"
+        },
+        {
+          "k": "Worked with",
+          "v": "2 engineers, 1 designer"
         }
       ],
       "blocks": [
@@ -591,7 +595,7 @@
         "category": "work",
         "shape": "poster",
         "glyphSrc": "/cursors/levels/our-force-1-L6.webm",
-        "summary": "A collection page, and the Contentful workflow and design-system components behind it.",
+        "summary": "A collection page, and the CMS workflow and design-system components behind it.",
         "comingSoon": false
       },
       "archive": {
