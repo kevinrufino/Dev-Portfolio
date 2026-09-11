@@ -40,23 +40,28 @@ export const ENABLE_SHADER_BACKGROUND = readFlag(
 /**
  * The pixel palm scene (`PalmScene`).
  *
- * Off by default. It is the most expensive thing on the page — a full-viewport
- * raster presented on the 6px lattice every frame — and it already carries
- * three internal throttles (a sub-60fps cap, a skip while only the works
- * section is on screen, and batched frond strokes). Leave it off until it has
- * been profiled on a mid-range machine.
+ * On. It is the most expensive thing on the page — a full-viewport raster
+ * presented on the 6px lattice every frame — and it carries three internal
+ * throttles to pay for that: a sub-60fps cap, a skip while only the works
+ * section is on screen, and batched frond strokes.
  *
  * With it off, no palm canvas mounts and the landing physics runs with no leaf
- * colliders, which is its behaviour on main today.
+ * colliders.
  */
 export const ENABLE_PALM_SCENE = readFlag(
   process.env.REACT_APP_PALM_SCENE,
-  // Back to the default this flag always described. It was flipped on for a
-  // review branch — "REVIEW BRANCH ONLY", said the comment that shipped with it
-  // — and the temporary default outlived the review. The note above still
-  // stands: this is the most expensive thing on the page and it wants profiling
-  // on a mid-range machine before it is on for everybody.
+  // On, deliberately, and no longer by leftover.
   //
-  // Set REACT_APP_PALM_SCENE=true in .env.local to see it.
-  false,
+  // This spent a while defaulted on by a comment that said "REVIEW BRANCH ONLY"
+  // and promised it stayed false elsewhere, which made a shipped default look
+  // like something forgotten. It was turned off on that reading and turned back
+  // on on purpose: the palm is part of the page, not an experiment running past
+  // its welcome.
+  //
+  // The cost note above still stands and is worth re-reading before adding to
+  // this scene — it is the most expensive thing the homepage draws, and the
+  // three throttles inside it are what make that acceptable rather than
+  // incidental. Set REACT_APP_PALM_SCENE=false in .env.local to profile without
+  // it.
+  true,
 );
