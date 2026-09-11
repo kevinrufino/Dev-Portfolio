@@ -25,7 +25,56 @@
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
     <title>Kevin Rufino | Portfolio</title>
-    <link rel="preload" href="%PUBLIC_URL%/fonts/OffBit-Bold.otf" as="font" type="font/otf" crossorigin="anonymous" />
+    <!-- Fonts are declared here, not in the bundled stylesheet.
+         Two reasons. Webpack rewrites any url() it can resolve into a hashed
+         filename, and a hashed name cannot be written into a preload tag — which
+         is why the preload that used to live here pointed at
+         /fonts/OffBit-Bold.otf, a path no rule ever requested, and fetched 16KB
+         at high priority that nothing used. And declaring them in the HTML means
+         the browser starts fetching them from the first parse rather than after
+         main.css arrives.
+
+         The faces themselves are woff2 now, converted from the original otf:
+         81.6KB down to 43.5KB for the same five fonts. -->
+    <link rel="preload" href="%PUBLIC_URL%/fonts/OffBit-101Bold.woff2" as="font" type="font/woff2" crossorigin="anonymous" />
+    <link rel="preload" href="%PUBLIC_URL%/fonts/OffBit-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous" />
+    <style>
+      @font-face { font-family: "OffBit-101"; src: url("/fonts/OffBit-101.woff2") format("woff2"); font-display: swap; }
+      @font-face { font-family: "OffBit-101-Bold"; src: url("/fonts/OffBit-101Bold.woff2") format("woff2"); font-display: swap; }
+      @font-face { font-family: "OffBit-Regular"; src: url("/fonts/OffBit-Regular.woff2") format("woff2"); font-display: swap; }
+      @font-face { font-family: "OffBit-Bold"; src: url("/fonts/OffBit-Bold.woff2") format("woff2"); font-display: swap; }
+      @font-face { font-family: "OffBit-Dot"; src: url("/fonts/OffBit-Dot.woff2") format("woff2"); font-display: swap; }
+
+      /* The punctuation OffBit does not have.
+         The OffBit cut in public/fonts is the trial: 68 glyphs, letters and
+         figures and nothing else. No apostrophe, no comma, no full stop, no
+         question mark — so "Let's connect." lost its apostrophe and any heading
+         with a question in it lost the question mark.
+
+         Browsers fall back per GLYPH, not per family, so naming a second family
+         in each OffBit stack is the whole fix. This is Micro 5 (SIL Open Font
+         License), chosen for having the lightest marks of the pixel faces
+         tried — Silkscreen's colon and percent were too heavy beside OffBit's
+         strokes, and its apostrophe read as a slab.
+
+         unicode-range keeps it to punctuation. Without it the fallback would
+         also be eligible for any letter OffBit happened to miss, and a stray
+         word in a different face is worse than a missing mark.
+
+         size-adjust is deliberately 100%, which is NOT cap-height parity —
+         matching Micro 5's marks to OffBit's cap height would take 154%, since
+         its exclamation rises 91 where OffBit's H rises 140 at the same size.
+         The small, light mark is the point: it was chosen against heavier
+         candidates whose colon and percent fought the letters around them.
+         Raise it toward 154% if the marks ever read as too faint. */
+      @font-face {
+        font-family: "OffBit Punctuation";
+        src: url("/fonts/Micro5.woff2") format("woff2");
+        font-display: swap;
+        size-adjust: 100%;
+        unicode-range: U+0021-002F, U+003A-0040, U+005B-0060, U+007B-007E, U+2018-201D;
+      }
+    </style>
   </head>
   <body>
     <script src="/oneko.js" defer></script>
