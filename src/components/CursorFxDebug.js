@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { debugFields } from '../utils/cursorFx.js';
 
 /**
@@ -10,8 +11,15 @@ import { debugFields } from '../utils/cursorFx.js';
  * reach — so "the CTA should start pulling from further out" becomes a number
  * rather than a feeling.
  *
- * Off by default. `?gravity` in the URL turns it on, and shift+G toggles it at
- * any time.
+ * Only reachable in edit mode. This is a tool for arguing with the design, not
+ * part of it, and both of its old ways in were reachable by accident — `?gravity`
+ * survives being pasted along with a URL, and shift+G is one stray keystroke
+ * while something else has focus. A reader who triggered either got a screen of
+ * dashed boxes over the work with no clue what they were or how to dismiss them.
+ *
+ * So it lives behind `?edit=1`, with the rest of the authoring tools. Inside edit
+ * mode it behaves as it always did: `?gravity` alongside `edit` turns it on, and
+ * shift+G toggles it.
  *
  * The outer boundary's corners are quarter ellipses of the two sides that meet
  * there, which is not a stylistic choice: the gap to a box is a straight-line
@@ -21,14 +29,25 @@ import { debugFields } from '../utils/cursorFx.js';
  */
 const HOTKEY = 'G';
 const PARAM = 'gravity';
+const GATE = 'edit';
 
 const CursorFxDebug = () => {
   const [on, setOn] = useState(false);
   const [fields, setFields] = useState([]);
   const [size, setSize] = useState({ w: 0, h: 0 });
+  // This component lives outside <Routes> so it survives the page transition,
+  // which also means it does not re-render on navigation by itself. `useLocation`
+  // is what tells it the query string changed — leaving edit mode has to put the
+  // overlay away.
+  const { search } = useLocation();
+  const editing = new URLSearchParams(search).get(GATE) === '1';
 
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).has(PARAM)) setOn(true);
+    if (!editing) {
+      setOn(false);
+      return undefined;
+    }
+    if (new URLSearchParams(search).has(PARAM)) setOn(true);
     const onKey = event => {
       if (event.shiftKey && event.key.toUpperCase() === HOTKEY) {
         setOn(value => !value);
@@ -36,7 +55,7 @@ const CursorFxDebug = () => {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [editing, search]);
 
   useEffect(() => {
     if (!on) return undefined;

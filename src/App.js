@@ -341,8 +341,9 @@ const AppRefactored = () => {
             and it must survive the page transition rather than unmounting
             mid-navigation. */}
         <CursorAnnotation />
-        {/* Draws every gravity field. Off unless `?gravity` is in the URL or
-            shift+G has been pressed. */}
+        {/* Draws every gravity field. Only reachable in edit mode — it is a
+            tool for arguing with the design rather than part of it, and both of
+            its ways in were reachable by accident. */}
         <CursorFxDebug />
         {/* The blind sweep between routes. Outside <Routes> because it has to
             outlive the page it covers: it goes up over the outgoing route and
