@@ -2,13 +2,25 @@
 module.exports = {
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
+    // Plumpelo sits behind every OffBit face on purpose. The OffBit cut in
+    // public/fonts is the trial: 68 glyphs, letters and figures and nothing
+    // else — no apostrophe, no comma, no full stop, no question mark. A
+    // browser falls back per GLYPH rather than per family, so anything OffBit
+    // cannot draw is drawn by the next family that can, and "Let's connect."
+    // stops losing its apostrophe to a missing-glyph box.
+    //
+    // "OffBit Punctuation" is Plumpelo, restricted to punctuation and scaled to
+    // OffBit's cap height — see the @font-face in index.css for why it is a
+    // separate family rather than Plumpelo itself. The sans at the end catches
+    // en dash, em dash and ellipsis, which neither face has; nothing set in
+    // OffBit uses them today (checked, not assumed).
     fontFamily: {
-      offbit101: ["OffBit-101"],
-      offbit101Bold: ["OffBit-101-Bold"],
-      offbit: ["OffBit-Regular"],
-      offbitBold: ["OffBit-Bold"],
-      offbitDot: ["OffBit-Dot"],
-      plumpelo: ["Plumpelo"],
+      offbit101: ["OffBit-101", "OffBit Punctuation", "sans-serif"],
+      offbit101Bold: ["OffBit-101-Bold", "OffBit Punctuation", "sans-serif"],
+      offbit: ["OffBit-Regular", "OffBit Punctuation", "sans-serif"],
+      offbitBold: ["OffBit-Bold", "OffBit Punctuation", "sans-serif"],
+      offbitDot: ["OffBit-Dot", "OffBit Punctuation", "monospace"],
+      plumpelo: ["Plumpelo", "sans-serif"],
       sans: ["DM Sans", "sans-serif"],
     },
     extend: {

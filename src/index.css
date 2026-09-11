@@ -40,6 +40,60 @@
   font-display: swap;
 }
 
+/* The punctuation OffBit does not have.
+ *
+ * The OffBit cut in public/fonts is the trial: 68 glyphs, letters and figures
+ * and nothing else. No apostrophe, no comma, no full stop, no question mark —
+ * so "Let's connect." lost its apostrophe and any heading with a question in
+ * it lost the question mark.
+ *
+ * Browsers fall back per GLYPH, not per family, so naming a second family in
+ * the stack is enough to fix it. This is that family: Silkscreen, by Jason
+ * Kottke, under the SIL Open Font License — a common pixel face, self-hosted
+ * as woff2 beside the others rather than fetched from Google, so the site keeps
+ * its fonts to itself and adds no render-blocking request. Both weights are
+ * about 3KB.
+ *
+ * `unicode-range` is what keeps it to its job. Without it the fallback would
+ * also be eligible for any letter OffBit happened to miss, and a stray word in
+ * a different face is worse than a missing mark.
+ *
+ * Two weights, not one, so that bold headings get bold punctuation and small
+ * labels do not.
+ *
+ * `size-adjust: 112%` is measured, not guessed. At 200px OffBit's cap height is
+ * 140 and Silkscreen's exclamation — which spans its cap height — rises 125, so
+ * the marks arrived about a tenth too small. 140/125 is 1.12. That is the
+ * number to turn if they ever look wrong against the letters.
+ *
+ * Measure it with a punctuation glyph, not a letter: `unicode-range` means this
+ * family has no letters to measure, so asking it for an 'H' silently measures
+ * whatever the system falls back to. That mistake produced a first answer of
+ * 106% here.
+ *
+ * The em dash is the one character in none of these faces, so it is left out of
+ * the range and falls through to the sans at the end of the stack. Nothing set
+ * in OffBit uses one today (checked, not assumed). */
+@font-face {
+  font-family: "OffBit Punctuation";
+  src: url("../public/fonts/Silkscreen-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+  size-adjust: 112%;
+  unicode-range: U+0021-002F, U+003A-0040, U+005B-0060, U+007B-007E,
+    U+2013, U+2018-201D, U+2026;
+}
+
+@font-face {
+  font-family: "OffBit Punctuation";
+  src: url("../public/fonts/Silkscreen-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+  size-adjust: 112%;
+  unicode-range: U+0021-002F, U+003A-0040, U+005B-0060, U+007B-007E,
+    U+2013, U+2018-201D, U+2026;
+}
+
 :root {
   --acid: #f1f43b;
   --ultra: #3e3bf4;
@@ -79,7 +133,10 @@ html {
 
 body {
   margin: 0;
-  font-family: "OffBit-Regular", -apple-system, BlinkMacSystemFont, "Segoe UI",
+  /* Plumpelo catches the punctuation the OffBit trial cut has no glyphs for —
+     see tailwind.config.js. */
+  font-family: "OffBit-Regular", "OffBit Punctuation", -apple-system, BlinkMacSystemFont,
+    "Segoe UI",
     "Roboto", "Helvetica Neue", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -423,7 +480,7 @@ code {
    the pixel faces were never drawn for paragraph text and lose legibility
    below ~20px. */
 .type-label {
-  font-family: "OffBit-Dot", monospace;
+  font-family: "OffBit-Dot", "OffBit Punctuation", monospace;
   font-size: 11px;
   letter-spacing: 0.3em;
   text-transform: uppercase;
