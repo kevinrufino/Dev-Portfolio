@@ -1,7 +1,17 @@
-import { useRef } from 'react';
 import PropTypes from 'prop-types';
 import useCursorFx from '../../hooks/useCursorFx.js';
+import usePlayWhenVisible from '../../hooks/usePlayWhenVisible.js';
 import { useLightbox, isVideoSrc } from './MediaLightbox.js';
+
+/**
+ * The still that holds a video's slot before it plays.
+ *
+ * By convention beside the clip — `world-desktop.mp4` is posted by
+ * `world-desktop.poster.jpg` — so a figure needs no extra field to carry one
+ * and the studio does not have to know posters exist. A missing poster is not
+ * an error: the frame just stays on its own background until the clip starts.
+ */
+const posterFor = src => src?.replace(/\.(mp4|webm)$/i, '.poster.jpg');
 
 /**
  * A figure in a case study.
@@ -28,7 +38,9 @@ const AssetSlot = ({
   markCorner = 'br',
 }) => {
   const isVideo = isVideoSrc(src);
-  const mediaRef = useRef(null);
+  // Doubles as the ref the lightbox lifts from, so there is still one node that
+  // is both the thing playing and the thing pressed.
+  const mediaRef = usePlayWhenVisible(isVideoSrc(src) ? src : undefined);
   const lightbox = useLightbox();
   // Outside a provider — a preview route, a test — the frame is simply not
   // zoomable rather than a button that does nothing when pressed.
@@ -50,11 +62,15 @@ const AssetSlot = ({
     <video
       ref={mediaRef}
       src={src}
-      autoPlay
+      poster={posterFor(src)}
       loop
       muted
       playsInline
-      preload='metadata'
+      // No `autoplay`, and nothing preloaded. `autoplay` overrides `preload`,
+      // so every figure on a page used to start streaming at once whether or
+      // not it was on screen. Playback — and therefore loading — is started by
+      // usePlayWhenVisible when the figure is within a screen of the viewport.
+      preload='none'
       aria-label={caption}
       className='h-full w-full object-cover'
     />
