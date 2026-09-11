@@ -150,6 +150,54 @@ describe('a draft that has fallen behind the site', () => {
   });
 });
 
+describe('what the export puts in the bundle', () => {
+  const titles = ['Alpha', 'Beta', 'Gamma', 'Delta'];
+
+  test('carries every project, not only the edited ones', () => {
+    const { draft } = load();
+    // `studio:apply` REPLACES projects.json. An export built only from the
+    // draft deleted everything untouched — which is how four personal projects
+    // vanished and three retired ones came back.
+    const out = draft.exportProjects({}, titles);
+    expect(Object.keys(out).sort()).toEqual(['Alpha', 'Beta', 'Delta', 'Gamma']);
+  });
+
+  test('keeps a retired project retired', () => {
+    const { draft } = load();
+    const out = draft.exportProjects({}, titles);
+    // Its tombstone is the only thing that keeps it off the site. Rebuilding it
+    // from a seed would resurrect the body retirement was hiding.
+    expect(out.Gamma).toEqual({ removed: true });
+  });
+
+  test('keeps the body of a project published without a page', () => {
+    const { draft } = load();
+    const out = draft.exportProjects({}, titles);
+    // Beta is liveOnly. It renders no page, but it still HAS a story, and an
+    // export that blanked it would erase it from the file on the next apply.
+    expect(out.Beta.blocks).toHaveLength(1);
+    expect(out.Beta.index.liveOnly).toBe(true);
+  });
+
+  test('a drafted project wins over what is published', () => {
+    const { draft } = load();
+    const edited = { ...draft.seedProject('Alpha'), tagline: 'Rewritten' };
+    const out = draft.exportProjects({ Alpha: edited }, titles);
+    expect(out.Alpha.tagline).toBe('Rewritten');
+    // …and the untouched ones are still there beside it.
+    expect(out.Beta).toBeDefined();
+    expect(out.Gamma).toEqual({ removed: true });
+  });
+
+  test('an export with no draft reproduces what is published', () => {
+    const { draft } = load();
+    const out = draft.exportProjects({}, titles);
+    for (const title of ['Alpha', 'Beta']) {
+      expect(draft.matchesPublished(out[title], title)).toBe(true);
+    }
+  });
+});
+
 describe('the edited badge', () => {
   test('is off for a draft the site has caught up with', () => {
     const { draft } = load();

@@ -85,6 +85,35 @@ const pageless = Object.entries(parsed.projects || {})
 // apart, and the file is routinely uncommitted (it is generated), so `git
 // checkout` is not always a way back. One copy costs nothing and is.
 mkdirSync(path.dirname(CONTENT), { recursive: true });
+
+// A bundle that carries fewer projects than the file it replaces is deleting
+// them, because this write is a replacement. That has happened: an export built
+// only from the studio's draft contained the six projects that had been edited,
+// and applying it dropped four personal projects out of the index and brought
+// three retired ones back to life, since their tombstones lived in the file it
+// overwrote. The export is fixed, but the file it writes is the site's content
+// and a truncated one should never land without someone saying so out loud.
+if (existsSync(CONTENT)) {
+  try {
+    const current = JSON.parse(readFileSync(CONTENT, 'utf8')).projects || {};
+    const missing = Object.keys(current).filter(t => !(t in (parsed.projects || {})));
+    if (missing.length) {
+      console.error(`
+  ⚠  This bundle is missing ${missing.length} project(s) that the site has now:
+
+${missing.map(t => `       · ${t}${current[t]?.removed ? '  (retired — applying would un-retire it)' : ''}`).join('\n')}
+
+  Applying it would delete them. If that is what you meant, re-run with --force.
+  If it is not, re-export from /studio — an export should carry every project,
+  not only the ones you edited.
+`);
+      if (!process.argv.includes('--force')) process.exit(1);
+    }
+  } catch {
+    // An unreadable current file is not a reason to block a good bundle.
+  }
+}
+
 if (existsSync(CONTENT)) {
   const previous = readFileSync(CONTENT, 'utf8');
   if (previous.trim() && previous.trim() !== '{\n  "projects": {}\n}') {

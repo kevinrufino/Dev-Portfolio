@@ -1,5 +1,8 @@
 import { ProjectsData } from '../constants.js';
-import { STORED_STORIES } from '../components/Project/projectStories.js';
+import {
+  RETIRED_TITLES,
+  STORED_STORIES,
+} from '../components/Project/projectStories.js';
 import { ARCHIVE_TITLES, WORKS, archiveFor } from '../components/Works/worksData.js';
 import {
   DEFAULT_PROJECT_NOTICE,
@@ -204,6 +207,40 @@ export const normaliseProject = data => {
 };
 
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+/**
+ * Every project the bundle has to carry, in the shape `projects.json` holds.
+ *
+ * The export used to write only the projects that had a draft entry, and
+ * `studio:apply` REPLACES the file rather than merging into it. So a bundle
+ * exported after editing six projects contained six projects, and applying it
+ * deleted the other seven: four personal projects vanished from the index, and
+ * three retired ones came back to life, because their tombstones lived in the
+ * file that had just been overwritten.
+ *
+ * That got worse rather than better when the draft started pruning entries that
+ * matched what was published — the pruning is right, but it left the export with
+ * even less to write.
+ *
+ * So the bundle is assembled from every title, not from the draft: the draft's
+ * version where there is one, and what the site currently publishes where there
+ * is not. A retired project without a draft entry emits its tombstone rather
+ * than being reconstructed as a live one, since the seed it would rebuild from
+ * is exactly the body retirement was hiding.
+ */
+export const exportProjects = (drafts, titles) => {
+  const out = {};
+  for (const title of titles) {
+    if (drafts[title]) {
+      out[title] = normaliseProject(drafts[title]);
+    } else if (RETIRED_TITLES.has(title)) {
+      out[title] = { removed: true };
+    } else {
+      out[title] = normaliseProject(publishedRecord(title));
+    }
+  }
+  return out;
+};
 
 /** The record the site publishes right now, ignoring any draft over it. */
 export const publishedRecord = title =>

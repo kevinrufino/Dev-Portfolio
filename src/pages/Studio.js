@@ -22,7 +22,7 @@ import {
   blankProject,
   clone,
   isEdited,
-  normaliseProject,
+  exportProjects,
   readDraft,
   recordFor,
   seedProject,
@@ -374,14 +374,11 @@ const Studio = () => {
 
   const exportBundle = async () => {
     setStatus('Building the bundle…');
-    // The same normalisation the "edited" badge compares against — see
-    // `studioDraft`. If the export and the comparison ever drifted apart, a
-    // project would go on reading as edited after publishing exactly what it
-    // said it would.
-    const projects = {};
-    for (const [title, data] of Object.entries(drafts)) {
-      projects[title] = normaliseProject(data);
-    }
+    // EVERY project, not just the edited ones. `studio:apply` replaces the
+    // content file rather than merging into it, so anything missing from the
+    // bundle is deleted from the site — see `exportProjects`, which is also
+    // where the normalisation the "edited" badge compares against lives.
+    const projects = exportProjects(drafts, titles);
     // The order goes out in full rather than as a delta. It is only titles, it
     // is the one part of this file a human will read top to bottom, and a
     // complete list cannot disagree with itself.
