@@ -497,7 +497,14 @@ const ProjectPageBody = () => {
               editing ? 'pedit-above-bar' : 'pointer-events-none'
             } absolute inset-x-0 bottom-0 flex flex-wrap items-end justify-between gap-8 px-[clamp(24px,6vw,88px)] pb-[clamp(34px,6vh,64px)]`}
           >
-            <div className='min-w-0'>
+            {/* Remounted with every structural change, like the metadata table
+                and the block list below. Every editable field is uncontrolled
+                once it exists — the DOM is the truth for a node being typed
+                into — so a change that comes from outside the field, such as
+                resetting the page to what is published, only lands if the
+                field is rebuilt. Without this key the title and tagline kept
+                the old draft's words after a reset. */}
+            <div className='min-w-0' key={edit.rev}>
               <p className='type-label m-0 mb-[18px] text-acid'>
                 {project.client === 'Passion Project'
                   ? 'Personal project'

@@ -192,6 +192,20 @@ export const normaliseProject = data => {
 
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
+/** The record the site publishes right now, ignoring any draft over it. */
+export const publishedRecord = title =>
+  SEED_TITLES.has(title) ? seedProject(title) : blankProject(title);
+
+/**
+ * Does this record say what the site is already publishing?
+ *
+ * Compared through `normaliseProject`, so the empty paragraph an editor keeps
+ * around to type into does not count as a difference from a page that has none.
+ */
+export const matchesPublished = (record, title) =>
+  SEED_TITLES.has(title) &&
+  same(normaliseProject(record), normaliseProject(publishedRecord(title)));
+
 /**
  * Does this draft record differ from what the site is already publishing?
  *
@@ -210,7 +224,7 @@ export const isEdited = (drafts, title) => {
   if (!edited) return false;
   if (edited.removed) return false; // retired reads as retired, not as edited
   if (!SEED_TITLES.has(title)) return true; // invented here, so it has never shipped
-  return !same(normaliseProject(edited), normaliseProject(seedProject(title)));
+  return !matchesPublished(edited, title);
 };
 
 /** The same question for the settings that belong to the site as a whole. */

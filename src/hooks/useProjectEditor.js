@@ -5,8 +5,10 @@ import { deleteAsset, putAsset } from '../utils/studioStore.js';
 import {
   blankBlock,
   clone,
+  matchesPublished,
   mergeIntoDraft,
   normaliseProject,
+  publishedRecord,
   readDraft,
   recordFor,
   seedSite,
@@ -147,6 +149,33 @@ export default function useProjectEditor(title) {
     setRev(n => n + 1);
     setStatus('');
   }, [opened]);
+
+  /**
+   * Is the draft this opened from saying something the site is not?
+   *
+   * The editor loads a saved draft in preference to the published record, which
+   * is the whole point of a draft — but it did so silently, and a stale one is
+   * indistinguishable from the page. A draft made before the case studies were
+   * rewritten opened Candid with one empty block against the four that were
+   * live, and the bar said "no unsaved changes", which was true of the session
+   * and wildly untrue of the page.
+   *
+   * Measured against the baseline rather than the working copy: the question is
+   * what was LOADED, not what has been typed since.
+   */
+  const aheadOfPublished = useMemo(
+    () =>
+      Boolean(title) &&
+      Boolean(baseline) &&
+      !matchesPublished(baseline.record, title),
+    [title, baseline],
+  );
+
+  /** Is the working copy currently identical to the published page? */
+  const showingPublished = useMemo(
+    () => Boolean(title) && Boolean(record) && matchesPublished(record, title),
+    [title, record],
+  );
 
   const changes = useMemo(() => {
     if (!editing || !record || !baseline) return 0;
@@ -333,6 +362,28 @@ export default function useProjectEditor(title) {
     setStatus('Saved to the studio draft. Export it from /studio to publish.');
   }, [title, record, site]);
 
+  /**
+   * Throw the draft away for this project and start from what is published.
+   *
+   * Deliberately leaves the result dirty rather than writing it out. Resetting
+   * is a claim about this page that the author should have to confirm with
+   * Save, and saving the published record back over the draft entry is also
+   * what clears it: the next load prunes any entry that matches what is live.
+   */
+  const resetToPublished = useCallback(() => {
+    if (!title) return;
+    const ask =
+      'Replace this page with what the site publishes?\n\n' +
+      'The saved draft for this project is discarded — press Save afterwards to ' +
+      'make that stick.';
+    if (!window.confirm(ask)) return;
+    setRecord(clone(publishedRecord(title)));
+    setRev(n => n + 1);
+    setStatus(
+      'Showing what the site publishes. Save to discard the old draft.',
+    );
+  }, [title]);
+
   const discard = useCallback(() => {
     if (!baseline) return;
     setRecord(clone(baseline.record));
@@ -399,6 +450,8 @@ export default function useProjectEditor(title) {
     rev,
     dirty,
     changes,
+    aheadOfPublished,
+    showingPublished,
     status,
     panel,
     setPanel,
@@ -414,6 +467,7 @@ export default function useProjectEditor(title) {
     clearAsset,
     save,
     discard,
+    resetToPublished,
     exit,
     openStudio,
   };

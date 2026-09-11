@@ -120,6 +120,36 @@ describe('a project the studio invented', () => {
   });
 });
 
+describe('a draft that has fallen behind the site', () => {
+  test('is recognisable as different from what is published', () => {
+    const { draft } = load();
+    // What a draft saved before a rewrite looks like: the shape the page used
+    // to have, which is indistinguishable from a page with less on it.
+    const stale = {
+      ...draft.seedProject('Alpha'),
+      tagline: '',
+      blocks: [{ type: 'text', label: '', title: '', note: '', paras: [''], pull: '' }],
+    };
+    expect(draft.matchesPublished(stale, 'Alpha')).toBe(false);
+    expect(draft.matchesPublished(draft.seedProject('Alpha'), 'Alpha')).toBe(true);
+  });
+
+  test('publishedRecord ignores whatever the draft says', () => {
+    const { draft } = load();
+    const published = draft.publishedRecord('Alpha');
+    expect(published.blocks).toHaveLength(1);
+    expect(published.blocks[0].title).toBe('Why');
+    expect(published.tagline).toBe('A tagline');
+  });
+
+  test('a project the studio invented never matches published', () => {
+    const { draft } = load();
+    // There is nothing live to match, so the editor must always treat it as
+    // unpublished rather than claiming parity with a page that does not exist.
+    expect(draft.matchesPublished(draft.blankProject('Delta'), 'Delta')).toBe(false);
+  });
+});
+
 describe('the edited badge', () => {
   test('is off for a draft the site has caught up with', () => {
     const { draft } = load();

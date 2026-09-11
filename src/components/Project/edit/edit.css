@@ -339,3 +339,29 @@ body.is-editing {
     transition: none;
   }
 }
+
+/* A draft that disagrees with the published page. Amber rather than red: it is
+   not an error, it is a fact about which of two versions you are looking at —
+   and the answer is often "the right one", just not always. */
+.pedit-bar__stale {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 8px 16px 0;
+  border: 1px solid #6b5a1f;
+  background: #2a2413;
+  padding: 8px 12px;
+  color: #e8cf85;
+}
+
+.pedit-bar__stale strong {
+  font-weight: 600;
+}
+
+.pedit-bar__stale button {
+  margin-left: auto;
+  border-color: #6b5a1f !important;
+  background: #3a3118 !important;
+  color: #f0dca0 !important;
+}

@@ -43,7 +43,16 @@ Row.propTypes = {
 };
 
 const EditBar = ({ edit, title, slug }) => {
-  const { record, site, changes, dirty, status, panel, setPanel } = edit;
+  const {
+    record,
+    site,
+    changes,
+    dirty,
+    aheadOfPublished,
+    status,
+    panel,
+    setPanel,
+  } = edit;
   const notice = site?.projectNotice || {};
   const set = (key, value) => edit.patch(['index', key], value);
 
@@ -89,6 +98,30 @@ const EditBar = ({ edit, title, slug }) => {
           Done
         </button>
       </div>
+
+      {/* The editor loads a saved draft in preference to what is published,
+          which is the point of a draft and was also invisible. A draft made
+          before the case studies were rewritten opened a page with one empty
+          block against the four that were live, under a bar reading "no
+          unsaved changes" — true of the session, wildly untrue of the page.
+          So when the two disagree, the bar says so and offers the way back. */}
+      {aheadOfPublished &&
+        (edit.showingPublished ? (
+          <p className='pedit-bar__stale'>
+            <strong>Showing what the site publishes.</strong> The saved draft
+            for this project is still in this browser — press Save to replace
+            it.
+          </p>
+        ) : (
+          <p className='pedit-bar__stale'>
+            <strong>This is a saved draft, not what the site publishes.</strong>{' '}
+            It was loaded from this browser and differs from the live page — an
+            old draft looks exactly like a page with less on it.
+            <button type='button' onClick={edit.resetToPublished}>
+              Reset to published
+            </button>
+          </p>
+        ))}
 
       {/* Said once, on the bar, rather than left to be worked out: this page
           is rendering a working copy, and saving moves it one step along a
