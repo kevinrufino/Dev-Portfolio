@@ -1,6 +1,6 @@
 import { ProjectsData } from '../constants.js';
-import { PROJECT_STORIES } from '../components/Project/projectStories.js';
-import { WORKS, archiveFor } from '../components/Works/worksData.js';
+import { STORED_STORIES } from '../components/Project/projectStories.js';
+import { ARCHIVE_TITLES, WORKS, archiveFor } from '../components/Works/worksData.js';
 import {
   DEFAULT_PROJECT_NOTICE,
   PROJECT_NOTICE,
@@ -84,10 +84,20 @@ export const blankBlock = type => {
   return head;
 };
 
-/** Titles the repo itself ships. These can be retired but never deleted. */
+/**
+ * Every title the editor knows about. These can be retired but never deleted.
+ *
+ * Built from what is STORED rather than what is rendered, which is the
+ * difference between a list of projects and a list of pages. A project that is
+ * both invented in the studio and published without a page — Toolcraft and
+ * Warcraft are both — appears in neither `ProjectsData` nor the rendered
+ * stories, and so vanished from the studio's own rail entirely. It could not be
+ * edited, and the switch that had hidden it could not be switched back.
+ */
 export const SEED_TITLES = new Set([
   ...ProjectsData.map(p => p.title),
-  ...Object.keys(PROJECT_STORIES),
+  ...ARCHIVE_TITLES,
+  ...Object.keys(STORED_STORIES),
 ]);
 
 /** A project that does not exist yet. */
@@ -122,7 +132,10 @@ export const blankProject = title => ({
  */
 export const seedProject = title => {
   const archive = archiveFor(title) || {};
-  const story = PROJECT_STORIES[title];
+  // The stored story, not the rendered one: the studio edits the file, and a
+  // project published without a page still has a body in it. Reading the
+  // rendered map seeded those as blank and would have exported the blank.
+  const story = STORED_STORIES[title];
   const row = [...WORKS.work, ...WORKS.personal].find(r => r.title === title);
   return {
     title,

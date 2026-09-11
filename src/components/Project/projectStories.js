@@ -846,16 +846,25 @@ export const LIVE_ONLY_TITLES = new Set(
     .map(([title]) => title),
 );
 
-export const PROJECT_STORIES = Object.fromEntries(
+/**
+ * Every story the file holds, INCLUDING projects published without a page.
+ *
+ * Two different questions get asked about a project, and conflating them cost
+ * real data. "What does the site render?" is `PROJECT_STORIES` below, which
+ * drops anything marked `liveOnly`. "What is written down for this project?" is
+ * this — and it is the one the studio has to ask, because the studio edits the
+ * file rather than the page.
+ *
+ * Reading the rendered map instead meant a page-less project seeded as a blank
+ * one: Moodie opened in the studio showing a single empty block where six are
+ * stored, and exporting would have written that emptiness back over them.
+ */
+export const STORED_STORIES = Object.fromEntries(
   [...new Set([...Object.keys(SEED), ...Object.keys(GENERATED)])]
     .map(title => {
       const generated = GENERATED[title];
       if (!generated) return [title, SEED[title]];
       if (generated.removed) return null;
-      // Marked as having no page. The body may still be sitting in the seed
-      // below, or in the export, and it stays there — this is a decision about
-      // what the site shows, and it is one export away from being undone.
-      if (generated.index?.liveOnly) return null;
       // `index` and `archive` belong to the works pane, not to the case study.
       const { index, archive, ...story } = generated;
       // An entry that carries NO story at all is not a story of nothing.
@@ -869,4 +878,17 @@ export const PROJECT_STORIES = Object.fromEntries(
       return [title, story];
     })
     .filter(Boolean),
+);
+
+/**
+ * The stories the site renders.
+ *
+ * A project published without a page keeps its body — this is a decision about
+ * what the site shows, and it is one export away from being undone — it just
+ * does not reach the router or the case-study template.
+ */
+export const PROJECT_STORIES = Object.fromEntries(
+  Object.entries(STORED_STORIES).filter(
+    ([title]) => !LIVE_ONLY_TITLES.has(title),
+  ),
 );

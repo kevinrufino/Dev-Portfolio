@@ -23,14 +23,22 @@ jest.mock('../content/siteSettings.js', () => ({
   },
   DEFAULT_PROJECT_NOTICE: 'More coming soon.',
 }));
-jest.mock('../components/Project/projectStories.js', () => ({
-  RETIRED_TITLES: new Set(),
-  LIVE_ONLY_TITLES: new Set(),
-  PROJECT_STORIES: {
+jest.mock('../components/Project/projectStories.js', () => {
+  // Built inside the factory: jest hoists these above the file's own consts, so
+  // a shared variable declared outside is not initialised yet when this runs.
+  const stories = {
     Alpha: { blocks: [{ title: 'Introduction' }, { title: 'Reflection' }] },
     Beta: { blocks: [{ title: 'Beta introduction' }] },
-  },
-}));
+  };
+  return {
+    RETIRED_TITLES: new Set(),
+    LIVE_ONLY_TITLES: new Set(),
+    PROJECT_STORIES: stories,
+    // What the studio seeds from — the same map here, since nothing in these
+    // tests is published without a page.
+    STORED_STORIES: stories,
+  };
+});
 jest.mock('../hooks/useCursorFx.js', () => () => () => {});
 jest.mock('../hooks/useGooFollower.js', () => () => ({
   groupRef: { current: null },
