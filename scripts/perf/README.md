@@ -77,6 +77,17 @@ the run says so instead of quietly averaging.
 metric whose spread is wider than the regression tolerance is reported as
 `unstable` and cannot fail a build on its own.
 
+**Threshold metrics swing when nothing changed.** `jankyPct` counts frames over
+a fixed 50ms and `p95FrameMs` quantises to whole vsyncs, so on a page whose
+frames already sit near a vsync boundary a hair of drift flips a large share of
+them across the line while the frame rate barely moves. The first real use of
+this harness produced `jankyPct` 39.6% → 55.2% from a pure class-name refactor
+that a computed-style diff had already proven changes nothing a browser resolves
+differently — fps moved 1%. So those metrics now only fail a build when the
+frame rate corroborates them by moving the same way by at least half the
+tolerance. Uncorroborated movement is still reported, as `uncorroborated`, but
+it does not block.
+
 **A minified stack names nothing.** LoAF attributes a blocking frame to
 `main.<hash>.js` at a character offset. `symbolicate.mjs` maps that back through
 the build's source map, so the report says `components/Works/workFluid.js:121`

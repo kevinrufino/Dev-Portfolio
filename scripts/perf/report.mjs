@@ -25,13 +25,16 @@ export const writeReport = ({ payload, findings, baselineDir, outDir }) => {
 
   if (findings.length) {
     const hard = findings.filter(f => f.severity === 'regression');
-    const soft = findings.filter(f => f.severity === 'unstable');
+    const soft = findings.filter(f => f.severity !== 'regression');
     L.push(hard.length ? '## ❌ Regressions' : '## ⚠️ Movement');
     L.push('', '| profile | scenario | metric | baseline | now | change | |');
     L.push('|---|---|---|---|---|---|---|');
     for (const f of [...hard, ...soft])
       L.push(`| ${f.profile} | ${f.scenario} | \`${f.key}\` | ${f.baseline} | ${f.current} `
-        + `| ${f.pct > 0 ? '+' : ''}${f.pct}% | ${f.severity === 'unstable' ? 'too noisy to call' : 'over tolerance'} |`);
+        + `| ${f.pct > 0 ? '+' : ''}${f.pct}% | ${
+          f.severity === 'unstable' ? 'too noisy to call'
+          : f.severity === 'uncorroborated' ? (f.note || 'not corroborated by the frame rate')
+          : 'over tolerance'} |`);
     L.push('');
   } else {
     L.push('## ✅ No regressions past tolerance', '');
