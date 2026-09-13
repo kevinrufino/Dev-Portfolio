@@ -39,6 +39,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { createNoise2D } from 'simplex-noise';
 import PropTypes from 'prop-types';
+import { colour } from '../../styles/tokens';
 
 // ─────────────────────────────────────────────
 // GLSL — fullscreen compositor (all the effects)
@@ -50,6 +51,12 @@ const compositorVert = /* glsl */ `
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   }
 `;
+
+/** `#RRGGBB` -> a GLSL `vec3(...)` literal in 0-1 range. */
+const glslRGB = (hex) =>
+  `vec3(${[1, 3, 5]
+    .map(i => `${parseInt(hex.slice(i, i + 2), 16)}.0/255.0`)
+    .join(', ')})`;
 
 const compositorFrag = /* glsl */ `
   precision highp float;
@@ -72,7 +79,7 @@ const compositorFrag = /* glsl */ `
     float ga = ceil(gc.a * 10.0) / 10.0;
 
     // ── Base color (yellow background) ───────────────────────────────
-    vec3 yellowColor = vec3(241.0/255.0, 244.0/255.0, 59.0/255.0);  // #F1F43B
+    vec3 yellowColor = ${glslRGB(colour.acid)};
 
     // ── Scanlines ───────────────────────────────────────────────────
     float scanLine = (1.0 + sin(p.y * 5.0 + uTime)) * 0.5;
@@ -474,7 +481,7 @@ export default function MikaShaderEffect({ style = {} }) {
         dpr={Math.min(window.devicePixelRatio, dprCap)}
         frameloop={isMobile || reducedMotion ? 'demand' : 'always'}
       >
-        {/* <color attach='background' args={['#F1F43B']} /> */}
+        {/* <color attach='background' args={[colour.acid]} /> */}
         <Scene isMobile={isMobile} />
       </Canvas>
     </div>

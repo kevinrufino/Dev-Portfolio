@@ -1,4 +1,5 @@
 import PropTypes from 'prop-types';
+import { colour } from '../styles/tokens';
 
 /**
  * Pixelated water fill for the loading name.
@@ -8,7 +9,7 @@ import PropTypes from 'prop-types';
  * thing is clipped by the same `loading-mask` (HeroFillName.svg) as before, so
  * the water only shows inside the letterforms.
  */
-const ULTRA = '#3e3bf4';
+const ULTRA = colour.ultra;
 
 // Wave tile geometry (SVG user units). One tile is 12 columns of 8px steps.
 const TILE_W = 96;

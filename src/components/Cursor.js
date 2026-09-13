@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { aimState } from '../utils/cursorFx.js';
+import { colour } from '../styles/tokens';
 
 /**
  * The page cursor.
@@ -146,7 +147,7 @@ const Cursor = () => {
         height='34'
         viewBox='0 0 24 24'
         fill='none'
-        stroke='#ffffff'
+        stroke={colour.white}
         strokeWidth='2.35'
         strokeLinecap='round'
         strokeLinejoin='round'

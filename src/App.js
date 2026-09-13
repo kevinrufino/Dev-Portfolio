@@ -315,7 +315,7 @@ const AnimatedRoutes = () => {
         <Route
           path="/studio"
           element={
-            <Suspense fallback={<RouteGround tone='bg-[#131318]' />}>
+            <Suspense fallback={<RouteGround tone='bg-page-deep' />}>
               <Studio />
             </Suspense>
           }

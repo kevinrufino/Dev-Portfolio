@@ -28,6 +28,7 @@ import {
 } from '../components/Project/edit/EditContext.js';
 import EditBar from '../components/Project/edit/EditBar.js';
 import '../components/Project/edit/edit.css';
+import { colour } from '../styles/tokens';
 
 const COVER_CELL = 12;
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
@@ -391,9 +392,9 @@ const ProjectPageBody = () => {
             activeIndex={-1}
             hotIndex={navHot}
             followerRef={navFollowerRef}
-            pillColor='#ffffff'
-            hoverColor='#d9e6ff'
-            followerColor='#ffd9f2'
+            pillColor={colour.white}
+            hoverColor={colour['cursor-hover']}
+            followerColor={colour['cursor-follower']}
           />
           <button
             type='button'
@@ -407,7 +408,7 @@ const ProjectPageBody = () => {
             onMouseEnter={() => setNavHot(0)}
             onMouseLeave={() => setNavHot(-1)}
             className='pointer-events-auto relative border-0 bg-transparent px-[10px] py-2 font-offbit101Bold text-xl transition-colors duration-200'
-            style={{ color: navHot === 0 ? '#1e1e1e' : '#ffffff' }}
+            style={{ color: navHot === 0 ? colour['ink-hard'] : colour.white }}
           >
             ← selected work
           </button>
@@ -423,14 +424,14 @@ const ProjectPageBody = () => {
               onMouseEnter={() => setNavHot(1)}
               onMouseLeave={() => setNavHot(-1)}
               className='pointer-events-auto relative px-[10px] py-2 font-offbit101Bold text-xl transition-colors duration-200'
-              style={{ color: navHot === 1 ? '#1e1e1e' : '#ffffff' }}
+              style={{ color: navHot === 1 ? colour['ink-hard'] : colour.white }}
             >
               live ↗
             </a>
           )}
         </nav>
 
-        <header className='relative h-[100svh] min-h-[560px] overflow-hidden bg-[#101014]'>
+        <header className='relative h-[100svh] min-h-[560px] overflow-hidden bg-page'>
           <div
             ref={coverScaleRef}
             className='absolute inset-0 [will-change:transform]'
@@ -514,7 +515,7 @@ const ProjectPageBody = () => {
                 as='h1'
                 path={['display']}
                 placeholder='Project name'
-                className='m-0 mb-5 font-offbit101Bold text-[clamp(52px,10vw,168px)] leading-[.86] tracking-[-.02em] text-white [text-wrap:balance]'
+                className='m-0 mb-5 font-offbit101Bold text-display-hero text-white [text-wrap:balance]'
               >
                 {display}
               </Editable>
@@ -522,7 +523,7 @@ const ProjectPageBody = () => {
                 as='p'
                 path={['tagline']}
                 placeholder='One line on what this was'
-                className='type-body m-0 max-w-[46ch] text-[clamp(17px,1.5vw,21px)] leading-[1.6] text-[#dcddd7]'
+                className='type-body m-0 max-w-[46ch] text-body-l text-page-body'
               >
                 {story?.tagline || project.description}
               </Editable>
@@ -534,13 +535,13 @@ const ProjectPageBody = () => {
                   as='p'
                   path={['cover']}
                   placeholder='Cover caption'
-                  className='type-label m-0 mt-4 text-[#8f9089]'
+                  className='type-label m-0 mt-4 text-page-caption'
                 >
                   {story.cover}
                 </Editable>
               )}
             </div>
-            <p className='type-label m-0 whitespace-nowrap text-[#c8c9c3]'>
+            <p className='type-label m-0 whitespace-nowrap text-page-meta'>
               {String(position).padStart(2, '0')} /{' '}
               {String(total).padStart(2, '0')}
             </p>
@@ -555,7 +556,7 @@ const ProjectPageBody = () => {
           <div
             ref={railRef}
             data-chapters=''
-            className='sticky top-0 z-40 overflow-x-auto overflow-y-hidden border-b border-[#3a3a36] bg-charcoal pt-[76px]'
+            className='sticky top-0 z-40 overflow-x-auto overflow-y-hidden border-b border-page-rule bg-charcoal pt-[76px]'
           >
             <div className='flex min-w-max items-stretch px-[clamp(24px,6vw,88px)]'>
               {blocks.map((b, i) => (
@@ -568,18 +569,18 @@ const ProjectPageBody = () => {
                   href={`#sec-${i}`}
                   className='mr-[22px] flex items-center gap-[9px] whitespace-nowrap border-b-2 py-[14px] pr-[22px] transition-colors duration-200'
                   style={{
-                    borderColor: i === active ? '#F1F43B' : 'transparent',
+                    borderColor: i === active ? colour.acid : 'transparent',
                   }}
                 >
                   <span
                     className='type-label text-[11px] tracking-[.24em]'
-                    style={{ color: i === active ? '#F1F43B' : '#6e6f69' }}
+                    style={{ color: i === active ? colour.acid : colour['page-faint'] }}
                   >
                     {String(i + 1).padStart(2, '0')}
                   </span>
                   <span
                     className='type-label text-[11px] tracking-[.24em]'
-                    style={{ color: i === active ? '#F1F43B' : '#a8a9a3' }}
+                    style={{ color: i === active ? colour.acid : colour['page-muted'] }}
                   >
                     {b.title}
                   </span>
@@ -592,14 +593,14 @@ const ProjectPageBody = () => {
         {story?.meta && !held && (
           <section
             aria-label='Project metadata'
-            className='border-b border-[#3a3a36] bg-charcoal'
+            className='border-b border-page-rule bg-charcoal'
           >
             <div
               // Remounted whenever a row is added, removed or moved: every
               // editable field on this page is uncontrolled once it exists, so
               // a change of address has to be a change of element.
               key={edit.rev}
-              className='grid gap-px bg-[#3a3a36] [grid-template-columns:repeat(auto-fit,minmax(200px,1fr))]'
+              className='grid gap-px bg-page-rule [grid-template-columns:repeat(auto-fit,minmax(200px,1fr))]'
             >
               {story.meta.map((m, i) => (
                 <div
@@ -618,7 +619,7 @@ const ProjectPageBody = () => {
                     as='p'
                     path={['meta', i, 'v']}
                     placeholder='Value'
-                    className='type-body m-0 text-base leading-[1.6] text-[#e2e3dd]'
+                    className='type-body m-0 text-base leading-[1.6] text-page-ink'
                   >
                     {m.v}
                   </Editable>
@@ -661,7 +662,7 @@ const ProjectPageBody = () => {
           </section>
         )}
 
-        <main className='bg-charcoal text-[#e2e3dd]'>
+        <main className='bg-charcoal text-page-ink'>
           {held ? (
             // The whole case study, held behind one line. Set in the same type
             // and at the same weight as the page a bad slug lands on, because it
@@ -705,14 +706,14 @@ const ProjectPageBody = () => {
 
         <footer className='relative overflow-hidden bg-acid text-charcoal'>
           <div className='relative z-[1] px-[clamp(24px,6vw,88px)] pb-[clamp(28px,4vh,44px)] pt-[clamp(56px,10vh,120px)]'>
-            <p className='type-label m-0 mb-6 text-[#4c4d16]'>Next project</p>
+            <p className='type-label m-0 mb-6 text-on-acid-muted'>Next project</p>
             {/* The arrow takes the ultra sweep rather than the whole line: the
               name is the label, the arrow is the direction, and only the
               direction needs to answer. Two stacked copies, the upper one
               clipped to how far the sweep has come, so nothing moves. */}
             <Link
               to={`/projects/${toSlug(next.title)}`}
-              className='sweep-cta m-0 mb-5 inline-block font-offbit101Bold text-[clamp(38px,7vw,110px)] leading-[.9] tracking-[-.02em] text-charcoal'
+              className='sweep-cta m-0 mb-5 inline-block font-offbit101Bold text-display-xl text-charcoal'
             >
               {nextName}{' '}
               <span ref={nextFx} className='sweep-cta__mark'>
@@ -722,7 +723,7 @@ const ProjectPageBody = () => {
                 </span>
               </span>
             </Link>
-            <p className='type-body m-0 max-w-[44ch] text-[17px] leading-[1.65] text-[#3a3b10]'>
+            <p className='type-body m-0 max-w-[44ch] text-[17px] leading-[1.65] text-on-acid-ink'>
               {nextStory?.tagline || next.description}
             </p>
             <nav
@@ -762,14 +763,14 @@ const ProjectPageBody = () => {
           </div>
           <div
             aria-hidden='true'
-            className='mx-[clamp(24px,6vw,88px)] h-px bg-[#adaf3d]'
+            className='mx-[clamp(24px,6vw,88px)] h-px bg-on-acid-rule'
           />
-          <div className='type-label flex items-center justify-between gap-4 px-[clamp(24px,6vw,88px)] py-[18px] tracking-[.2em] text-[#4c4d16]'>
+          <div className='type-label flex items-center justify-between gap-4 px-[clamp(24px,6vw,88px)] py-[18px] tracking-[.2em] text-on-acid-muted'>
             <span>Designed and developed by Kevin Rufino</span>
             <button
               type='button'
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              className='line-cta text-[#4c4d16]'
+              className='line-cta text-on-acid-muted'
               style={{ '--line-cta-ink': 'var(--ultra)' }}
             >
               Back to top

@@ -115,12 +115,12 @@ export const Footer = ({ setCursor }) => {
               className='grid w-max grid-cols-2 gap-x-[38px] gap-y-[14px]'
             >
               <EmailCta
-                className='type-body text-[19px] text-[#dedbd0] transition-colors hover:text-charcoal-ink focus-visible:text-charcoal-ink'
+                className='type-body text-[19px] text-on-charcoal-link transition-colors hover:text-charcoal-ink focus-visible:text-charcoal-ink'
                 style={{ '--line-cta-ink': 'var(--acid)' }}
               />
               {footerLinks.map(link => (
                 <a
-                  className='line-cta type-body text-[19px] text-[#dedbd0] transition-colors hover:text-charcoal-ink focus-visible:text-charcoal-ink'
+                  className='line-cta type-body text-[19px] text-on-charcoal-link transition-colors hover:text-charcoal-ink focus-visible:text-charcoal-ink'
                   style={{ '--line-cta-ink': 'var(--acid)' }}
                   href={link.href}
                   key={link.label}

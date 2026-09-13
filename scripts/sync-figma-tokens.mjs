@@ -54,7 +54,10 @@ const push = (prefix, obj, fmt = v => v) => {
 push('colour', tokens.colour);
 push('space', tokens.space, v => `${v}px`);
 push('motion', tokens.motion, v => (typeof v === 'number' ? `${v}ms` : v));
-push('shadow', tokens.effect);
+// `effect`, not `shadow`: the group is named `effect` in tokens.json, and
+// prefixing it with `shadow` produced `--shadow-shadow-hard`. It also collided
+// with the `--shadow-hard` alias index.css has always used.
+push('effect', tokens.effect);
 
 lines.push('  /* type — fluid ramp, min → max across the viewport */');
 for (const [name, t] of Object.entries(tokens.type)) {
