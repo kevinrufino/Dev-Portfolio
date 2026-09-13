@@ -14,6 +14,18 @@ Figma file (HVAOVM33y8u9vZxiwR8jEp)
 Change a value in Figma, re-export, re-run the sync. Nothing else in the
 repository is allowed to carry a colour value of its own.
 
+"Figma is the source of truth" is a claim, and a claim nothing checks decays
+into a comment. So it is checked:
+
+```bash
+node scripts/design-system/reconcile-figma.mjs
+```
+
+It diffs a verbatim read-back of the Figma file (`figma-export.json`) against
+`tokens.json` and exits non-zero on any disagreement in either direction — a
+token in code that Figma does not have is drift just as much as the reverse.
+62 tokens currently agree.
+
 ## Using a token
 
 | where | how |
@@ -105,6 +117,7 @@ not. This is how the colour pass in this commit was shown to be inert.
 | script | what it does |
 |---|---|
 | `scripts/sync-figma-tokens.mjs` | tokens.json → tokens.css |
+| `scripts/design-system/reconcile-figma.mjs` | proves Figma and tokens.json still agree |
 | `scripts/design-system/tokenise.mjs` | replaces hex literals with tokens; `--dry` to preview |
 | `scripts/design-system/audit-type.mjs` | reports type sizes against the scale; writes nothing |
 | `scripts/perf/style-snapshot.mjs` | proves a refactor changed nothing visible |

@@ -114,9 +114,13 @@ for (const rel of files) {
       return `${attr}{${jsRef(name)}}`;
     });
 
-    if (usedJsToken && !/from ['"][^'"]*styles\/tokens['"]/.test(src)) {
+    if (usedJsToken && !/from ['"][^'"]*styles\/tokens\.js['"]/.test(src)) {
       const depth = rel.split('/').length - 2; // relative to src/
-      const spec = depth === 0 ? './styles/tokens' : `${'../'.repeat(depth)}styles/tokens`;
+      // The `.js` is mandatory: package.json sets "type": "module", so webpack
+      // treats these as fully-specified ESM requests and an extensionless
+      // specifier fails to resolve. Jest resolves it either way, so the build
+      // is the only place this shows up.
+      const spec = depth === 0 ? './styles/tokens.js' : `${'../'.repeat(depth)}styles/tokens.js`;
       // After the last top-of-file import so the group stays together.
       const imports = [...src.matchAll(/^import .*?;$/gm)];
       const line = `import { colour } from '${spec}';`;

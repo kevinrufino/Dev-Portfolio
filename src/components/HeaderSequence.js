@@ -3,7 +3,7 @@ import { HeroName } from './Hero/components/HeroName.js';
 import RollingNumber from './common/RollingNumber.js';
 import PixelWaterFill from './PixelWaterFill.js';
 import { HERO_SHRINK_PX } from '../utils/heroRunway.js';
-import { colour } from '../styles/tokens';
+import { colour } from '../styles/tokens.js';
 
 /**
  * Landing header: the loader overlay + the hero-fold region the physics fills.

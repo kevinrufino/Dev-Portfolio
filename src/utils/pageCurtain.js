@@ -1,4 +1,4 @@
-import { colour } from '../styles/tokens';
+import { colour } from '../styles/tokens.js';
 /**
  * The curtain between routes — a blind sweep.
  *

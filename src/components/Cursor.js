@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { aimState } from '../utils/cursorFx.js';
-import { colour } from '../styles/tokens';
+import { colour } from '../styles/tokens.js';
 
 /**
  * The page cursor.

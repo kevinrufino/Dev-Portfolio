@@ -39,7 +39,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { createNoise2D } from 'simplex-noise';
 import PropTypes from 'prop-types';
-import { colour } from '../../styles/tokens';
+import { colour } from '../../styles/tokens.js';
 
 // ─────────────────────────────────────────────
 // GLSL — fullscreen compositor (all the effects)

@@ -1,4 +1,4 @@
-import { colour } from '../../styles/tokens';
+import { colour } from '../../styles/tokens.js';
 /**
  * The glyph study — a generative stand-in for each project.
  *

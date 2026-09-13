@@ -6,7 +6,7 @@ import { LastNameComponent } from './Hero/components/LastNameComponent.js';
 import { getLeafColliders, shakePalm } from './Palm/leafColliders.js';
 import { addSource } from '../utils/cursorFx.js';
 import { HERO_MIN_SCALE, HERO_SHRINK_PX } from '../utils/heroRunway.js';
-import { colour } from '../styles/tokens';
+import { colour } from '../styles/tokens.js';
 
 /**
  * Full-page physics canvas for the landing sequence.

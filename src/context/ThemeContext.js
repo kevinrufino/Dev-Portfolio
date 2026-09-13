@@ -14,7 +14,7 @@ import React, {
   useCallback,
 } from 'react';
 import PropTypes from 'prop-types';
-import { colour } from '../styles/tokens';
+import { colour } from '../styles/tokens.js';
 
 // Action types for theme state management
 export const THEME_ACTIONS = {

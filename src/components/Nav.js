@@ -8,7 +8,7 @@ import {
   revealStart,
 } from '../utils/navigateToSection.js';
 import ArrowBackUpIcon from './ArrowBackUpIcon.js';
-import { colour } from '../styles/tokens';
+import { colour } from '../styles/tokens.js';
 
 /**
  * home / work / connect — three states per item (plain text, hovered

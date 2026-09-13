@@ -7,7 +7,7 @@
  * colour changed in the design file reaches a `fillStyle` on a canvas, which it
  * previously could not.
  *
- *   import { colour } from '../styles/tokens';
+ *   import { colour } from '../styles/tokens.js';
  *   ctx.fillStyle = colour.acid;
  *
  * Values are plain strings, resolved at build time by webpack's JSON import.

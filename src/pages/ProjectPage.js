@@ -28,7 +28,7 @@ import {
 } from '../components/Project/edit/EditContext.js';
 import EditBar from '../components/Project/edit/EditBar.js';
 import '../components/Project/edit/edit.css';
-import { colour } from '../styles/tokens';
+import { colour } from '../styles/tokens.js';
 
 const COVER_CELL = 12;
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];

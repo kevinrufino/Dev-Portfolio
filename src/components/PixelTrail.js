@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { colour } from '../styles/tokens';
+import { colour } from '../styles/tokens.js';
 
 // 18px cells = three of the page's 6px grid cells, so a trail cell always
 // lands on the lattice the sections and the palm share.

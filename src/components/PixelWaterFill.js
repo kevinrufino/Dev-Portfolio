@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { colour } from '../styles/tokens';
+import { colour } from '../styles/tokens.js';
 
 /**
  * Pixelated water fill for the loading name.

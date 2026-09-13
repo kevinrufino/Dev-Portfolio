@@ -1,4 +1,4 @@
-import { colour } from '../../styles/tokens';
+import { colour } from '../../styles/tokens.js';
 /**
  * The two palettes the works pane swaps between.
  *
