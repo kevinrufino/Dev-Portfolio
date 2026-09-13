@@ -6,6 +6,7 @@ import { LastNameComponent } from './Hero/components/LastNameComponent.js';
 import { getLeafColliders, shakePalm } from './Palm/leafColliders.js';
 import { addSource } from '../utils/cursorFx.js';
 import { HERO_MIN_SCALE, HERO_SHRINK_PX } from '../utils/heroRunway.js';
+import { colour } from '../styles/tokens.js';
 
 /**
  * Full-page physics canvas for the landing sequence.
@@ -26,8 +27,8 @@ import { HERO_MIN_SCALE, HERO_SHRINK_PX } from '../utils/heroRunway.js';
  * afterRender show), and the sprite draw is offset by scrollY to render just
  * the visible slice, avoiding a document-tall backing store.
  */
-const ACID = '#F1F43B';
-const ULTRA = '#3e3bf4';
+const ACID = colour.acid;
+const ULTRA = colour.ultra;
 // Fully transparent, spelled as a colour so the SVG's `fill` still parses.
 const CLEAR = '#00000000';
 

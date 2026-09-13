@@ -1,3 +1,4 @@
+import { colour } from '../../styles/tokens.js';
 /**
  * The glyph study — a generative stand-in for each project.
  *
@@ -99,7 +100,7 @@ export function createWorkGlyph(canvas) {
   let from = null;
   let morphStart = 0;
   let paused = false;
-  let colors = { glyphInk: '#f1f43b', glyphBg: '#111125' };
+  let colors = { glyphInk: colour.acid, glyphBg: colour['on-ultra-glyph-bg'] };
   // One sampler per source, kept across selections: switching back to a
   // project should not restart its loop from a black first frame.
   const loops = new Map();

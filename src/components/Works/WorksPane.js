@@ -710,7 +710,7 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
                           </span>
                           <span
                             data-t-color={on ? 'metaOn' : 'metaIdle'}
-                            className='type-body mt-[9px] block text-[13px] leading-[1.5]'
+                            className='type-body mt-[9px] block text-body-xs'
                             style={{
                               color: on ? palette.metaOn : palette.metaIdle,
                             }}

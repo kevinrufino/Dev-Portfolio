@@ -3,6 +3,7 @@ import { HeroName } from './Hero/components/HeroName.js';
 import RollingNumber from './common/RollingNumber.js';
 import PixelWaterFill from './PixelWaterFill.js';
 import { HERO_SHRINK_PX } from '../utils/heroRunway.js';
+import { colour } from '../styles/tokens.js';
 
 /**
  * Landing header: the loader overlay + the hero-fold region the physics fills.
@@ -36,11 +37,11 @@ const PixelScrollCue = () => (
     aria-hidden='true'
   >
     <path
-      fill='#F1F43B'
+      fill={colour.acid}
       d='M5 1h6v1H5z M3 2h10v1H3z M2 3h12v2H2z M1 5h14v6H1z M2 11h12v2H2z M3 13h10v1H3z M5 14h6v1H5z'
     />
     <path
-      fill='#3e3bf4'
+      fill={colour.ultra}
       d='M5 0h6v1H5z M3 1h2v1H3z M11 1h2v1h-2z M2 2h1v1H2z M13 2h1v1h-1z M1 3h1v2H1z M14 3h1v2h-1z M0 5h1v6H0z M15 5h1v6h-1z M1 11h1v2H1z M14 11h1v2h-1z M2 13h1v1H2z M13 13h1v1h-1z M3 14h2v1H3z M11 14h2v1h-2z M5 15h6v1H5z M7 4h2v5H7z M5 9h6v1H5z M6 10h4v1H6z M7 11h2v1H7z'
     />
   </svg>
@@ -61,7 +62,7 @@ export const HeaderSequence = ({
       {/* True loading gate: full-page, opaque, above the nav — blocks
           interaction until the name hands off to physics. */}
       {!handedOff && (
-        <div className='fixed inset-0 z-[999] flex flex-col items-center justify-center p-2 bg-[#F1F43B]'>
+        <div className='fixed inset-0 z-[999] flex flex-col items-center justify-center p-2 bg-acid'>
           <div className='w-full relative' ref={nameRef}>
             <HeroName
               className='w-full'
@@ -71,7 +72,7 @@ export const HeaderSequence = ({
             <PixelWaterFill pct={pct} />
           </div>
           <div
-            className={`text-[#3e3bf4] text-3xl font-bold font-offbit101Bold mb-4 transition-opacity duration-500 ${
+            className={`text-ultra text-3xl font-bold font-offbit101Bold mb-4 transition-opacity duration-500 ${
               filling ? 'opacity-0' : 'opacity-100'
             }`}
           >

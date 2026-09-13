@@ -14,6 +14,7 @@ import React, {
   useCallback,
 } from 'react';
 import PropTypes from 'prop-types';
+import { colour } from '../styles/tokens.js';
 
 // Action types for theme state management
 export const THEME_ACTIONS = {
@@ -24,17 +25,17 @@ export const THEME_ACTIONS = {
 // Available themes
 export const THEMES = {
   YELLOW_BLUE: {
-    primary: '#F1F43B',
-    secondary: '#3e3bf4',
-    background: '#F1F43B',
-    text: '#3e3bf4',
+    primary: colour.acid,
+    secondary: colour.ultra,
+    background: colour.acid,
+    text: colour.ultra,
     name: 'Yellow Blue',
   },
   BLUE_YELLOW: {
-    primary: '#3e3bf4',
-    secondary: '#F1F43B',
-    background: '#3e3bf4',
-    text: '#F1F43B',
+    primary: colour.ultra,
+    secondary: colour.acid,
+    background: colour.ultra,
+    text: colour.acid,
     name: 'Blue Yellow',
   },
 };

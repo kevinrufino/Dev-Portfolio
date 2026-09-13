@@ -32,6 +32,28 @@
   --colour-on-acid-muted: #4C4D16;
   --colour-on-acid-rule: #ADAF3D;
   --colour-on-charcoal-link: #DEDBD0;
+  --colour-page-ink-bright: #E8E9E3;
+  --colour-page-meta: #C8C9C3;
+  --colour-page-caption: #8F9089;
+  --colour-page-rule-strong: #4A4A45;
+  --colour-page-deep: #131318;
+  --colour-ink-hard: #1E1E1E;
+  --colour-cursor-hover: #D9E6FF;
+  --colour-cursor-follower: #FFD9F2;
+  --colour-white: #FFFFFF;
+  --colour-black: #000000;
+  --colour-on-ultra-row: #C0BEFF;
+  --colour-on-ultra-meta: #CCCAFF;
+  --colour-on-ultra-body: #DFDEFF;
+  --colour-on-ultra-caption: #C9CDF6;
+  --colour-on-ultra-glyph-bg: #111125;
+  --colour-on-ultra-hover: #9D9BFB;
+  --colour-on-ultra-follower: #C3C1FF;
+  --colour-on-acid-accent: #6F6CF2;
+  --colour-on-acid-meta: #5B58C8;
+  --colour-on-acid-strong: #4F4CD4;
+  --colour-on-acid-hover: #D5D833;
+  --colour-on-acid-follower: #C3C62C;
 
   /* space */
   --space-1: 6px;
@@ -55,10 +77,10 @@
   --motion-ease-cta: cubic-bezier(0.62, 0.05, 0.2, 1);
   --motion-ease-linear: linear;
 
-  /* shadow */
-  --shadow-shadow-hard: 6px 6px 0 0 #3E3BF4;
-  --shadow-shadow-hard-sm: 3px 3px 0 0 #3E3BF4;
-  --shadow-shadow-hard-acid: 6px 6px 0 0 #F1F43B;
+  /* effect */
+  --effect-shadow-hard: 6px 6px 0 0 #3E3BF4;
+  --effect-shadow-hard-sm: 3px 3px 0 0 #3E3BF4;
+  --effect-shadow-hard-acid: 6px 6px 0 0 #F1F43B;
 
   /* type — fluid ramp, min → max across the viewport */
   --text-display-hero: clamp(52px, 10vw, 168px);

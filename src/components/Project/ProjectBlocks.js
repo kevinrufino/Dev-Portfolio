@@ -37,7 +37,7 @@ const BlockHead = ({ num, label, title, note, i }) => {
         as='h2'
         path={at(i, 'title')}
         placeholder='Heading'
-        className='m-0 font-offbit101Bold text-[clamp(30px,4.2vw,60px)] leading-[.98] tracking-[-.015em] text-white [text-wrap:balance]'
+        className='m-0 font-offbit101Bold text-display-s text-white [text-wrap:balance]'
       >
         {title}
       </Editable>
@@ -48,7 +48,7 @@ const BlockHead = ({ num, label, title, note, i }) => {
           as='p'
           path={at(i, 'note')}
           placeholder='Small print under the heading'
-          className='type-body mt-5 max-w-[38ch] text-sm leading-[1.6] text-[#a8a9a3]'
+          className='type-body mt-5 max-w-[38ch] text-sm leading-[1.6] text-page-muted'
         >
           {note}
         </Editable>
@@ -86,7 +86,7 @@ const Paragraphs = ({ paras, pull, i }) => {
               onEmptyBackspace={
                 list.length > 1 ? () => edit.removePara(i, j) : undefined
               }
-              className='type-body m-0 text-[clamp(16px,1.2vw,18px)] text-[#dcddd7]'
+              className='type-body m-0 text-[clamp(16px,1.2vw,18px)] text-page-body'
             >
               {text}
             </Editable>
@@ -207,7 +207,7 @@ const AssetGrid = ({ items, i }) => {
               as='figcaption'
               path={at(i, 'items', j, 'caption')}
               placeholder='Caption'
-              className='type-body mt-[10px] text-[13px] leading-[1.5] text-[#a8a9a3]'
+              className='type-body mt-[10px] text-body-xs text-page-muted'
             >
               {item.caption}
             </Editable>
@@ -246,7 +246,7 @@ const Moment = ({ item, i, j, count }) => {
   const path = (...rest) => at(i, 'items', j, ...rest);
   return (
     <article
-      className={`grid grid-cols-1 gap-[clamp(20px,4vw,70px)] border-b border-[#3a3a36] py-[clamp(26px,4vh,44px)] lg:[grid-template-columns:minmax(0,5fr)_minmax(0,7fr)] ${edit ? 'pedit-host' : ''}`.trim()}
+      className={`grid grid-cols-1 gap-[clamp(20px,4vw,70px)] border-b border-page-rule py-[clamp(26px,4vh,44px)] lg:[grid-template-columns:minmax(0,5fr)_minmax(0,7fr)] ${edit ? 'pedit-host' : ''}`.trim()}
     >
       <div>
         <Editable
@@ -293,7 +293,7 @@ const Moment = ({ item, i, j, count }) => {
           as='p'
           path={path('body')}
           placeholder='What the tension was'
-          className='type-body m-0 mb-[26px] max-w-[58ch] text-base leading-[1.72] text-[#dcddd7]'
+          className='type-body m-0 mb-[26px] max-w-[58ch] text-base leading-[1.72] text-page-body'
         >
           {item.body}
         </Editable>
@@ -310,16 +310,16 @@ const Moment = ({ item, i, j, count }) => {
               as='p'
               path={path('chose', 'v')}
               placeholder='What was chosen'
-              className='type-body m-0 text-[15px] leading-[1.65] text-[#e8e9e3]'
+              className='type-body m-0 text-[15px] leading-[1.65] text-page-ink-bright'
             >
               {item.chose.v}
             </Editable>
           </div>
-          <div className='border-t-2 border-[#4a4a45] pt-[14px]'>
+          <div className='border-t-2 border-page-rule-strong pt-[14px]'>
             <Editable
               as='p'
               path={path('passed', 'k')}
-              className='type-label m-0 mb-[10px] text-[10px] tracking-[.26em] text-[#a8a9a3]'
+              className='type-label m-0 mb-[10px] text-[10px] tracking-[.26em] text-page-muted'
             >
               {item.passed.k}
             </Editable>
@@ -327,7 +327,7 @@ const Moment = ({ item, i, j, count }) => {
               as='p'
               path={path('passed', 'v')}
               placeholder='What was passed on'
-              className='type-body m-0 text-[15px] leading-[1.65] text-[#a8a9a3]'
+              className='type-body m-0 text-[15px] leading-[1.65] text-page-muted'
             >
               {item.passed.v}
             </Editable>
@@ -363,7 +363,7 @@ const ImpactFigure = ({ item, i, j, count }) => {
     <div
       className={`bg-charcoal px-[clamp(20px,3vw,34px)] pb-[clamp(10px,2vw,20px)] pr-[clamp(20px,3vw,44px)] pt-[clamp(24px,3vw,38px)] ${edit ? 'pedit-host' : ''}`.trim()}
     >
-      <p className='m-0 mb-4 font-offbit101Bold text-[clamp(46px,6.4vw,96px)] leading-[.94] tracking-[-.02em] text-acid'>
+      <p className='m-0 mb-4 font-offbit101Bold text-figure text-acid'>
         {edit ? (
           // A number you cannot type into is not editable, and an odometer is
           // exactly that. While editing it is the figure itself, at the same
@@ -401,7 +401,7 @@ const ImpactFigure = ({ item, i, j, count }) => {
           as='p'
           path={path('note')}
           placeholder='Where it comes from'
-          className='type-body m-0 text-[13px] leading-[1.55] text-[#a8a9a3]'
+          className='type-body m-0 text-[13px] leading-[1.55] text-page-muted'
         >
           {item.note}
         </Editable>
@@ -500,7 +500,7 @@ const ProjectBlock = ({ block, num, id, i = 0, count = 1 }) => {
     <section
       id={id}
       data-sec=''
-      className={`border-b border-[#3a3a36] px-[clamp(24px,6vw,88px)] py-[clamp(48px,8vh,104px)] [scroll-margin-top:128px] ${edit ? 'pedit-host' : ''}`.trim()}
+      className={`border-b border-page-rule px-[clamp(24px,6vw,88px)] py-[clamp(48px,8vh,104px)] [scroll-margin-top:128px] ${edit ? 'pedit-host' : ''}`.trim()}
     >
       <BlockRail i={i} block={block} count={count} />
 
@@ -518,7 +518,7 @@ const ProjectBlock = ({ block, num, id, i = 0, count = 1 }) => {
       {block.type === 'assets' && <AssetGrid items={items} i={i} />}
 
       {block.type === 'moments' && (
-        <div className='mt-[clamp(30px,5vh,58px)] border-t border-[#3a3a36]'>
+        <div className='mt-[clamp(30px,5vh,58px)] border-t border-page-rule'>
           {items.map((item, j) => (
             <Moment
               key={edit ? j : item.title}
@@ -544,7 +544,7 @@ const ProjectBlock = ({ block, num, id, i = 0, count = 1 }) => {
 
       {block.type === 'impact' && (
         <>
-          <div className='mt-[clamp(30px,5vh,58px)] grid grid-cols-1 gap-px bg-[#3a3a36] sm:grid-cols-2 lg:grid-cols-3'>
+          <div className='mt-[clamp(30px,5vh,58px)] grid grid-cols-1 gap-px bg-page-rule sm:grid-cols-2 lg:grid-cols-3'>
             {items.map((item, j) => (
               <ImpactFigure
                 key={edit ? j : item.k}

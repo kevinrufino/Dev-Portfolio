@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
+import { colour } from '../styles/tokens.js';
 
 // 18px cells = three of the page's 6px grid cells, so a trail cell always
 // lands on the lattice the sections and the palm share.
@@ -50,7 +51,7 @@ const publishTrailPoint = (x, y) => {
 // Canvas fillStyle does not resolve CSS custom properties, so the tokens are
 // read into real values once per resize rather than per cell (getComputedStyle
 // is a layout read, and a fast pointer paints up to 24 cells per event).
-const INK_FALLBACK = { ultra: '#3e3bf4', gold: '#ebc035' };
+const INK_FALLBACK = { ultra: colour.ultra, gold: colour['palm-gold'] };
 
 const readToken = (name, fallback) =>
   getComputedStyle(document.documentElement).getPropertyValue(name).trim() ||

@@ -8,6 +8,7 @@ import {
   revealStart,
 } from '../utils/navigateToSection.js';
 import ArrowBackUpIcon from './ArrowBackUpIcon.js';
+import { colour } from '../styles/tokens.js';
 
 /**
  * home / work / connect — three states per item (plain text, hovered
@@ -33,14 +34,14 @@ const GOO_PAD = 90;
 const GOO_SIGMA = 7;
 const FOLLOWER_SIZE = 24;
 const FOLLOWER_RANGE = 300;
-const FOLLOWER_TINT = '#ffd9f2';
-const HOVER_PILL_TINT = '#d9e6ff';
-const ACTIVE_PILL_FILL = '#ffffff';
+const FOLLOWER_TINT = colour['cursor-follower'];
+const HOVER_PILL_TINT = colour['cursor-hover'];
+const ACTIVE_PILL_FILL = colour.white;
 // Fixed-height selected pill, vertically centered in the item box, so it reads
 // as a compact rounded chip rather than filling the link's full padded height.
 const ACTIVE_PILL_HEIGHT = 36;
-const ACTIVE_TEXT = '#000000';
-const HOVER_TEXT = '#1e1e1e';
+const ACTIVE_TEXT = colour.black;
+const HOVER_TEXT = colour['ink-hard'];
 
 const GooeyNavFilter = ({ id }) => (
   <svg aria-hidden='true' width='0' height='0' style={{ position: 'absolute' }}>
@@ -234,7 +235,7 @@ const HomeNav = ({ setCursor }) => {
   };
 
   const navColor = i =>
-    i === activeIndex ? ACTIVE_TEXT : i === hotIndex ? HOVER_TEXT : '#ffffff';
+    i === activeIndex ? ACTIVE_TEXT : i === hotIndex ? HOVER_TEXT : colour.white;
 
   return (
     <nav

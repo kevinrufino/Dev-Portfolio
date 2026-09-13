@@ -1,3 +1,4 @@
+import { colour } from '../styles/tokens.js';
 /**
  * The curtain between routes — a blind sweep.
  *
@@ -47,7 +48,7 @@ const FEATHER = 3;
 const STAGGER_IN = 0.13;
 const STAGGER_OUT = 0.16;
 
-const INK_FALLBACK = '#f1f43b';
+const INK_FALLBACK = colour.acid;
 
 /**
  * Coverage, as a function of cell and progress: >= 1 solid, <= 0 untouched,

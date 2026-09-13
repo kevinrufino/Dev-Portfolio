@@ -1,3 +1,4 @@
+import { colour } from '../../styles/tokens.js';
 /**
  * The two palettes the works pane swaps between.
  *
@@ -13,23 +14,23 @@
  */
 export const THEMES = {
   work: {
-    bg: '#3e3bf4',
-    ink: '#ffffff',
-    label: '#F1F43B',
-    accent: '#F1F43B',
-    rowIdle: '#c0beff',
-    metaIdle: '#cccaff',
+    bg: colour.ultra,
+    ink: colour.white,
+    label: colour.acid,
+    accent: colour.acid,
+    rowIdle: colour['on-ultra-row'],
+    metaIdle: colour['on-ultra-meta'],
     metaOn: 'rgba(241,244,59,.82)',
     border: 'rgba(255,255,255,.19)',
-    desc: '#dfdeff',
-    link: '#ffffff',
+    desc: colour['on-ultra-body'],
+    link: colour.white,
     linkBorder: 'rgba(255,255,255,.56)',
-    caption: '#c9cdf6',
-    glyphInk: '#f1f43b',
-    glyphBg: '#111125',
-    togglePill: '#F1F43B',
-    togglePillInk: '#3e3bf4',
-    toggleIdleInk: '#ffffff',
+    caption: colour['on-ultra-caption'],
+    glyphInk: colour.acid,
+    glyphBg: colour['on-ultra-glyph-bg'],
+    togglePill: colour.acid,
+    togglePillInk: colour.ultra,
+    toggleIdleInk: colour.white,
     // Opaque, not translucent: the goo filter re-hardens alpha after
     // blurring, so a semi-transparent source came out of it thinner than an
     // opaque one and the toggle's hover read visibly smaller than the nav's,
@@ -39,31 +40,31 @@ export const THEMES = {
     // acid over this ground, which turned out to be a dull grey-mauve. These
     // are a light bloom of the ground's own hue instead — the same move the
     // nav makes with its pale blue tint over white.
-    toggleHover: '#9d9bfb',
-    toggleFollower: '#c3c1ff',
+    toggleHover: colour['on-ultra-hover'],
+    toggleFollower: colour['on-ultra-follower'],
   },
   personal: {
-    bg: '#F1F43B',
-    ink: '#3e3bf4',
-    label: '#3e3bf4',
-    accent: '#6f6cf2',
-    rowIdle: '#3e3bf4',
-    metaIdle: '#5b58c8',
-    metaOn: '#4f4cd4',
+    bg: colour.acid,
+    ink: colour.ultra,
+    label: colour.ultra,
+    accent: colour['on-acid-accent'],
+    rowIdle: colour.ultra,
+    metaIdle: colour['on-acid-meta'],
+    metaOn: colour['on-acid-strong'],
     border: 'rgba(62,59,244,.24)',
-    desc: '#4f4cd4',
-    link: '#3e3bf4',
+    desc: colour['on-acid-strong'],
+    link: colour.ultra,
     linkBorder: 'rgba(62,59,244,.5)',
-    caption: '#5b58c8',
-    glyphInk: '#3e3bf4',
-    glyphBg: '#f7f8f5',
-    togglePill: '#3e3bf4',
-    togglePillInk: '#F1F43B',
-    toggleIdleInk: '#3e3bf4',
+    caption: colour['on-acid-meta'],
+    glyphInk: colour.ultra,
+    glyphBg: colour.paper,
+    togglePill: colour.ultra,
+    togglePillInk: colour.acid,
+    toggleIdleInk: colour.ultra,
     // On acid the bloom has to go the other way: a deeper note of the same
     // yellow, since nothing lighter reads against it.
-    toggleHover: '#d5d833',
-    toggleFollower: '#c3c62c',
+    toggleHover: colour['on-acid-hover'],
+    toggleFollower: colour['on-acid-follower'],
   },
 };
 

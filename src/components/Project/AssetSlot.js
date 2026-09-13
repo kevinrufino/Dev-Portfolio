@@ -85,7 +85,7 @@ const AssetSlot = ({
 
   return (
     <div
-      className={`relative w-full overflow-hidden bg-[#2a2a2e] ${className}`}
+      className={`relative w-full overflow-hidden bg-page-slot ${className}`}
       style={{ aspectRatio: ratio }}
     >
       {src ? (
@@ -110,8 +110,8 @@ const AssetSlot = ({
           media
         )
       ) : (
-        <div className='absolute inset-[10px] flex items-end border border-dashed border-[#4a4a45] p-[14px]'>
-          <p className='type-label m-0 text-[#6e6f69]'>{caption}</p>
+        <div className='absolute inset-[10px] flex items-end border border-dashed border-page-rule-strong p-[14px]'>
+          <p className='type-label m-0 text-page-faint'>{caption}</p>
         </div>
       )}
     </div>

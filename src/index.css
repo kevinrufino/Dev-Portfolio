@@ -6,31 +6,44 @@
 @tailwind components;
 @tailwind utilities;
 
+/* The short names the stylesheets and components already use, pointed at the
+   generated tokens above rather than carrying values of their own.
+ *
+ * Until now this block wrote out its own copy of every colour, which meant two
+ * files claimed authority over `--acid` and nothing stopped them drifting
+ * apart. These are aliases now: one value, defined in Figma, exported to
+ * tokens.json, generated into tokens.css, referenced here. Change a colour in
+ * one place and it changes everywhere, which is the entire point of having done
+ * this.
+ *
+ * `--paper-ink-2` and `--charcoal-ink-2` keep their old names on purpose —
+ * renaming them to `-muted` would touch forty call sites for no gain and bury
+ * the actual change in this commit. */
 :root {
-  --acid: #f1f43b;
-  --ultra: #3e3bf4;
+  --acid: var(--colour-acid);
+  --ultra: var(--colour-ultra);
 
   /* Paper — the intro/marquee ground, and its ink ramp. */
-  --paper: #f7f8f5;
-  --paper-ink: #252c24;
-  --paper-ink-2: #5d6259;
-  --paper-rule: #e0e3dc;
+  --paper: var(--colour-paper);
+  --paper-ink: var(--colour-paper-ink);
+  --paper-ink-2: var(--colour-paper-muted);
+  --paper-rule: var(--colour-paper-rule);
 
   /* Charcoal — the contact footer. */
-  --charcoal: #202020;
-  --charcoal-ink: #f0efeb;
-  --charcoal-ink-2: #b0afa9;
-  --charcoal-rule: #454540;
+  --charcoal: var(--colour-charcoal);
+  --charcoal-ink: var(--colour-charcoal-ink);
+  --charcoal-ink-2: var(--colour-charcoal-muted);
+  --charcoal-rule: var(--colour-charcoal-rule);
 
   /* The palm's gold, also the trail's ink over the charcoal ground. */
-  --palm-gold: #ebc035;
+  --palm-gold: var(--colour-palm-gold);
 
   /* One 6px lattice shared by the palm, the pixel trail and the section
      grids. Every grid-aligned size downstream is a multiple of this. */
-  --grid: 6px;
+  --grid: var(--space-lattice);
 
-  --shadow-hard: 6px 6px 0 0 var(--ultra);
-  --shadow-hard-sm: 3px 3px 0 0 var(--ultra);
+  --shadow-hard: var(--effect-shadow-hard);
+  --shadow-hard-sm: var(--effect-shadow-hard-sm);
   background-color: var(--acid);
 }
 
@@ -261,7 +274,7 @@ code {
 
 .mask {
   mix-blend-mode: difference;
-  background: #f1f43b;
+  background: var(--colour-acid);
 }
 
 .loading-mask {
@@ -393,8 +406,8 @@ code {
    below ~20px. */
 .type-label {
   font-family: "OffBit-Dot", "OffBit Punctuation", monospace;
-  font-size: 11px;
-  letter-spacing: 0.3em;
+  font-size: var(--text-label);
+  letter-spacing: var(--text-label-tracking);
   text-transform: uppercase;
 }
 
@@ -831,7 +844,7 @@ html {
   height: auto;
   max-height: calc(100vh - clamp(150px, 22vh, 230px));
   object-fit: contain;
-  background: #101014;
+  background: var(--colour-page);
 }
 
 .media-lightbox__caption {
@@ -839,17 +852,17 @@ html {
   max-width: 62ch;
   font-size: 13px;
   line-height: 1.5;
-  color: #a8a9a3;
+  color: var(--colour-page-muted);
 }
 
 .media-lightbox__close {
   position: absolute;
   top: clamp(16px, 3vh, 28px);
   right: clamp(16px, 4vw, 40px);
-  border: 1px solid #4a4a45;
+  border: 1px solid var(--colour-page-rule-strong);
   background: rgba(16, 16, 20, 0.7);
   padding: 9px 14px;
-  color: #e2e3dd;
+  color: var(--colour-page-ink);
   transition:
     background-color 200ms ease,
     color 200ms ease,
@@ -862,15 +875,15 @@ html {
 }
 
 .media-lightbox__close:focus-visible {
-  outline: 2px solid var(--ultra, #3e3bf4);
+  outline: 2px solid var(--ultra);
   outline-offset: 2px;
 }
 
 .media-lightbox__close:hover,
 .media-lightbox__close:focus-visible {
-  border-color: var(--acid, #f1f43b);
-  background: var(--acid, #f1f43b);
-  color: #1e1e1e;
+  border-color: var(--acid);
+  background: var(--acid);
+  color: var(--colour-ink-hard);
 }
 
 /* There is no Esc key on a phone, and a line of instructions for one is just
@@ -889,7 +902,7 @@ html {
   margin: 0;
   font-size: 10px;
   letter-spacing: 0.26em;
-  color: #6e6f69;
+  color: var(--colour-page-faint);
 }
 
 /* ── the figure's own invitation ────────────────────────────────────────────
@@ -914,7 +927,7 @@ html {
   border: 1px solid rgba(241, 244, 59, 0.4);
   background: rgba(16, 16, 20, 0.66);
   padding: 6px 10px;
-  color: var(--acid, #f1f43b);
+  color: var(--acid);
   font-size: 10px;
   letter-spacing: 0.24em;
   opacity: 0;
@@ -943,7 +956,7 @@ html {
 }
 
 .media-zoom:focus-visible {
-  outline: 2px solid var(--acid, #f1f43b);
+  outline: 2px solid var(--acid);
   outline-offset: 3px;
 }
 
