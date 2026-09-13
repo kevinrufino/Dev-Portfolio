@@ -33,6 +33,7 @@ import { SkillsMarquee } from './components/Intro/SkillsMarquee.js';
 import Cursor from './components/Cursor.js';
 import CursorAnnotation from './components/CursorAnnotation.js';
 import CursorFxDebug from './components/CursorFxDebug.js';
+import PerfHud from './components/PerfHud.js';
 import { HeaderSequence } from './components/HeaderSequence.js';
 import PixelTrail from './components/PixelTrail.js';
 import { preloadImages } from './services/AssetService.js';
@@ -345,6 +346,8 @@ const AppRefactored = () => {
             tool for arguing with the design rather than part of it, and both of
             its ways in were reachable by accident. */}
         <CursorFxDebug />
+        {/* Frame-rate readout for the device that feels slow. `?perf=1`. */}
+        <PerfHud />
         {/* The blind sweep between routes. Outside <Routes> because it has to
             outlive the page it covers: it goes up over the outgoing route and
             comes off the incoming one, and a canvas belonging to either would
