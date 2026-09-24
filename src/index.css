@@ -1,4 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&display=swap');
+/* Generated from the Figma design system — see scripts/sync-figma-tokens.mjs */
+@import './styles/tokens.css';
 
 @tailwind base;
 @tailwind components;
