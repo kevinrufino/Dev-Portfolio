@@ -103,6 +103,10 @@ const PalmScene = () => {
     const loop = t => {
       raf = requestAnimationFrame(loop);
       if (t - last < FRAME_MS) return;
+      // A hidden tab does not need the most expensive thing on the page. This
+      // sits above the rect reads below rather than inside the skip test they
+      // feed, because those two reads force layout every capped frame.
+      if (document.hidden) return;
       last = t;
       const intro = rectOf('intro');
       const footer = footerRect();

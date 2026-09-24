@@ -1,3 +1,4 @@
+import { hasFinePointer, onPointerKindChange } from './pointerKind.js';
 /**
  * Cursor effects: hover annotations and gravity.
  *
@@ -60,6 +61,10 @@ let px = -9999;
 let py = -9999;
 let moved = false;
 let raf = 0;
+// Whether this device has a cursor worth aiming, and whether a finger or button
+// is currently down. Together they decide whether the frame loop runs at all.
+let fine = true;
+let pointerDown = false;
 let chip = null;
 
 /** Where the arrow is pointing, and how much of that is the field's doing. */
@@ -271,7 +276,28 @@ function releaseHold() {
   holdWatch?.(0);
 }
 
+/**
+ * Is there anything for the frame loop to do?
+ *
+ * With a real cursor: always, because the aim eases toward its target every
+ * frame whether or not the pointer moved. On a touch screen there is no aim to
+ * ease — the only thing the loop drives there is the progress ring on a
+ * press-and-hold — so it runs between pointerdown and pointerup and idles the
+ * rest of the time. That is the difference between a 60fps loop running for a
+ * whole visit and one running for the second a finger is down.
+ *
+ * A hidden tab never needs it either. Nothing here was checking.
+ */
+const shouldRun = () => {
+  if (typeof document !== 'undefined' && document.hidden) return false;
+  return fine || pointerDown || Boolean(heldFrom);
+};
+
 const loop = () => {
+  if (!shouldRun()) {
+    raf = 0;
+    return;
+  }
   raf = requestAnimationFrame(loop);
 
   // Targets only need re-measuring when something could have moved under the
@@ -329,21 +355,43 @@ const onPointerDown = event => {
   holdWatch?.(0.0001);
 };
 
-const onPointerUp = () => releaseHold();
+/** Restart the loop after it has suspended itself. */
+const wake = () => {
+  if (!started || raf) return;
+  if (shouldRun()) raf = requestAnimationFrame(loop);
+};
+
+const onPointerUp = () => {
+  pointerDown = false;
+  releaseHold();
+};
 
 let started = false;
+let unwatchPointerKind = null;
 
 const start = () => {
   if (started || typeof window === 'undefined') return;
   started = true;
+  fine = hasFinePointer();
   window.addEventListener('pointermove', onPointerMove, { passive: true });
   window.addEventListener('pointerdown', onPointerDown, { passive: true });
   window.addEventListener('pointerup', onPointerUp, { passive: true });
   window.addEventListener('pointercancel', onPointerUp, { passive: true });
-  window.addEventListener('scroll', markMoved, { passive: true });
-  window.addEventListener('resize', markMoved);
+  // Scroll and resize matter only because they move targets under a cursor that
+  // is standing still. With no cursor there is nothing to re-aim — and this was
+  // the expensive half on a phone: every scroll marked the registry dirty, and
+  // the next frame re-measured every registered field.
+  if (fine) {
+    window.addEventListener('scroll', markMoved, { passive: true });
+    window.addEventListener('resize', markMoved);
+  }
   document.addEventListener('pointerleave', onPointerLeave);
-  raf = requestAnimationFrame(loop);
+  document.addEventListener('visibilitychange', wake);
+  unwatchPointerKind = onPointerKindChange(next => {
+    fine = next;
+    wake();
+  });
+  wake();
 };
 
 const stop = () => {
@@ -356,7 +404,12 @@ const stop = () => {
   window.removeEventListener('scroll', markMoved);
   window.removeEventListener('resize', markMoved);
   document.removeEventListener('pointerleave', onPointerLeave);
+  document.removeEventListener('visibilitychange', wake);
+  unwatchPointerKind?.();
+  unwatchPointerKind = null;
+  pointerDown = false;
   cancelAnimationFrame(raf);
+  raf = 0;
 };
 
 const settle = () => {

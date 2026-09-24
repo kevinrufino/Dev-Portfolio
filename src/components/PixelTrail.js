@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { hasFinePointer, onPointerKindChange } from '../utils/pointerKind.js';
 
 // 18px cells = three of the page's 6px grid cells, so a trail cell always
 // lands on the lattice the sections and the palm share.
@@ -342,6 +343,13 @@ const GooeyFilter = ({ id }) => (
  */
 const PixelTrail = ({ className = '', clipTo = null, zone = 'page' }) => {
   const canvasRef = useRef(null);
+  // A trail behind a cursor that does not exist is three full-viewport canvases
+  // and a resize observer for nothing. Three of these mount at once — page,
+  // intro and footer — so on a phone that was ~16MB of backing store allocated
+  // for an effect no touch can ever trigger. Same query index.css uses to hide
+  // the native cursor, so the two can never disagree.
+  const [fine, setFine] = useState(hasFinePointer);
+  useEffect(() => onPointerKindChange(setFine), []);
   const filterId = useMemo(
     () => `portfolio-pixel-trail-${Math.random().toString(36).slice(2)}`,
     [],
@@ -349,7 +357,7 @@ const PixelTrail = ({ className = '', clipTo = null, zone = 'page' }) => {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return undefined;
+    if (!canvas || !fine) return undefined;
     const surface = {
       canvas,
       ctx: canvas.getContext('2d', { alpha: true }),
@@ -365,7 +373,9 @@ const PixelTrail = ({ className = '', clipTo = null, zone = 'page' }) => {
       engine.surfaces.delete(surface);
       if (engine.surfaces.size === 0) unbind();
     };
-  }, [clipTo, zone]);
+  }, [clipTo, zone, fine]);
+
+  if (!fine) return null;
 
   return (
     <div className={`portfolio-pixel-trail ${className}`.trim()}>
