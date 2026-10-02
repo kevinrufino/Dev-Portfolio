@@ -1,3 +1,6 @@
+const tokens = require("./src/styles/tokens.json");
+const c = tokens.colour;
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
@@ -17,30 +20,58 @@ module.exports = {
       sans: ["DM Sans", "sans-serif"],
     },
     extend: {
+      // Read from the generated token file rather than written out here. These
+      // were declared twice — once in this object and once as custom properties
+      // in index.css — which is exactly the kind of duplication that lets a
+      // colour drift between the two and nobody notice.
       colors: {
-        acid: "#F1F43B",
-        ultra: "#3e3bf4",
+        acid: c.acid,
+        ultra: c.ultra,
+        "palm-gold": c["palm-gold"],
         paper: {
-          DEFAULT: "#f7f8f5",
-          ink: "#252c24",
-          muted: "#5d6259",
-          rule: "#e0e3dc",
+          DEFAULT: c.paper,
+          ink: c["paper-ink"],
+          muted: c["paper-muted"],
+          rule: c["paper-rule"],
         },
         charcoal: {
-          DEFAULT: "#202020",
-          ink: "#f0efeb",
-          muted: "#b0afa9",
-          rule: "#454540",
+          DEFAULT: c.charcoal,
+          ink: c["charcoal-ink"],
+          muted: c["charcoal-muted"],
+          rule: c["charcoal-rule"],
         },
-        "palm-gold": "#ebc035",
+        // The case studies run on their own, deeper scale. It had no tokens at
+        // all before — twelve components each wrote the hexes out by hand.
+        page: {
+          DEFAULT: c.page,
+          slot: c["page-slot"],
+          ink: c["page-ink"],
+          body: c["page-body"],
+          muted: c["page-muted"],
+          faint: c["page-faint"],
+          rule: c["page-rule"],
+        },
+        "on-acid": {
+          ink: c["on-acid-ink"],
+          muted: c["on-acid-muted"],
+          rule: c["on-acid-rule"],
+        },
+        "on-charcoal": { link: c["on-charcoal-link"] },
       },
       spacing: {
-        grid: "6px",
+        grid: `${tokens.space.lattice}px`,
+        pixel: `${tokens.space.pixel}px`,
       },
       boxShadow: {
-        hard: "6px 6px 0 0 #3e3bf4",
-        "hard-sm": "3px 3px 0 0 #3e3bf4",
-        "hard-acid": "6px 6px 0 0 #F1F43B",
+        hard: tokens.effect["shadow-hard"],
+        "hard-sm": tokens.effect["shadow-hard-sm"],
+        "hard-acid": tokens.effect["shadow-hard-acid"],
+      },
+      transitionTimingFunction: { cta: tokens.motion["ease-cta"] },
+      transitionDuration: {
+        fast: `${tokens.motion["duration-fast"]}ms`,
+        cta: `${tokens.motion["duration-cta"]}ms`,
+        swap: `${tokens.motion["duration-swap"]}ms`,
       },
     },
   },

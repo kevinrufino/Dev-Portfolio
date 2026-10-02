@@ -1,0 +1,100 @@
+/* GENERATED — do not edit.
+ *
+ * Written by scripts/sync-figma-tokens.mjs from src/styles/tokens.json,
+ * which is exported from https://www.figma.com/design/HVAOVM33y8u9vZxiwR8jEp
+ *
+ * Change a value in Figma, re-export, re-run the sync. Editing this file by
+ * hand puts the code and the design file back into the disagreement this
+ * whole arrangement exists to end.
+ */
+
+:root {
+  /* colour */
+  --colour-acid: #F1F43B;
+  --colour-ultra: #3E3BF4;
+  --colour-palm-gold: #EBC035;
+  --colour-paper: #F7F8F5;
+  --colour-paper-ink: #252C24;
+  --colour-paper-muted: #5D6259;
+  --colour-paper-rule: #E0E3DC;
+  --colour-charcoal: #202020;
+  --colour-charcoal-ink: #F0EFEB;
+  --colour-charcoal-muted: #B0AFA9;
+  --colour-charcoal-rule: #454540;
+  --colour-page: #101014;
+  --colour-page-slot: #2A2A2E;
+  --colour-page-ink: #E2E3DD;
+  --colour-page-body: #DCDDD7;
+  --colour-page-muted: #A8A9A3;
+  --colour-page-faint: #6E6F69;
+  --colour-page-rule: #3A3A36;
+  --colour-on-acid-ink: #3A3B10;
+  --colour-on-acid-muted: #4C4D16;
+  --colour-on-acid-rule: #ADAF3D;
+  --colour-on-charcoal-link: #DEDBD0;
+
+  /* space */
+  --space-1: 6px;
+  --space-2: 12px;
+  --space-3: 18px;
+  --space-4: 24px;
+  --space-6: 36px;
+  --space-8: 48px;
+  --space-12: 72px;
+  --space-lattice: 6px;
+  --space-pixel: 4px;
+  --space-gutter-page: 88px;
+  --space-gutter-wide: 110px;
+
+  /* motion */
+  --motion-duration-fast: 140ms;
+  --motion-duration-base: 200ms;
+  --motion-duration-slow: 320ms;
+  --motion-duration-cta: 400ms;
+  --motion-duration-swap: 420ms;
+  --motion-ease-cta: cubic-bezier(0.62, 0.05, 0.2, 1);
+  --motion-ease-linear: linear;
+
+  /* shadow */
+  --shadow-shadow-hard: 6px 6px 0 0 #3E3BF4;
+  --shadow-shadow-hard-sm: 3px 3px 0 0 #3E3BF4;
+  --shadow-shadow-hard-acid: 6px 6px 0 0 #F1F43B;
+
+  /* type — fluid ramp, min → max across the viewport */
+  --text-display-hero: clamp(52px, 10vw, 168px);
+  --text-display-hero-leading: 0.86;
+  --text-display-hero-tracking: -0.02em;
+  --text-display-xl: clamp(38px, 7vw, 110px);
+  --text-display-xl-leading: 0.9;
+  --text-display-xl-tracking: -0.02em;
+  --text-display-l: clamp(44px, 5.4vw, 88px);
+  --text-display-l-leading: 0.92;
+  --text-display-l-tracking: -0.01em;
+  --text-display-m: clamp(36px, 6vw, 72px);
+  --text-display-m-leading: 0.94;
+  --text-display-m-tracking: -0.01em;
+  --text-display-s: clamp(30px, 4.2vw, 60px);
+  --text-display-s-leading: 0.98;
+  --text-display-s-tracking: -0.015em;
+  --text-display-xs: clamp(28px, 3.4vw, 46px);
+  --text-display-xs-leading: 1.1;
+  --text-display-xs-tracking: -0.01em;
+  --text-figure: clamp(46px, 6.4vw, 96px);
+  --text-figure-leading: 0.94;
+  --text-figure-tracking: -0.02em;
+  --text-body-l: clamp(17px, 1.5vw, 21px);
+  --text-body-l-leading: 1.6;
+  --text-body-l-tracking: 0;
+  --text-body-m: clamp(16px, 1.2vw, 17px);
+  --text-body-m-leading: 1.65;
+  --text-body-m-tracking: 0;
+  --text-body-s: 15px;
+  --text-body-s-leading: 1.75;
+  --text-body-s-tracking: 0;
+  --text-body-xs: 13px;
+  --text-body-xs-leading: 1.5;
+  --text-body-xs-tracking: 0;
+  --text-label: 11px;
+  --text-label-leading: 1;
+  --text-label-tracking: 0.3em;
+}
