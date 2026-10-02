@@ -1111,3 +1111,37 @@ html {
     transform: none;
   }
 }
+
+/* ── route curtain ─────────────────────────────────────────────────────────
+   The blind sweep between pages, as a View Transition. The browser holds a
+   snapshot of the outgoing page and a live view of the incoming one; both
+   are masked by images utils/routeTransition.js bakes for the viewport (one
+   pixel per 12px cell, dithered front included) and slides a whole cell at a
+   time. Between the two the acid ground of ::view-transition shows through —
+   that is the curtain. `pixelated` keeps the 12x upscale hard-edged.
+
+   Scoped to [data-route-curtain], which is only set while a route change is
+   running, so no other view transition picks these up. */
+:root[data-route-curtain]::view-transition {
+  background: var(--acid);
+}
+
+:root[data-route-curtain]::view-transition-old(root),
+:root[data-route-curtain]::view-transition-new(root) {
+  mix-blend-mode: normal;
+  image-rendering: pixelated;
+  mask-repeat: no-repeat;
+  mask-size: var(--route-curtain-size);
+}
+
+:root[data-route-curtain]::view-transition-old(root) {
+  mask-image: var(--route-curtain-cover);
+  animation: route-curtain-cover var(--route-curtain-build-ms) steps(1, end)
+    both;
+}
+
+:root[data-route-curtain]::view-transition-new(root) {
+  mask-image: var(--route-curtain-lift);
+  animation: route-curtain-lift var(--route-curtain-lift-ms) steps(1, end)
+    calc(var(--route-curtain-build-ms) + var(--route-curtain-hold-ms)) both;
+}

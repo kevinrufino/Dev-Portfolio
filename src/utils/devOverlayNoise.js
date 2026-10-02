@@ -19,11 +19,12 @@
  *
  * Nothing in `src/` constructs a ResizeObserver on a project page. That was
  * verified rather than assumed — patching the constructor and remounting the
- * whole route caught none. The observers belong to framer-motion (the
- * `AnimatePresence` wrapping the routes) and @react-spring, both mounted once at
- * app start. Closing the media lightbox restores `body`'s overflow and the
- * scrollbar-width padding it was holding, and that is a real width change for
- * those observers to notice. The work is correct; it just sometimes does not fit
+ * whole route caught none. When this was written the observers belonged to
+ * framer-motion (then an `AnimatePresence` wrapping the routes, since replaced
+ * by a View Transition) and @react-spring, both mounted once at app start.
+ * Closing the media lightbox restores `body`'s overflow and the scrollbar-width
+ * padding it was holding, and that is a real width change for those observers
+ * to notice. The work is correct; it just sometimes does not fit
  * in one frame.
  *
  * ── why this is done by wrapping the constructor ────────────────────────────

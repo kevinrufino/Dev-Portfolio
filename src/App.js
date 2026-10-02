@@ -12,14 +12,7 @@
  */
 
 import React, { useEffect, useRef, Suspense, lazy } from 'react';
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-  useLocation,
-  useNavigate,
-} from 'react-router-dom';
-import { AnimatePresence } from 'framer-motion';
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import AppProviders from './context/AppProviders.js';
 import { useCursor } from './context/CursorContext.js';
 import { useTheme } from './context/ThemeContext.js';
@@ -37,8 +30,7 @@ import { HeaderSequence } from './components/HeaderSequence.js';
 import PixelTrail from './components/PixelTrail.js';
 import { preloadImages } from './services/AssetService.js';
 import FillPhysicsCanvas from './components/FillPhysicsCanvas.js';
-import PageTransition from './components/PageTransition.js';
-import PageCurtain from './components/PageCurtain.js';
+import ViewTransitionRouter from './components/ViewTransitionRouter.js';
 import Reveal from './components/Reveal.js';
 import { watchGrids } from './utils/grid.js';
 import { scrollToSection } from './utils/navigateToSection.js';
@@ -272,62 +264,52 @@ const AppContent = () => {
  * Better performance with optimized re-renders
  */
 /**
- * Routes keyed by pathname inside AnimatePresence so the pixel-wipe
- * transition plays between the index and project dossier views
+ * Routes keyed by pathname, so moving between two project pages remounts the
+ * page rather than reusing it. The pixel-wipe between pages is not in here:
+ * ViewTransitionRouter runs every pathname change under the route curtain.
  */
 const AnimatedRoutes = () => {
   const location = useLocation();
 
   return (
-    <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
-        <Route
-          path="/"
-          element={
-            <PageTransition>
-              <AppContent />
-            </PageTransition>
-          }
-        />
-        {/* Suspense sits inside each element rather than around <Routes>: a
-            boundary outside would suspend the tree AnimatePresence is holding
-            for its exit animation, and the wipe between pages would drop. */}
-        <Route
-          path="/projects/:slug"
-          element={
-            <PageTransition>
-              <Suspense fallback={<RouteGround />}>
-                <ProjectPage />
-              </Suspense>
-            </PageTransition>
-          }
-        />
-        <Route
-          path="/projects/:slug/preview"
-          element={
-            <Suspense fallback={<RouteGround tone='bg-ultra' />}>
-              <ProjectPreview />
-            </Suspense>
-          }
-        />
-        {/* Unlinked on purpose: the content editor, which writes nothing on
-            its own and hands over a bundle to be committed. */}
-        <Route
-          path="/studio"
-          element={
-            <Suspense fallback={<RouteGround tone='bg-[#131318]' />}>
-              <Studio />
-            </Suspense>
-          }
-        />
-      </Routes>
-    </AnimatePresence>
+    <Routes location={location} key={location.pathname}>
+      <Route path="/" element={<AppContent />} />
+      {/* Suspense sits inside each element rather than around <Routes>, so a
+          lazy page suspending shows its own ground rather than blanking the
+          whole route tree. */}
+      <Route
+        path="/projects/:slug"
+        element={
+          <Suspense fallback={<RouteGround />}>
+            <ProjectPage />
+          </Suspense>
+        }
+      />
+      <Route
+        path="/projects/:slug/preview"
+        element={
+          <Suspense fallback={<RouteGround tone='bg-ultra' />}>
+            <ProjectPreview />
+          </Suspense>
+        }
+      />
+      {/* Unlinked on purpose: the content editor, which writes nothing on
+          its own and hands over a bundle to be committed. */}
+      <Route
+        path="/studio"
+        element={
+          <Suspense fallback={<RouteGround tone='bg-[#131318]' />}>
+            <Studio />
+          </Suspense>
+        }
+      />
+    </Routes>
   );
 };
 
 const AppRefactored = () => {
   return (
-    <BrowserRouter>
+    <ViewTransitionRouter>
       <AppProviders>
         {/* One cursor for the whole app, outside <Routes>.
             index.css hides the native cursor under `@media (pointer: fine)`
@@ -345,14 +327,9 @@ const AppRefactored = () => {
             tool for arguing with the design rather than part of it, and both of
             its ways in were reachable by accident. */}
         <CursorFxDebug />
-        {/* The blind sweep between routes. Outside <Routes> because it has to
-            outlive the page it covers: it goes up over the outgoing route and
-            comes off the incoming one, and a canvas belonging to either would
-            be gone in between. */}
-        <PageCurtain />
         <AnimatedRoutes />
       </AppProviders>
-    </BrowserRouter>
+    </ViewTransitionRouter>
   );
 };
 
