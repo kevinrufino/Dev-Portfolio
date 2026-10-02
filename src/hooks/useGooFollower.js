@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { onFrame } from '../utils/frameLoop.js';
 
 /**
  * The spring-follower behind the gooey pill groups.
@@ -120,26 +121,36 @@ export default function useGooFollower(count, range = 300, fromItems = false) {
       }
     };
 
-    let raf = 0;
+    // Same as the nav: only write when the eased values have actually moved,
+    // so a blob at rest costs nothing per frame.
+    let drawnTransform = '';
+    let drawnOpacity = '';
     const loop = () => {
       p.px += (p.tx - p.px) * FOLLOW_EASE;
       p.py += (p.ty - p.py) * FOLLOW_EASE;
       p.near += (p.targetNear - p.near) * NEAR_EASE;
       const el = followerRef.current;
       if (el && p.primed) {
-        el.style.transform =
-          `translate3d(${p.px - 12 + GOO_PAD}px, ${p.py - 12 + GOO_PAD}px, 0)` +
-          ` scale(${0.55 + 0.45 * p.near})`;
-        el.style.opacity = String(Math.min(1, 0.25 + p.near * 1.35));
+        const transform =
+          `translate3d(${(p.px - 12 + GOO_PAD).toFixed(2)}px, ${(p.py - 12 + GOO_PAD).toFixed(2)}px, 0)` +
+          ` scale(${(0.55 + 0.45 * p.near).toFixed(3)})`;
+        const opacity = Math.min(1, 0.25 + p.near * 1.35).toFixed(3);
+        if (transform !== drawnTransform) {
+          el.style.transform = transform;
+          drawnTransform = transform;
+        }
+        if (opacity !== drawnOpacity) {
+          el.style.opacity = opacity;
+          drawnOpacity = opacity;
+        }
       }
-      raf = requestAnimationFrame(loop);
     };
 
     window.addEventListener('pointermove', onMove, { passive: true });
-    raf = requestAnimationFrame(loop);
+    const leaveLoop = onFrame(loop);
     return () => {
       window.removeEventListener('pointermove', onMove);
-      cancelAnimationFrame(raf);
+      leaveLoop();
     };
   }, [range, fromItems, count]);
 

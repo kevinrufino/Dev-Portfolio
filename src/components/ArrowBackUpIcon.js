@@ -1,28 +1,65 @@
-import { forwardRef, useImperativeHandle } from 'react';
+import { forwardRef, useImperativeHandle, useRef } from 'react';
 import PropTypes from 'prop-types';
-import { motion, useAnimate } from 'framer-motion';
 
 /**
  * Animated arrow-back-up icon from Its Hover.
  * https://www.itshover.com/icons/arrow-back-up-icon
+ *
+ * The nudge is the Web Animations API on the arrow's group — one keyframed
+ * translate, which is all framer-motion's `useAnimate` was doing here.
  */
+
+/** The arrow's current horizontal offset, so a stop eases from where it is. */
+const currentX = el => {
+  const t = getComputedStyle(el).transform;
+  if (!t || t === 'none') return 0;
+  return new DOMMatrixReadOnly(t).m41;
+};
 const ArrowBackUpIcon = forwardRef(
   (
     { size = 24, color = 'currentColor', strokeWidth = 2, className = '' },
     ref,
   ) => {
-    const [scope, animate] = useAnimate();
+    const groupRef = useRef(null);
+    const runningRef = useRef(null);
 
-    const startAnimation = async () => {
-      await animate(
-        '.arrow-group',
-        { x: [0, -3, 0] },
-        { duration: 0.4, ease: 'easeInOut' },
+    const play = (keyframes, options) => {
+      const g = groupRef.current;
+      if (!g?.animate) return;
+      runningRef.current?.cancel();
+      runningRef.current = g.animate(keyframes, options);
+    };
+
+    const startAnimation = () => {
+      play(
+        [
+          { transform: 'translateX(0px)' },
+          { transform: 'translateX(-3px)' },
+          { transform: 'translateX(0px)' },
+        ],
+        { duration: 400, easing: 'ease-in-out' },
       );
     };
 
     const stopAnimation = () => {
-      animate('.arrow-group', { x: 0 }, { duration: 0.2, ease: 'easeOut' });
+      const g = groupRef.current;
+      if (!g) return;
+      const from = currentX(g);
+      play(
+        [
+          { transform: `translateX(${from}px)` },
+          { transform: 'translateX(0px)' },
+        ],
+        { duration: 200, easing: 'ease-out' },
+      );
+    };
+
+    // Hover, as framer-motion's onHoverStart defined it: a mouse, not a tap.
+    const onPointerEnter = e => {
+      if (e.pointerType === 'mouse') startAnimation();
+    };
+    const onPointerLeave = e => {
+      if (e.pointerType === 'mouse') stopAnimation();
     };
 
     useImperativeHandle(ref, () => ({
@@ -31,11 +68,10 @@ const ArrowBackUpIcon = forwardRef(
     }));
 
     return (
-      <motion.div
-        ref={scope}
+      <div
         aria-hidden='true'
-        onHoverStart={startAnimation}
-        onHoverEnd={stopAnimation}
+        onPointerEnter={onPointerEnter}
+        onPointerLeave={onPointerLeave}
         className={`inline-flex cursor-pointer items-center justify-center ${className}`}
       >
         <svg
@@ -50,13 +86,13 @@ const ArrowBackUpIcon = forwardRef(
           strokeLinejoin='round'
           focusable='false'
         >
-          <motion.g className='arrow-group'>
+          <g ref={groupRef} className='arrow-group'>
             <path stroke='none' d='M0 0h24v24H0z' fill='none' />
             <path d='M9 14l-4 -4l4 -4' />
             <path d='M5 10h11a4 4 0 1 1 0 8h-1' />
-          </motion.g>
+          </g>
         </svg>
-      </motion.div>
+      </div>
     );
   },
 );

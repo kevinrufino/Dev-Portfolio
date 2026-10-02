@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
+import { FRAME_ORDER, onFrame } from '../utils/frameLoop.js';
 
 // 18px cells = three of the page's 6px grid cells, so a trail cell always
 // lands on the lattice the sections and the palm share.
@@ -94,7 +95,8 @@ const engine = {
   size: { width: 0, height: 0, dpr: 1 },
   lastPointer: null,
   reduced: false,
-  raf: 0,
+  // Unsubscribe from the shared loop while cells are fading; null at rest.
+  leaveLoop: null,
   bound: false,
 };
 
@@ -188,11 +190,18 @@ const draw = now => {
   }
 
   for (const { ctx } of engine.surfaces) ctx.globalAlpha = 1;
-  engine.raf = engine.cells.size > 0 ? requestAnimationFrame(draw) : 0;
+  if (engine.cells.size === 0) stopDrawing();
+};
+
+const stopDrawing = () => {
+  engine.leaveLoop?.();
+  engine.leaveLoop = null;
 };
 
 const scheduleDraw = () => {
-  if (engine.raf === 0) engine.raf = requestAnimationFrame(draw);
+  if (!engine.leaveLoop) {
+    engine.leaveLoop = onFrame(draw, { order: FRAME_ORDER.draw });
+  }
 };
 
 const paintAt = (clientX, clientY, velocity, ground) => {
@@ -293,8 +302,7 @@ const unbind = () => {
   window.removeEventListener('pointermove', handlePointer);
   window.removeEventListener('pointerdown', handlePointer);
   motionQuery?.removeEventListener('change', syncMotion);
-  cancelAnimationFrame(engine.raf);
-  engine.raf = 0;
+  stopDrawing();
   engine.cells.clear();
   engine.lastPointer = null;
   // The path outlives this component otherwise, and the cat would spend its
