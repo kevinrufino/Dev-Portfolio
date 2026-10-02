@@ -3,6 +3,7 @@ import { createPalmScene } from './palmEngine.js';
 import { setLeafColliderProvider, setPalmShaker } from './leafColliders.js';
 import { ENABLE_PALM_SCENE } from '../../featureFlags.js';
 import { addSource } from '../../utils/cursorFx.js';
+import { FRAME_ORDER, onFrame } from '../../utils/frameLoop.js';
 
 // The presenter is the page's most expensive pass, so it is capped well below
 // 60fps. The palm is ambient — nothing about it needs to track the pointer
@@ -98,12 +99,7 @@ const PalmScene = () => {
     setLeafColliderProvider(time => palm.leafColliders(time));
     setPalmShaker(() => palm.shake());
 
-    let raf = 0;
-    let last = 0;
     const loop = t => {
-      raf = requestAnimationFrame(loop);
-      if (t - last < FRAME_MS) return;
-      last = t;
       const intro = rectOf('intro');
       const footer = footerRect();
       if (
@@ -116,7 +112,10 @@ const PalmScene = () => {
       }
       palm.render(t);
     };
-    raf = requestAnimationFrame(loop);
+    const leaveLoop = onFrame(loop, {
+      interval: FRAME_MS,
+      order: FRAME_ORDER.draw,
+    });
 
     const onResize = () => palm.resize();
     const onMove = e => palm.setPointer(e.clientX, e.clientY);
@@ -228,7 +227,7 @@ const PalmScene = () => {
     window.addEventListener('click', onClick);
 
     return () => {
-      cancelAnimationFrame(raf);
+      leaveLoop();
       removeSource();
       setLeafColliderProvider(null);
       setPalmShaker(null);

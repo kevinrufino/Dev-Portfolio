@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ENABLE_SHADER_BACKGROUND } from '../featureFlags.js';
+import { onFrame } from '../utils/frameLoop.js';
 
 /**
  * Drives the landing loader → physics-fill sequence.
@@ -80,7 +81,7 @@ export default function useLandingSequence() {
       ? ['fonts', 'window-load', 'shader']
       : ['fonts', 'window-load'];
     const done = new Set();
-    let raf = 0;
+    let leaveLoop = () => {};
 
     const realFrac = () => done.size / milestones.length;
 
@@ -107,9 +108,8 @@ export default function useLandingSequence() {
         // effects twice in development, so a flag set on entry would make the
         // second mount skip the sequence and the loader would never play.
         hasPlayed = true;
-        return;
+        leaveLoop();
       }
-      raf = requestAnimationFrame(tick);
     };
 
     document.fonts.ready.then(() => done.add('fonts'));
@@ -130,10 +130,10 @@ export default function useLandingSequence() {
       READINESS_CAP_MS,
     );
 
-    raf = requestAnimationFrame(tick);
+    leaveLoop = onFrame(tick);
 
     return () => {
-      cancelAnimationFrame(raf);
+      leaveLoop();
       clearTimeout(cap);
       window.removeEventListener('load', onLoad);
       window.removeEventListener('shader:ready', onShader);

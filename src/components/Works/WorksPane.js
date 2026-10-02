@@ -5,6 +5,7 @@ import { toSlug } from '../../utils/helpers.js';
 import useGooFollower from '../../hooks/useGooFollower.js';
 import useCursorFx from '../../hooks/useCursorFx.js';
 import { setWorkSelector } from '../../utils/worksSelection.js';
+import { FRAME_ORDER, onFrame } from '../../utils/frameLoop.js';
 import GooPills from '../common/GooPills.js';
 import { WORKS, WORK_CATEGORIES } from './worksData.js';
 import { THEMES, WORKS_RANGE } from './themes.js';
@@ -373,22 +374,24 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
     fluidRef.current = fluid;
 
     let visible = false;
-    let raf = 0;
-    let lastPaint = 0;
+    let leaveLoop = null;
     const frame = t => {
-      raf = 0;
-      if (!visible || document.hidden) return;
-      if (t - lastPaint > FRAME_MS) {
-        fluid?.paint(t);
-        glyph.current?.paint(t);
-        lastPaint = t;
-      }
-      raf = requestAnimationFrame(frame);
+      fluid?.paint(t);
+      glyph.current?.paint(t);
     };
+    // On the shared loop only while the section is on screen and the tab is
+    // showing; off it, the pane schedules nothing at all.
     const sync = () => {
-      cancelAnimationFrame(raf);
-      raf = 0;
-      if (visible && !document.hidden) raf = requestAnimationFrame(frame);
+      const want = visible && !document.hidden;
+      if (want && !leaveLoop) {
+        leaveLoop = onFrame(frame, {
+          interval: FRAME_MS,
+          order: FRAME_ORDER.draw,
+        });
+      } else if (!want && leaveLoop) {
+        leaveLoop();
+        leaveLoop = null;
+      }
     };
 
     const io = new IntersectionObserver(entries => {
@@ -411,7 +414,7 @@ const WorksPane = ({ id = 'projects', className = '' }) => {
     return () => {
       io.disconnect();
       ro.disconnect();
-      cancelAnimationFrame(raf);
+      leaveLoop?.();
       document.removeEventListener('visibilitychange', sync);
       fluidRef.current = null;
       fluid?.destroy();

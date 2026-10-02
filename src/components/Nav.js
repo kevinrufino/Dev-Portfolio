@@ -8,6 +8,7 @@ import {
   revealStart,
 } from '../utils/navigateToSection.js';
 import ArrowBackUpIcon from './ArrowBackUpIcon.js';
+import { onFrame } from '../utils/frameLoop.js';
 
 /**
  * home / work / connect — three states per item (plain text, hovered
@@ -78,7 +79,6 @@ const HomeNav = ({ setCursor }) => {
   const navRef = useRef(null);
   const followerRef = useRef(null);
   const linkRefs = useRef([]);
-  const rafRef = useRef(0);
   const slideTimerRef = useRef(null);
   const pointerRef = useRef({
     px: 0,
@@ -188,29 +188,44 @@ const HomeNav = ({ setCursor }) => {
         p.py = p.ty;
       }
     };
+    // The last values written, so a blob at rest costs no style writes: the
+    // eases converge, and re-assigning an identical transform still dirties
+    // the element's style every frame.
+    let drawnTransform = '';
+    let drawnOpacity = '';
     const loop = () => {
       p.px += (p.tx - p.px) * 0.34;
       p.py += (p.ty - p.py) * 0.34;
       p.near += (p.targetNear - p.near) * 0.13;
       const el = followerRef.current;
       if (el && p.primed) {
-        el.style.transform = `translate3d(${p.px - FOLLOWER_SIZE / 2 + GOO_PAD}px, ${
-          p.py - FOLLOWER_SIZE / 2 + GOO_PAD
-        }px, 0) scale(${0.55 + 0.45 * p.near})`;
-        el.style.opacity = String(Math.min(1, 0.25 + p.near * 1.35));
+        const transform = `translate3d(${(p.px - FOLLOWER_SIZE / 2 + GOO_PAD).toFixed(2)}px, ${(
+          p.py -
+          FOLLOWER_SIZE / 2 +
+          GOO_PAD
+        ).toFixed(2)}px, 0) scale(${(0.55 + 0.45 * p.near).toFixed(3)})`;
+        const opacity = Math.min(1, 0.25 + p.near * 1.35).toFixed(3);
+        if (transform !== drawnTransform) {
+          el.style.transform = transform;
+          drawnTransform = transform;
+        }
+        if (opacity !== drawnOpacity) {
+          el.style.opacity = opacity;
+          drawnOpacity = opacity;
+        }
       }
-      rafRef.current = requestAnimationFrame(loop);
     };
+    let leaveLoop = () => {};
     if (!reduce) {
       window.addEventListener('pointermove', onMove, { passive: true });
-      rafRef.current = requestAnimationFrame(loop);
+      leaveLoop = onFrame(loop);
     }
 
     return () => {
       window.removeEventListener('resize', measure);
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('pointermove', onMove);
-      cancelAnimationFrame(rafRef.current);
+      leaveLoop();
       clearTimeout(slideTimerRef.current);
     };
   }, []);

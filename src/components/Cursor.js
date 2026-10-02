@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { aimState } from '../utils/cursorFx.js';
+import { FRAME_ORDER, onFrame } from '../utils/frameLoop.js';
 
 /**
  * The page cursor.
@@ -78,12 +79,14 @@ const Cursor = () => {
         `rotate(${deg.toFixed(2)}deg)` + (down ? ' scale(.94)' : '');
     };
 
-    let raf = 0;
-    const tick = () => {
-      raf = requestAnimationFrame(tick);
-      if (shown) turn();
-    };
-    raf = requestAnimationFrame(tick);
+    // Drawn after cursorFx has eased the aim for this frame, so the arrow
+    // never shows the previous frame's angle.
+    const leaveLoop = onFrame(
+      () => {
+        if (shown) turn();
+      },
+      { order: FRAME_ORDER.draw },
+    );
 
     const onMove = event => {
       x = event.clientX;
@@ -115,7 +118,7 @@ const Cursor = () => {
     document.addEventListener('pointerleave', onLeave);
 
     return () => {
-      cancelAnimationFrame(raf);
+      leaveLoop();
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerdown', onDown);
       window.removeEventListener('pointerup', onUp);

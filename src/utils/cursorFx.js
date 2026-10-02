@@ -40,6 +40,8 @@
  * place you are heading toward, not a place you have arrived.
  */
 
+import { FRAME_ORDER, onFrame } from './frameLoop.js';
+
 /** Chip offset from the pointer. */
 const CHIP_DX = 20;
 const CHIP_DY = 18;
@@ -59,7 +61,7 @@ const enumerators = new Map();
 let px = -9999;
 let py = -9999;
 let moved = false;
-let raf = 0;
+let leaveLoop = () => {};
 let chip = null;
 
 /** Where the arrow is pointing, and how much of that is the field's doing. */
@@ -272,8 +274,6 @@ function releaseHold() {
 }
 
 const loop = () => {
-  raf = requestAnimationFrame(loop);
-
   // Targets only need re-measuring when something could have moved under the
   // pointer. Standing still costs one easing step and nothing else.
   if (moved) {
@@ -343,7 +343,7 @@ const start = () => {
   window.addEventListener('scroll', markMoved, { passive: true });
   window.addEventListener('resize', markMoved);
   document.addEventListener('pointerleave', onPointerLeave);
-  raf = requestAnimationFrame(loop);
+  leaveLoop = onFrame(loop, { order: FRAME_ORDER.input });
 };
 
 const stop = () => {
@@ -356,7 +356,8 @@ const stop = () => {
   window.removeEventListener('scroll', markMoved);
   window.removeEventListener('resize', markMoved);
   document.removeEventListener('pointerleave', onPointerLeave);
-  cancelAnimationFrame(raf);
+  leaveLoop();
+  leaveLoop = () => {};
 };
 
 const settle = () => {

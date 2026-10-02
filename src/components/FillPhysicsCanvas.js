@@ -5,6 +5,7 @@ import { FirstNameComponent } from './Hero/components/FirstNameComponent.js';
 import { LastNameComponent } from './Hero/components/LastNameComponent.js';
 import { getLeafColliders, shakePalm } from './Palm/leafColliders.js';
 import { addSource } from '../utils/cursorFx.js';
+import { FRAME_ORDER, onFrame } from '../utils/frameLoop.js';
 import { HERO_MIN_SCALE, HERO_SHRINK_PX } from '../utils/heroRunway.js';
 
 /**
@@ -22,8 +23,8 @@ import { HERO_MIN_SCALE, HERO_SHRINK_PX } from '../utils/heroRunway.js';
  * obstacle, and each name is retired from the world as it clears the document,
  * so the simulation winds down to nothing instead of holding a settled pile
  * for the rest of the session. The canvas itself stays fixed and
- * viewport-sized (every body is invisible — only the sprites drawn in
- * afterRender show), and the sprite draw is offset by scrollY to render just
+ * viewport-sized (every body is invisible — only the sprites drawn each
+ * frame show), and the sprite draw is offset by scrollY to render just
  * the visible slice, avoiding a document-tall backing store.
  */
 const ACID = '#F1F43B';
@@ -328,28 +329,23 @@ const FillPhysicsCanvas = ({
         engine.gravity.y = GRAVITY_FILL;
         const world = engine.world;
         // The canvas stays viewport-sized and fixed; every physics body is
-        // invisible (only the sprites drawn in afterRender show), so instead of
+        // invisible (only the sprites drawn below show), so instead of
         // allocating a document-tall canvas we render the viewport slice and
         // offset the sprite draw by scrollY. Physics still runs in full
         // document coordinates.
-        const render = Matter.Render.create({
-          canvas,
-          engine,
-          options: {
-            width: W,
-            height: fold,
-            wireframes: false,
-            background: 'transparent',
-            showSleeping: false,
-          },
-        });
+        //
+        // No Matter.Render and no Matter.Runner.run: each of those runs a
+        // requestAnimationFrame chain of its own, and Render also traced a
+        // transparent path for every body — walls, floors and thirty leaf
+        // circles — every frame, only for none of it to show. The runner is
+        // kept for its fixed-timestep accounting and ticked from the page's
+        // shared loop; the sprites are the only thing drawn.
+        canvas.width = W;
+        canvas.height = fold;
+        const ctx = canvas.getContext('2d');
         const runner = Matter.Runner.create();
 
-        const invisible = {
-          fillStyle: 'transparent',
-          strokeStyle: 'transparent',
-        };
-        const staticOpts = { isStatic: true, render: invisible };
+        const staticOpts = { isStatic: true };
 
         // Split floor at the fold: two invisible halves meeting at the center.
         // Scroll slides them outward to open a center gap.
@@ -357,7 +353,6 @@ const FillPhysicsCanvas = ({
         const floorOpts = {
           isStatic: true,
           friction: 0.05, // slippery so the pile slides off as it retracts
-          render: invisible,
         };
         // The left section never moves; only the right one slides away.
         let leftW = W * FLOOR_SPLIT;
@@ -467,7 +462,6 @@ const FillPhysicsCanvas = ({
             restitution: 0.05,
             friction: 0.15,
             frictionAir: 0.012,
-            render: invisible,
           });
           // Tetris mode while the stack drops in: rotation locked so the
           // boosted-gravity cascade can't knock rows into a tumble — they
@@ -561,18 +555,18 @@ const FillPhysicsCanvas = ({
         // Nothing catches the pile at the bottom, so every name eventually
         // clears the document. Once one is far enough past the end to be
         // invisible at any scroll position it is removed from the world: the
-        // solver steps fewer bodies and afterRender draws fewer sprites the
-        // further the drain gets, and when the last one is gone the runner and
-        // renderer stop outright rather than stepping a settled pile for the
+        // solver steps fewer bodies and the frame draws fewer sprites the
+        // further the drain gets, and when the last one is gone it leaves the
+        // shared loop outright rather than stepping a settled pile for the
         // rest of the session.
         let stopped = false;
+        let leaveLoop = () => {};
         const culled = new WeakSet();
         const stopSimulation = () => {
           if (stopped) return;
           stopped = true;
-          Matter.Render.stop(render);
-          Matter.Runner.stop(runner);
-          render.context.clearRect(0, 0, W, fold);
+          leaveLoop();
+          ctx.clearRect(0, 0, W, fold);
           // The landing is over: the hero can be taken out of the document now
           // without interrupting anything the reader was watching.
           onDrainedRef.current?.();
@@ -608,7 +602,6 @@ const FillPhysicsCanvas = ({
             isStatic: true,
             restitution: 0.42,
             friction: 0.02,
-            render: invisible,
           }),
         );
         Matter.World.add(world, leafBodies);
@@ -650,7 +643,6 @@ const FillPhysicsCanvas = ({
             // text, not to collect them.
             friction: 0.001,
             restitution: 0.15,
-            render: invisible,
           },
         );
         Matter.World.add(world, copyBody);
@@ -721,8 +713,8 @@ const FillPhysicsCanvas = ({
         // Draw the name sprites each frame, bottom-aligned to the (shorter)
         // collision box. Bodies live in document coordinates; the canvas is a
         // fixed viewport slice, so shift everything up by scrollY.
-        Matter.Events.on(render, 'afterRender', () => {
-          const ctx = render.context;
+        const draw = () => {
+          ctx.clearRect(0, 0, W, fold);
 
           // Two regimes.
           //
@@ -765,7 +757,7 @@ const FillPhysicsCanvas = ({
             drawFireworks(ctx, fireworks, performance.now());
           }
           ctx.restore();
-        });
+        };
 
         // The names are canvas, so they cannot carry a hover of their own.
         // They answer the cursor through a source instead: asked what is at a
@@ -907,18 +899,9 @@ const FillPhysicsCanvas = ({
           if (rows.every(rowSettled)) finishFill();
         };
 
-        // Pause the simulation while the tab is hidden.
-        const handleVisibility = () => {
-          if (stopped) return; // drained — nothing left to step
-          if (document.hidden) {
-            Matter.Render.stop(render);
-            Matter.Runner.stop(runner);
-          } else {
-            Matter.Render.run(render);
-            Matter.Runner.run(runner, engine);
-          }
-        };
-        document.addEventListener('visibilitychange', handleVisibility);
+        // No visibility handling: a hidden tab gets no animation frames, so
+        // the shared loop simply stops calling in, and Runner.tick discards
+        // the long gap on return instead of simulating it.
 
         // Keep the fixed viewport canvas sized to the window; reposition the
         // fold-anchored floor and the side walls for the new width. Existing
@@ -927,10 +910,8 @@ const FillPhysicsCanvas = ({
           W = window.innerWidth;
           fold = window.innerHeight;
           docH = contentEnd();
-          render.options.width = W;
-          render.options.height = fold;
-          render.canvas.width = W;
-          render.canvas.height = fold;
+          canvas.width = W;
+          canvas.height = fold;
           // The split is a fraction of the width, so both sections have to be
           // rebuilt at the new size before updateFloor re-places the right one.
           const nextLeftW = W * FLOOR_SPLIT;
@@ -951,15 +932,25 @@ const FillPhysicsCanvas = ({
         window.addEventListener('resize', handleResize);
 
         // Handoff: draw the stationary 1:1 bodies first, then let the caller
-        // hide the DOM name, then start physics. The cascade spawns as soon
-        // as the loaded name (row 0) has settled on the floor.
-        Matter.Render.run(render);
-        requestAnimationFrame(() => {
-          if (cancelled) return;
-          onHandoffRef.current?.();
-          Matter.Runner.run(runner, engine);
-          spawnTimer = setInterval(checkFill, CHECK_MS);
-        });
+        // hide the DOM name in that same frame, and step physics from the
+        // next one on. The cascade spawns as soon as the loaded name (row 0)
+        // has settled on the floor.
+        //
+        // Step, then draw, in one callback: the sprites always show the state
+        // the solver just produced, where the separate Render and Runner
+        // loops drew whichever state the previous frame had left behind.
+        let stepping = false;
+        leaveLoop = onFrame(
+          now => {
+            if (stepping) Matter.Runner.tick(runner, engine, now);
+            draw();
+            if (stepping || cancelled) return;
+            stepping = true;
+            onHandoffRef.current?.();
+            spawnTimer = setInterval(checkFill, CHECK_MS);
+          },
+          { order: FRAME_ORDER.simulate },
+        );
 
         teardown = () => {
           dropSource();
@@ -970,10 +961,8 @@ const FillPhysicsCanvas = ({
           window.removeEventListener('scroll', updateFloor);
           window.removeEventListener('resize', handleResize);
           document.removeEventListener('click', handleClick);
-          document.removeEventListener('visibilitychange', handleVisibility);
           motionQuery.removeEventListener('change', handleMotionPreference);
-          Matter.Render.stop(render);
-          Matter.Runner.stop(runner);
+          leaveLoop();
           Matter.Engine.clear(engine);
           sprites.length = 0;
           fireworks.length = 0;
