@@ -961,10 +961,10 @@
         "liveLink": "https://third-war-chronicle.vercel.app/"
       }
     },
-    "Vega 16-Bit Con": {
-      "display": "Vega 16-Bit Con",
+    "16-Bit Con": {
+      "display": "16-Bit Con",
       "tagline": "",
-      "cover": "Cover — Vega 16-Bit Con",
+      "cover": "Cover — 16-Bit Con",
       "coverSrc": "",
       "meta": [],
       "blocks": [
@@ -986,7 +986,7 @@
         "liveOnly": true
       },
       "archive": {
-        "client": "Vega",
+        "client": "",
         "role": "Creator",
         "year": "2026",
         "liveLink": "https://16-bit-con.vercel.app/"
@@ -1007,7 +1007,7 @@
       "Toolcraft Explorations",
       "Warcraft 3 Book RTS",
       "Minecraft Clone",
-      "Vega 16-Bit Con"
+      "16-Bit Con"
     ]
   },
   "site": {
