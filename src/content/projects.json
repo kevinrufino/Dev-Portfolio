@@ -960,6 +960,37 @@
         "year": "2026",
         "liveLink": "https://third-war-chronicle.vercel.app/"
       }
+    },
+    "16-Bit Con": {
+      "display": "16-Bit Con",
+      "tagline": "",
+      "cover": "Cover — 16-Bit Con",
+      "coverSrc": "",
+      "meta": [],
+      "blocks": [
+        {
+          "type": "text",
+          "label": "",
+          "title": "",
+          "note": "",
+          "paras": [],
+          "pull": ""
+        }
+      ],
+      "index": {
+        "category": "personal",
+        "shape": "rings",
+        "glyphSrc": "/projects/16-bit-con/glyph.webm",
+        "summary": "A landing page exercise made in a few hours",
+        "comingSoon": false,
+        "liveOnly": true
+      },
+      "archive": {
+        "client": "",
+        "role": "Creator",
+        "year": "2026",
+        "liveLink": "https://16-bit-con.vercel.app/"
+      }
     }
   },
   "order": {
@@ -973,6 +1004,7 @@
     ],
     "personal": [
       "Moodie",
+      "16-Bit Con",
       "Toolcraft Explorations",
       "Warcraft 3 Book RTS",
       "Minecraft Clone"
